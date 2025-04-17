@@ -1,6 +1,6 @@
 # hushmate
 
-A new Flutter project.
+Flutter application for dating app
 
 ## Getting Started
 
