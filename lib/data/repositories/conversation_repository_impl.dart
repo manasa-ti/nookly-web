@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:hushmate/domain/entities/conversation.dart';
 import 'package:hushmate/domain/entities/message.dart';
-import 'package:hushmate/domain/entities/user.dart';
 import 'package:hushmate/domain/repositories/conversation_repository.dart';
 
 class ConversationRepositoryImpl implements ConversationRepository {
@@ -13,33 +11,39 @@ class ConversationRepositoryImpl implements ConversationRepository {
       id: '1',
       participantId: 'user1',
       participantName: 'Sarah',
+      participantAvatar: 'https://example.com/profile1.jpg',
       messages: [
         Message(
           id: 'm1',
           senderId: 'user1',
           content: 'Hey, how are you doing?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
+          type: MessageType.text,
         ),
       ],
       lastMessageTime: DateTime.now().subtract(const Duration(minutes: 30)),
       isOnline: true,
       unreadCount: 1,
+      userId: 'currentUser',
     ),
     '2': Conversation(
       id: '2',
       participantId: 'user2',
       participantName: 'Michael',
+      participantAvatar: 'https://example.com/profile2.jpg',
       messages: [
         Message(
           id: 'm2',
           senderId: 'user2',
           content: 'I saw you like photography too! What kind of camera do you use?',
           timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          type: MessageType.text,
         ),
       ],
       lastMessageTime: DateTime.now().subtract(const Duration(hours: 2)),
       isOnline: false,
       unreadCount: 0,
+      userId: 'currentUser',
     ),
   };
 

@@ -9,7 +9,7 @@ class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository
     await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
     
     return [
-      RecommendedProfileModel(
+      const RecommendedProfileModel(
         id: '1',
         name: 'Sarah',
         age: 25,
@@ -19,7 +19,7 @@ class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository
         interests: ['Travel', 'Food', 'Photography', 'Yoga'],
         profilePicture: 'https://example.com/profile1.jpg',
       ),
-      RecommendedProfileModel(
+      const RecommendedProfileModel(
         id: '2',
         name: 'Michael',
         age: 28,

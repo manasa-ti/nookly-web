@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/config/app_config.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_event.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_state.dart';
 import 'package:hushmate/presentation/widgets/interest_chips.dart';
+import 'package:hushmate/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
 
 class ProfileCreationPage extends StatefulWidget {
@@ -53,7 +53,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       firstDate: DateTime.now().subtract(const Duration(days: 36500)), // 100 years ago
       lastDate: DateTime.now().subtract(const Duration(days: 6570)), // 18 years ago
     );
-    if (picked != null && picked != _selectedDate) {
+    if (picked != null && picked != _selectedDate && mounted) {
       setState(() {
         _selectedDate = picked;
       });
@@ -63,9 +63,36 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
 
   void _onNextStep() {
     if (_currentStep < 3) {
-      setState(() {
-        _currentStep++;
-      });
+      bool isValid = false;
+      
+      // Validate based on current step
+      switch (_currentStep) {
+        case 0: // Basic Info
+          isValid = _selectedDate != null && _selectedSex != null && _selectedWishToFind != null;
+          break;
+        case 1: // Location & Age
+          isValid = _hometownController.text.isNotEmpty;
+          break;
+        case 2: // Profile Details
+          isValid = _bioController.text.isNotEmpty && _selectedInterests.isNotEmpty;
+          break;
+        case 3: // Objective
+          isValid = _selectedObjective != null;
+          break;
+      }
+
+      if (isValid) {
+        setState(() {
+          _currentStep++;
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please fill in all required fields'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     } else {
       _onSaveProfile();
     }
@@ -93,226 +120,243 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       ),
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
-          if (state is ProfileSaved) {
-            Navigator.pushReplacementNamed(context, '/home');
+          if (state is ProfileLoading) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Saving your profile...'),
+                duration: Duration(seconds: 1),
+              ),
+            );
+          } else if (state is ProfileSaved) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => const HomePage(),
+              ),
+            );
           } else if (state is ProfileError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
           }
         },
-        child: Form(
-          key: _formKey,
-          child: Stepper(
-            currentStep: _currentStep,
-            onStepContinue: _onNextStep,
-            onStepCancel: _onPreviousStep,
-            steps: [
-              Step(
-                title: const Text('Basic Info'),
-                content: Column(
-                  children: [
-                    ListTile(
-                      title: const Text('Birthdate'),
-                      subtitle: Text(
-                        _selectedDate != null
-                            ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
-                            : 'Select your birthdate',
-                      ),
-                      trailing: const Icon(Icons.calendar_today),
-                      onTap: () => _selectDate(context),
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedSex,
-                      decoration: const InputDecoration(
-                        labelText: 'Sex',
-                      ),
-                      items: _sexOptions.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedSex = newValue;
-                        });
-                        if (newValue != null) {
-                          context.read<ProfileBloc>().add(UpdateSex(newValue));
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select your sex';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _selectedWishToFind,
-                      decoration: const InputDecoration(
-                        labelText: 'Wish to Find',
-                      ),
-                      items: _wishToFindOptions.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedWishToFind = newValue;
-                        });
-                        if (newValue != null) {
-                          context
-                              .read<ProfileBloc>()
-                              .add(UpdateWishToFind(newValue));
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select who you want to find';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-                isActive: _currentStep >= 0,
-              ),
-              Step(
-                title: const Text('Location & Age'),
-                content: Column(
-                  children: [
-                    TextFormField(
-                      controller: _hometownController,
-                      decoration: const InputDecoration(
-                        labelText: 'Hometown',
-                        prefixIcon: Icon(Icons.location_city),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your hometown';
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        context.read<ProfileBloc>().add(UpdateHometown(value));
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    const Text('Preferred Age Range'),
-                    RangeSlider(
-                      values: _ageRange,
-                      min: 18,
-                      max: 80,
-                      divisions: 62,
-                      labels: RangeLabels(
-                        _ageRange.start.round().toString(),
-                        _ageRange.end.round().toString(),
-                      ),
-                      onChanged: (RangeValues values) {
-                        setState(() {
-                          _ageRange = values;
-                        });
-                        context.read<ProfileBloc>().add(
-                              UpdateAgePreferences(
-                                minAge: values.start.round(),
-                                maxAge: values.end.round(),
-                              ),
-                            );
-                      },
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: BlocBuilder<ProfileBloc, ProfileState>(
+          builder: (context, profileState) {
+            final isLoading = profileState is ProfileLoading;
+            
+            return Form(
+              key: _formKey,
+              child: Stepper(
+                currentStep: _currentStep,
+                onStepContinue: isLoading ? null : _onNextStep,
+                onStepCancel: isLoading ? null : _onPreviousStep,
+                steps: [
+                  Step(
+                    title: const Text('Basic Info'),
+                    content: Column(
                       children: [
-                        Text('${_ageRange.start.round()} years'),
-                        Text('${_ageRange.end.round()} years'),
+                        ListTile(
+                          title: const Text('Birthdate'),
+                          subtitle: Text(
+                            _selectedDate != null
+                                ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
+                                : 'Select your birthdate',
+                          ),
+                          trailing: const Icon(Icons.calendar_today),
+                          onTap: () => _selectDate(context),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _selectedSex,
+                          decoration: const InputDecoration(
+                            labelText: 'Sex',
+                          ),
+                          items: _sexOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedSex = newValue;
+                            });
+                            if (newValue != null) {
+                              context.read<ProfileBloc>().add(UpdateSex(newValue));
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select your sex';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: _selectedWishToFind,
+                          decoration: const InputDecoration(
+                            labelText: 'Wish to Find',
+                          ),
+                          items: _wishToFindOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedWishToFind = newValue;
+                            });
+                            if (newValue != null) {
+                              context
+                                  .read<ProfileBloc>()
+                                  .add(UpdateWishToFind(newValue));
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select who you want to find';
+                            }
+                            return null;
+                          },
+                        ),
                       ],
                     ),
-                  ],
-                ),
-                isActive: _currentStep >= 1,
-              ),
-              Step(
-                title: const Text('Profile Details'),
-                content: Column(
-                  children: [
-                    TextFormField(
-                      controller: _bioController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Bio',
-                        hintText: 'Tell us about yourself',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your bio';
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        context.read<ProfileBloc>().add(UpdateBio(value));
-                      },
+                    isActive: _currentStep >= 0,
+                  ),
+                  Step(
+                    title: const Text('Location & Age'),
+                    content: Column(
+                      children: [
+                        TextFormField(
+                          controller: _hometownController,
+                          decoration: const InputDecoration(
+                            labelText: 'Hometown',
+                            prefixIcon: Icon(Icons.location_city),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your hometown';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            context.read<ProfileBloc>().add(UpdateHometown(value));
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        const Text('Preferred Age Range'),
+                        RangeSlider(
+                          values: _ageRange,
+                          min: 18,
+                          max: 80,
+                          divisions: 62,
+                          labels: RangeLabels(
+                            _ageRange.start.round().toString(),
+                            _ageRange.end.round().toString(),
+                          ),
+                          onChanged: (RangeValues values) {
+                            setState(() {
+                              _ageRange = values;
+                            });
+                            context.read<ProfileBloc>().add(
+                                  UpdateAgePreferences(
+                                    minAge: values.start.round(),
+                                    maxAge: values.end.round(),
+                                  ),
+                                );
+                          },
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('${_ageRange.start.round()} years'),
+                            Text('${_ageRange.end.round()} years'),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    const Text('Interests'),
-                    const SizedBox(height: 8),
-                    InterestChips(
-                      selectedInterests: _selectedInterests,
-                      onInterestsChanged: (interests) {
-                        setState(() {
-                          _selectedInterests = interests;
-                        });
-                        context
-                            .read<ProfileBloc>()
-                            .add(UpdateInterests(interests));
-                      },
+                    isActive: _currentStep >= 1,
+                  ),
+                  Step(
+                    title: const Text('Profile Details'),
+                    content: Column(
+                      children: [
+                        TextFormField(
+                          controller: _bioController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Bio',
+                            hintText: 'Tell us about yourself',
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your bio';
+                            }
+                            return null;
+                          },
+                          onChanged: (value) {
+                            context.read<ProfileBloc>().add(UpdateBio(value));
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        const Text('Interests'),
+                        const SizedBox(height: 8),
+                        InterestChips(
+                          selectedInterests: _selectedInterests,
+                          onInterestsChanged: (interests) {
+                            setState(() {
+                              _selectedInterests = interests;
+                            });
+                            context
+                                .read<ProfileBloc>()
+                                .add(UpdateInterests(interests));
+                          },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                isActive: _currentStep >= 2,
-              ),
-              Step(
-                title: const Text('Objective'),
-                content: Column(
-                  children: [
-                    DropdownButtonFormField<String>(
-                      value: _selectedObjective,
-                      decoration: const InputDecoration(
-                        labelText: 'What are you looking for?',
-                      ),
-                      items: _objectiveOptions.map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedObjective = newValue;
-                        });
-                        if (newValue != null) {
-                          context
-                              .read<ProfileBloc>()
-                              .add(UpdateObjective(newValue));
-                        }
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please select your objective';
-                        }
-                        return null;
-                      },
+                    isActive: _currentStep >= 2,
+                  ),
+                  Step(
+                    title: const Text('Objective'),
+                    content: Column(
+                      children: [
+                        DropdownButtonFormField<String>(
+                          value: _selectedObjective,
+                          decoration: const InputDecoration(
+                            labelText: 'What are you looking for?',
+                          ),
+                          items: _objectiveOptions.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (String? newValue) {
+                            setState(() {
+                              _selectedObjective = newValue;
+                            });
+                            if (newValue != null) {
+                              context
+                                  .read<ProfileBloc>()
+                                  .add(UpdateObjective(newValue));
+                            }
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please select your objective';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                isActive: _currentStep >= 3,
+                    isActive: _currentStep >= 3,
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

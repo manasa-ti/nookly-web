@@ -5,51 +5,59 @@ import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
-  // Mock data
+  // Mock data - using final to prevent accidental modifications
   final Map<String, Conversation> _mockConversations = {
     '1': Conversation(
       id: '1',
       participantId: 'user1',
       participantName: 'Sarah',
+      participantAvatar: 'https://example.com/profile1.jpg',
       messages: [
         Message(
           id: 'm1',
           senderId: 'user1',
           content: 'Hey, how are you doing?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
+          type: MessageType.text,
         ),
         Message(
           id: 'm2',
           senderId: 'currentUser',
           content: 'I\'m good! How about you?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
+          type: MessageType.text,
         ),
         Message(
           id: 'm3',
           senderId: 'user1',
           content: 'Great! Would you like to grab coffee sometime?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 20)),
+          type: MessageType.text,
         ),
       ],
       lastMessageTime: DateTime.now().subtract(const Duration(minutes: 20)),
       isOnline: true,
       unreadCount: 1,
+      userId: 'currentUser',
     ),
     '2': Conversation(
       id: '2',
       participantId: 'user2',
       participantName: 'Michael',
+      participantAvatar: 'https://example.com/profile2.jpg',
       messages: [
         Message(
           id: 'm4',
           senderId: 'user2',
           content: 'I saw you like photography too! What kind of camera do you use?',
           timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+          type: MessageType.text,
         ),
       ],
       lastMessageTime: DateTime.now().subtract(const Duration(hours: 2)),
       isOnline: false,
       unreadCount: 0,
+      userId: 'currentUser',
     ),
   };
 
@@ -119,7 +127,7 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<List<Message>> getMessages(String conversationId) async {
     final conversation = await getConversation(conversationId);
-    return conversation.messages;
+    return List.unmodifiable(conversation.messages); // Return immutable list
   }
 
   @override
@@ -137,9 +145,18 @@ class ChatRepositoryImpl implements ChatRepository {
       senderId: 'currentUser',
       content: content,
       timestamp: DateTime.now(),
+      type: MessageType.text,
     );
 
-    conversation.messages.add(newMessage);
+    // Create a new conversation with the updated messages
+    final updatedConversation = conversation.copyWith(
+      messages: [...conversation.messages, newMessage],
+      lastMessageTime: DateTime.now(),
+    );
+    
+    // Update the mock data
+    _mockConversations[conversationId] = updatedConversation;
+    
     return newMessage;
   }
 } 

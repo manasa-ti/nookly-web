@@ -7,6 +7,7 @@ import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.da
 import 'package:hushmate/presentation/bloc/chat/chat_bloc.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:hushmate/presentation/bloc/purchased_features/purchased_features_bloc.dart';
+import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 import 'package:hushmate/presentation/pages/splash/splash_screen.dart';
 
 void main() async {
@@ -39,6 +40,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => di.sl<PurchasedFeaturesBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => di.sl<ProfileBloc>(),
         ),
       ],
       child: MaterialApp(

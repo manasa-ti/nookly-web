@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/config/app_config.dart';
 
 class ProfileCard extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -74,7 +73,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     final cardWidth = size.width * 0.9;
-    final cardHeight = 280.0;
+    const cardHeight = 280.0;
 
     return GestureDetector(
       onHorizontalDragStart: _onDragStart,

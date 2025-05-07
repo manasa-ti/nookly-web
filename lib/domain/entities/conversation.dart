@@ -10,6 +10,9 @@ class Conversation extends Equatable {
   final DateTime lastMessageTime;
   final bool isOnline;
   final int unreadCount;
+  final bool isMuted;
+  final bool isBlocked;
+  final String userId;
 
   const Conversation({
     required this.id,
@@ -20,6 +23,9 @@ class Conversation extends Equatable {
     required this.lastMessageTime,
     required this.isOnline,
     required this.unreadCount,
+    this.isMuted = false,
+    this.isBlocked = false,
+    required this.userId,
   });
 
   Conversation copyWith({
@@ -31,6 +37,9 @@ class Conversation extends Equatable {
     DateTime? lastMessageTime,
     bool? isOnline,
     int? unreadCount,
+    bool? isMuted,
+    bool? isBlocked,
+    String? userId,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -41,6 +50,9 @@ class Conversation extends Equatable {
       lastMessageTime: lastMessageTime ?? this.lastMessageTime,
       isOnline: isOnline ?? this.isOnline,
       unreadCount: unreadCount ?? this.unreadCount,
+      isMuted: isMuted ?? this.isMuted,
+      isBlocked: isBlocked ?? this.isBlocked,
+      userId: userId ?? this.userId,
     );
   }
 
@@ -54,5 +66,8 @@ class Conversation extends Equatable {
         lastMessageTime,
         isOnline,
         unreadCount,
+        isMuted,
+        isBlocked,
+        userId,
       ];
 } 

@@ -1,8 +1,6 @@
-import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/config/app_config.dart';
-import 'package:hushmate/core/di/injection_container.dart';
 import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_event.dart';
@@ -31,7 +29,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final AudioPlayer _audioPlayer = AudioPlayer();
-  final Record _audioRecorder = Record();
+  final AudioRecorder _audioRecorder = AudioRecorder();
   bool _isRecording = false;
   String? _recordingPath;
   bool _isAttachingFile = false;
@@ -68,6 +66,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final content = _messageController.text.trim();
     _messageController.clear();
 
+    if (!mounted) return;
     context.read<ConversationBloc>().add(
       SendTextMessage(widget.conversationId, content),
     );
@@ -82,17 +81,21 @@ class _ConversationScreenState extends State<ConversationScreen> {
         _recordingPath = '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
         
         await _audioRecorder.start(
-          path: _recordingPath,
-          encoder: AudioEncoder.aacLc,
-          bitRate: 128000,
-          samplingRate: 44100,
+          const RecordConfig(
+            encoder: AudioEncoder.aacLc,
+            bitRate: 128000,
+            sampleRate: 44100,
+          ),
+          path: _recordingPath ?? '',
         );
         
+        if (!mounted) return;
         setState(() {
           _isRecording = true;
         });
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to start recording: $e')),
       );
@@ -102,23 +105,25 @@ class _ConversationScreenState extends State<ConversationScreen> {
   Future<void> _stopRecording() async {
     try {
       final path = await _audioRecorder.stop();
+      if (!mounted) return;
       setState(() {
         _isRecording = false;
       });
       
       if (path != null) {
         // Get audio duration
-        final audioFile = File(path);
         final duration = await _audioPlayer.setFilePath(path).then((_) => _audioPlayer.duration?.inSeconds ?? 0);
         
         // Send voice message
+        if (!mounted) return;
         context.read<ConversationBloc>().add(
-          SendVoiceMessage(widget.conversationId, path, duration),
+          SendVoiceMessage(widget.conversationId, path, Duration(seconds: duration)),
         );
         
         _scrollToBottom();
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to stop recording: $e')),
       );
@@ -130,7 +135,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(source: ImageSource.gallery);
       
-      if (image != null) {
+      if (image != null && mounted) {
         context.read<ConversationBloc>().add(
           SendImageMessage(widget.conversationId, image.path),
         );
@@ -138,6 +143,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         _scrollToBottom();
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to pick image: $e')),
       );
@@ -146,13 +152,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   Future<void> _pickFile() async {
     try {
+      if (!mounted) return;
       setState(() {
         _isAttachingFile = true;
       });
       
       final result = await FilePicker.platform.pickFiles();
       
-      if (result != null && result.files.isNotEmpty) {
+      if (result != null && result.files.isNotEmpty && mounted) {
         final file = result.files.first;
         final path = file.path;
         final name = file.name;
@@ -167,20 +174,23 @@ class _ConversationScreenState extends State<ConversationScreen> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to pick file: $e')),
       );
     } finally {
-      setState(() {
-        _isAttachingFile = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isAttachingFile = false;
+        });
+      }
     }
   }
 
   void _showOptionsMenu() {
-    showModalBottomSheet(
+    showModalBottomSheet<void>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -225,9 +235,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   void _showBlockConfirmation() {
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Block User'),
           content: const Text('Are you sure you want to block this user?'),
@@ -243,7 +253,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   final state = context.read<ConversationBloc>().state;
                   if (state is ConversationLoaded) {
                     context.read<ConversationBloc>().add(
-                      BlockUser(state.conversation.otherUser.id),
+                      BlockUser(state.conversation.participantId),
                     );
                   }
                 }
@@ -257,9 +267,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
   }
 
   void _showLeaveConfirmation() {
-    showDialog(
+    showDialog<void>(
       context: context,
-      builder: (context) {
+      builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Leave Chat'),
           content: const Text('Are you sure you want to leave this chat?'),
@@ -289,7 +299,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ConversationBloc, ConversationState>(
-      listener: (context, state) {
+      listener: (BuildContext context, ConversationState state) {
         if (state is ConversationError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -299,7 +309,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           );
         }
       },
-      builder: (context, state) {
+      builder: (BuildContext context, ConversationState state) {
         if (state is ConversationLoading) {
           return const Scaffold(
             body: Center(
@@ -319,17 +329,19 @@ class _ConversationScreenState extends State<ConversationScreen> {
               title: Row(
                 children: [
                   CircleAvatar(
-                    backgroundImage: NetworkImage(conversation.otherUser.profilePicture),
+                    backgroundImage: conversation.participantAvatar != null
+                        ? NetworkImage(conversation.participantAvatar!)
+                        : null,
                     onBackgroundImageError: (_, __) {},
-                    child: conversation.otherUser.profilePicture.isEmpty
-                        ? Text(conversation.otherUser.name[0])
+                    child: conversation.participantAvatar == null
+                        ? Text(conversation.participantName[0])
                         : null,
                   ),
                   const SizedBox(width: 8),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(conversation.otherUser.name),
+                      Text(conversation.participantName),
                       Text(
                         conversation.isMuted ? 'Muted' : 'Online',
                         style: TextStyle(
@@ -401,7 +413,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     controller: _scrollController,
                     padding: const EdgeInsets.all(16),
                     itemCount: messages.length,
-                    itemBuilder: (context, index) {
+                    itemBuilder: (BuildContext context, int index) {
                       final message = messages[index];
                       final isMe = message.senderId == conversation.userId;
                       
@@ -457,7 +469,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       color: Colors.white,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.grey.withOpacity(0.2),
+                          color: Colors.grey.withValues(alpha:0.2),
                           blurRadius: 4,
                           offset: const Offset(0, -2),
                         ),
@@ -533,6 +545,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
       await _audioPlayer.setFilePath(message.content);
       await _audioPlayer.play();
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to play voice message: $e')),
       );

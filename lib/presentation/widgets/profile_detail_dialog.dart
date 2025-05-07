@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:hushmate/core/config/app_config.dart';
 
 class ProfileDetailDialog extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -101,8 +100,8 @@ class _ProfileDetailDialogState extends State<ProfileDetailDialog>
                       flex: 3,
                       child: Container(
                         width: double.infinity,
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.vertical(
                             top: Radius.circular(16),
                           ),
                         ),

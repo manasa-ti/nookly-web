@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hushmate/data/repositories/auth_repository_impl.dart';
 import 'package:hushmate/data/repositories/chat_repository_impl.dart';
 import 'package:hushmate/data/repositories/conversation_repository_impl.dart';
@@ -17,13 +18,18 @@ import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:hushmate/presentation/bloc/purchased_features/purchased_features_bloc.dart';
 import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
 import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
+import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 
 final GetIt sl = GetIt.instance;
 
 Future<void> init() async {
+  // External
+  final sharedPreferences = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => sharedPreferences);
+
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(),
+    () => AuthRepositoryImpl(sl()),
   );
   
   sl.registerLazySingleton<RecommendedProfilesRepository>(
@@ -69,5 +75,9 @@ Future<void> init() async {
   
   sl.registerFactory(
     () => PurchasedFeaturesBloc(repository: sl()),
+  );
+
+  sl.registerFactory(
+    () => ProfileBloc(authRepository: sl()),
   );
 } 

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/di/injection_container.dart';
 import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
 import 'package:hushmate/presentation/widgets/profile_detail_dialog.dart';
 import 'package:hushmate/presentation/widgets/profile_card.dart';

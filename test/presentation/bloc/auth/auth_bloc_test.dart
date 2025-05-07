@@ -26,7 +26,7 @@ void main() {
       'emits [AuthLoading, AuthAuthenticated] when SignInWithEmailAndPassword is successful',
       build: () => bloc,
       act: (bloc) => bloc.add(
-        SignInWithEmailAndPassword(
+        const SignInWithEmailAndPassword(
           email: 'user@example.com',
           password: 'password123',
         ),
@@ -41,7 +41,7 @@ void main() {
       'emits [AuthLoading, AuthError] when SignInWithEmailAndPassword fails',
       build: () => bloc,
       act: (bloc) => bloc.add(
-        SignInWithEmailAndPassword(
+        const SignInWithEmailAndPassword(
           email: 'wrong@email.com',
           password: 'wrongpassword',
         ),

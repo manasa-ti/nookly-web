@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/config/app_config.dart';
 import 'package:hushmate/presentation/pages/chat/chat_page.dart';
 import 'package:intl/intl.dart';
 

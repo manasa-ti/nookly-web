@@ -15,11 +15,11 @@ class ChatConversationModel extends ChatConversation {
     return ChatConversationModel(
       id: json['id'] as String,
       name: json['name'] as String,
-      profilePicture: json['profilePicture'] as String,
-      lastMessage: json['lastMessage'] as String,
+      profilePicture: json['profilePicture'] as String? ?? '',
+      lastMessage: json['lastMessage'] as String? ?? '',
       timestamp: DateTime.parse(json['timestamp'] as String),
-      unreadCount: json['unreadCount'] as int,
-      isOnline: json['isOnline'] as bool,
+      unreadCount: json['unreadCount'] as int? ?? 0,
+      isOnline: json['isOnline'] as bool? ?? false,
     );
   }
 

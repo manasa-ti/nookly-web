@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/config/app_config.dart';
 import 'package:hushmate/domain/entities/conversation.dart';
 import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_event.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_state.dart';
 import 'package:hushmate/presentation/widgets/message_bubble.dart';
-import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;

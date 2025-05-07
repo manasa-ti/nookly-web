@@ -48,19 +48,19 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       body: Center(
         child: FadeTransition(
           opacity: _animation,
-          child: Column(
+          child: const Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // TODO: Add app logo
-              const Icon(
+              Icon(
                 Icons.favorite,
                 size: 100,
                 color: Colors.white,
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
               Text(
                 AppConfig.appName,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,

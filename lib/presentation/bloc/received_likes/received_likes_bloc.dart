@@ -1,37 +1,66 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:hushmate/domain/entities/received_like.dart';
 import 'package:hushmate/domain/repositories/received_likes_repository.dart';
 
 // Events
-abstract class ReceivedLikesEvent {}
+abstract class ReceivedLikesEvent extends Equatable {
+  const ReceivedLikesEvent();
 
-class LoadReceivedLikes extends ReceivedLikesEvent {}
+  @override
+  List<Object?> get props => [];
+}
+
+class LoadReceivedLikes extends ReceivedLikesEvent {
+  const LoadReceivedLikes();
+}
 
 class AcceptLike extends ReceivedLikesEvent {
   final String likeId;
-  AcceptLike(this.likeId);
+  const AcceptLike(this.likeId);
+
+  @override
+  List<Object?> get props => [likeId];
 }
 
 class RejectLike extends ReceivedLikesEvent {
   final String likeId;
-  RejectLike(this.likeId);
+  const RejectLike(this.likeId);
+
+  @override
+  List<Object?> get props => [likeId];
 }
 
 // States
-abstract class ReceivedLikesState {}
+abstract class ReceivedLikesState extends Equatable {
+  const ReceivedLikesState();
 
-class ReceivedLikesInitial extends ReceivedLikesState {}
+  @override
+  List<Object?> get props => [];
+}
 
-class ReceivedLikesLoading extends ReceivedLikesState {}
+class ReceivedLikesInitial extends ReceivedLikesState {
+  const ReceivedLikesInitial();
+}
+
+class ReceivedLikesLoading extends ReceivedLikesState {
+  const ReceivedLikesLoading();
+}
 
 class ReceivedLikesLoaded extends ReceivedLikesState {
   final List<ReceivedLike> likes;
-  ReceivedLikesLoaded(this.likes);
+  const ReceivedLikesLoaded(this.likes);
+
+  @override
+  List<Object?> get props => [likes];
 }
 
 class ReceivedLikesError extends ReceivedLikesState {
   final String message;
-  ReceivedLikesError(this.message);
+  const ReceivedLikesError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }
 
 // Bloc

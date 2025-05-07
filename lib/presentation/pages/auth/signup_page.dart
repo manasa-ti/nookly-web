@@ -4,34 +4,35 @@ import 'package:hushmate/core/config/app_config.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
-import 'package:hushmate/presentation/pages/auth/forgot_password_page.dart';
 import 'package:hushmate/presentation/pages/profile/profile_creation_page.dart';
-import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class SignUpPage extends StatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignUpPageState extends State<SignUpPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  void _onSignInPressed() {
+  void _onSignUpPressed() {
     if (_formKey.currentState?.validate() ?? false) {
       context.read<AuthBloc>().add(
-            SignInWithEmailAndPassword(
+            SignUpWithEmailAndPassword(
               email: _emailController.text.trim(),
               password: _passwordController.text,
             ),
@@ -39,33 +40,22 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _onForgotPasswordPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ForgotPasswordPage(),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sign Up'),
+      ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
-            if (state.user.isProfileComplete) {
-              // Navigate to home page
-              Navigator.pushReplacementNamed(context, '/home');
-            } else {
-              // Navigate to profile creation
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfileCreationPage(),
-                ),
-              );
-            }
+            // Navigate to profile creation
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ProfileCreationPage(),
+              ),
+            );
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
@@ -73,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
           }
         },
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConfig.defaultPadding),
             child: Form(
               key: _formKey,
@@ -82,7 +72,7 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Welcome to HushMate',
+                    'Create Account',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -137,34 +127,49 @@ class _LoginPageState extends State<LoginPage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _onForgotPasswordPressed,
-                      child: const Text('Forgot Password?'),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _confirmPasswordController,
+                    obscureText: !_isConfirmPasswordVisible,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      prefixIcon: const Icon(Icons.lock),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isConfirmPasswordVisible
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                          });
+                        },
+                      ),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please confirm your password';
+                      }
+                      if (value != _passwordController.text) {
+                        return 'Passwords do not match';
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: _onSignInPressed,
-                    child: const Text('Sign In'),
+                    onPressed: _onSignUpPressed,
+                    child: const Text('Sign Up'),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Don\'t have an account?'),
+                      const Text('Already have an account?'),
                       TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SignUpPage(),
-                            ),
-                          );
-                        },
-                        child: const Text('Sign Up'),
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Sign In'),
                       ),
                     ],
                   ),

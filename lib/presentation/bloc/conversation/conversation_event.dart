@@ -1,5 +1,4 @@
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/message.dart';
 
 abstract class ConversationEvent extends Equatable {
   const ConversationEvent();

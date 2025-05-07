@@ -16,24 +16,32 @@ class ConversationLoading extends ConversationState {}
 class ConversationLoaded extends ConversationState {
   final Conversation conversation;
   final List<Message> messages;
+  final bool isCallActive;
+  final bool isAudioCall;
 
   const ConversationLoaded({
     required this.conversation,
     required this.messages,
+    this.isCallActive = false,
+    this.isAudioCall = false,
   });
 
   ConversationLoaded copyWith({
     Conversation? conversation,
     List<Message>? messages,
+    bool? isCallActive,
+    bool? isAudioCall,
   }) {
     return ConversationLoaded(
       conversation: conversation ?? this.conversation,
       messages: messages ?? this.messages,
+      isCallActive: isCallActive ?? this.isCallActive,
+      isAudioCall: isAudioCall ?? this.isAudioCall,
     );
   }
 
   @override
-  List<Object?> get props => [conversation, messages];
+  List<Object?> get props => [conversation, messages, isCallActive, isAudioCall];
 }
 
 class ConversationLeft extends ConversationState {}

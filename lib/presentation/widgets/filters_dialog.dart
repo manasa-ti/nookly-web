@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/config/app_config.dart';
 
 class FiltersDialog extends StatefulWidget {
   final Map<String, dynamic> currentFilters;

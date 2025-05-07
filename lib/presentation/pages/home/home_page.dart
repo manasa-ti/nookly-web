@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/config/app_config.dart';
 import 'package:hushmate/presentation/pages/home/recommended_profiles_page.dart';
 import 'package:hushmate/presentation/pages/home/received_likes_page.dart';
 import 'package:hushmate/presentation/pages/home/chat_inbox_page.dart';

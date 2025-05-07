@@ -1,37 +1,66 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import 'package:hushmate/domain/entities/purchased_feature.dart';
 import 'package:hushmate/domain/repositories/purchased_features_repository.dart';
 
 // Events
-abstract class PurchasedFeaturesEvent {}
+abstract class PurchasedFeaturesEvent extends Equatable {
+  const PurchasedFeaturesEvent();
 
-class LoadPurchasedFeatures extends PurchasedFeaturesEvent {}
+  @override
+  List<Object?> get props => [];
+}
+
+class LoadPurchasedFeatures extends PurchasedFeaturesEvent {
+  const LoadPurchasedFeatures();
+}
 
 class PurchaseFeature extends PurchasedFeaturesEvent {
   final String featureId;
-  PurchaseFeature(this.featureId);
+  const PurchaseFeature(this.featureId);
+
+  @override
+  List<Object?> get props => [featureId];
 }
 
 class CancelSubscription extends PurchasedFeaturesEvent {
   final String featureId;
-  CancelSubscription(this.featureId);
+  const CancelSubscription(this.featureId);
+
+  @override
+  List<Object?> get props => [featureId];
 }
 
 // States
-abstract class PurchasedFeaturesState {}
+abstract class PurchasedFeaturesState extends Equatable {
+  const PurchasedFeaturesState();
 
-class PurchasedFeaturesInitial extends PurchasedFeaturesState {}
+  @override
+  List<Object?> get props => [];
+}
 
-class PurchasedFeaturesLoading extends PurchasedFeaturesState {}
+class PurchasedFeaturesInitial extends PurchasedFeaturesState {
+  const PurchasedFeaturesInitial();
+}
+
+class PurchasedFeaturesLoading extends PurchasedFeaturesState {
+  const PurchasedFeaturesLoading();
+}
 
 class PurchasedFeaturesLoaded extends PurchasedFeaturesState {
   final List<PurchasedFeature> features;
-  PurchasedFeaturesLoaded(this.features);
+  const PurchasedFeaturesLoaded(this.features);
+
+  @override
+  List<Object?> get props => [features];
 }
 
 class PurchasedFeaturesError extends PurchasedFeaturesState {
   final String message;
-  PurchasedFeaturesError(this.message);
+  const PurchasedFeaturesError(this.message);
+
+  @override
+  List<Object?> get props => [message];
 }
 
 // Bloc

@@ -239,7 +239,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     try {
       await repository.startAudioCall(event.conversationId);
-      emit(AudioCallStarted());
+      if (state is ConversationLoaded) {
+        final currentState = state as ConversationLoaded;
+        emit(currentState.copyWith(isCallActive: true, isAudioCall: true));
+      } else {
+        emit(AudioCallStarted());
+      }
     } catch (e) {
       emit(ConversationError(e.toString()));
     }
@@ -251,7 +256,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     try {
       await repository.startVideoCall(event.conversationId);
-      emit(VideoCallStarted());
+      if (state is ConversationLoaded) {
+        final currentState = state as ConversationLoaded;
+        emit(currentState.copyWith(isCallActive: true, isAudioCall: false));
+      } else {
+        emit(VideoCallStarted());
+      }
     } catch (e) {
       emit(ConversationError(e.toString()));
     }
@@ -263,7 +273,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     try {
       await repository.endCall(event.conversationId);
-      emit(CallEnded());
+      if (state is ConversationLoaded) {
+        final currentState = state as ConversationLoaded;
+        emit(currentState.copyWith(isCallActive: false, isAudioCall: false));
+      } else {
+        emit(CallEnded());
+      }
     } catch (e) {
       emit(ConversationError(e.toString()));
     }

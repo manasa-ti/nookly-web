@@ -20,6 +20,19 @@ class SignInWithEmailAndPassword extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
+class SignUpWithEmailAndPassword extends AuthEvent {
+  final String email;
+  final String password;
+
+  const SignUpWithEmailAndPassword({
+    required this.email,
+    required this.password,
+  });
+
+  @override
+  List<Object?> get props => [email, password];
+}
+
 class SignInWithGoogle extends AuthEvent {}
 
 class SignOut extends AuthEvent {}
