@@ -7,14 +7,13 @@ void main() {
       test('should parse location coordinates correctly when they are integers', () {
         // Arrange
         final json = {
-          'id': '1',
+          '_id': '1',
           'email': 'test@example.com',
           'name': 'Test User',
           'bio': 'Test bio',
           'interests': [],
           'location': {
-            'latitude': 0,
-            'longitude': 0,
+            'coordinates': [0, 0],
           },
         };
 
@@ -22,21 +21,20 @@ void main() {
         final user = User.fromJson(json);
 
         // Assert
-        expect(user.location?['latitude'], 0.0);
-        expect(user.location?['longitude'], 0.0);
+        expect(user.location?['coordinates'][0], 0.0);
+        expect(user.location?['coordinates'][1], 0.0);
       });
 
       test('should parse location coordinates correctly when they are doubles', () {
         // Arrange
         final json = {
-          'id': '1',
+          '_id': '1',
           'email': 'test@example.com',
           'name': 'Test User',
           'bio': 'Test bio',
           'interests': [],
           'location': {
-            'latitude': 12.34,
-            'longitude': 56.78,
+            'coordinates': [12.34, 56.78],
           },
         };
 
@@ -44,14 +42,14 @@ void main() {
         final user = User.fromJson(json);
 
         // Assert
-        expect(user.location?['latitude'], 12.34);
-        expect(user.location?['longitude'], 56.78);
+        expect(user.location?['coordinates'][0], 12.34);
+        expect(user.location?['coordinates'][1], 56.78);
       });
 
       test('should handle null location', () {
         // Arrange
         final json = {
-          'id': '1',
+          '_id': '1',
           'email': 'test@example.com',
           'name': 'Test User',
           'bio': 'Test bio',
@@ -68,25 +66,24 @@ void main() {
       test('should parse all required fields correctly', () {
         // Arrange
         final json = {
-          'id': '1',
+          '_id': '1',
           'email': 'test@example.com',
           'name': 'Test User',
           'bio': 'Test bio',
           'interests': ['reading', 'gaming'],
           'location': {
-            'latitude': 12.34,
-            'longitude': 56.78,
+            'coordinates': [12.34, 56.78],
           },
           'age': 25,
-          'gender': 'Male',
-          'sex': 'Male',
-          'wishToFind': 'Female',
+          'sex': 'm',
+          'seeking_gender': 'f',
           'hometown': 'New York',
-          'minAgePreference': 18,
-          'maxAgePreference': 30,
-          'profilePictureUrl': 'https://example.com/photo.jpg',
-          'objective': 'Long Term',
-          'birthdate': '1998-01-01T00:00:00.000Z',
+          'preferred_age_range': {
+            'lower_limit': 18,
+            'upper_limit': 30,
+          },
+          'profile_pic': 'https://example.com/photo.jpg',
+          'objectives': ['Long Term'],
         };
 
         // Act
@@ -98,18 +95,16 @@ void main() {
         expect(user.name, 'Test User');
         expect(user.bio, 'Test bio');
         expect(user.interests, ['reading', 'gaming']);
-        expect(user.location?['latitude'], 12.34);
-        expect(user.location?['longitude'], 56.78);
+        expect(user.location?['coordinates'][0], 12.34);
+        expect(user.location?['coordinates'][1], 56.78);
         expect(user.age, 25);
-        expect(user.gender, 'Male');
-        expect(user.sex, 'Male');
-        expect(user.wishToFind, 'Female');
+        expect(user.sex, 'm');
+        expect(user.seekingGender, 'f');
         expect(user.hometown, 'New York');
-        expect(user.minAgePreference, 18);
-        expect(user.maxAgePreference, 30);
-        expect(user.profilePictureUrl, 'https://example.com/photo.jpg');
-        expect(user.objective, 'Long Term');
-        expect(user.birthdate?.year, 1998);
+        expect(user.preferredAgeRange?['lower_limit'], 18);
+        expect(user.preferredAgeRange?['upper_limit'], 30);
+        expect(user.profilePic, 'https://example.com/photo.jpg');
+        expect(user.objectives, ['Long Term']);
       });
     });
 
@@ -134,16 +129,21 @@ void main() {
           id: '1',
           email: 'test@example.com',
           name: 'Test User',
+          age: 25,
+          sex: 'm',
+          seekingGender: 'f',
+          location: {
+            'coordinates': [12.34, 56.78],
+          },
+          preferredAgeRange: {
+            'lower_limit': 18,
+            'upper_limit': 30,
+          },
+          hometown: 'New York',
           bio: 'Test bio',
           interests: ['reading'],
-          birthdate: DateTime.now(),
-          sex: 'Male',
-          wishToFind: 'Female',
-          hometown: 'New York',
-          minAgePreference: 18,
-          maxAgePreference: 30,
-          profilePictureUrl: 'https://example.com/photo.jpg',
-          objective: 'Long Term',
+          objectives: ['Long Term'],
+          profilePic: 'https://example.com/photo.jpg',
         );
 
         // Assert

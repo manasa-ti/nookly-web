@@ -170,10 +170,6 @@ class AuthRepositoryImpl implements AuthRepository {
         AppLogger.error('Email is missing in API response');
         throw Exception('Invalid user data: Email is missing');
       }
-      if (userData['name'] == null) {
-        AppLogger.error('Name is missing in API response');
-        throw Exception('Invalid user data: Name is missing');
-      }
       if (userData['bio'] == null) {
         AppLogger.error('Bio is missing in API response');
         throw Exception('Invalid user data: Bio is missing');
@@ -234,27 +230,42 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<List<String>> getPredefinedInterests() async {
+    try {
+      final response = await NetworkService.dio.get('/users/interests');
+      final data = response.data as Map<String, dynamic>;
+      final interests = List<String>.from(data['interests'] as List);
+      AppLogger.info('Successfully fetched ${interests.length} predefined interests');
+      return interests;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to fetch predefined interests: ${e.message}',
+      );
+      throw Exception('Failed to fetch predefined interests: ${e.message}');
+    }
+  }
+
   User _mapUserModelToEntity(UserModel model) {
     return User(
       id: model.id,
       email: model.email,
       name: model.email.split('@')[0], // Using email username as name for now
       age: model.age,
-      gender: model.sex,
-      bio: model.bio ?? '',
-      interests: model.interests ?? [],
-      profilePicture: model.profilePic ?? '',
+      sex: model.sex,
+      bio: model.bio,
+      interests: model.interests,
+      profilePic: model.profilePic,
       location: {
-        'latitude': model.location.coordinates[0],
-        'longitude': model.location.coordinates[1],
+        'coordinates': [model.location.coordinates[0], model.location.coordinates[1]],
       },
-      preferences: {
-        'ageRange': {
-          'min': model.preferredAgeRange.lowerLimit,
-          'max': model.preferredAgeRange.upperLimit,
-        },
-        'seekingGender': model.seekingGender,
+      preferredAgeRange: {
+        'lower_limit': model.preferredAgeRange.lowerLimit,
+        'upper_limit': model.preferredAgeRange.upperLimit,
       },
+      hometown: model.hometown,
+      seekingGender: model.seekingGender,
+      objectives: model.objectives,
     );
   }
 } 

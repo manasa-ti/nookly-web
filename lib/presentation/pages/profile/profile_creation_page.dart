@@ -6,6 +6,8 @@ import 'package:hushmate/presentation/bloc/profile/profile_state.dart';
 import 'package:hushmate/presentation/widgets/interest_chips.dart';
 import 'package:hushmate/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
+import 'package:hushmate/domain/entities/user.dart';
+import 'package:hushmate/domain/repositories/auth_repository.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -107,8 +109,28 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   }
 
   void _onSaveProfile() {
-    if (_formKey.currentState?.validate() ?? false) {
-      context.read<ProfileBloc>().add(SaveProfile());
+    if (_formKey.currentState!.validate()) {
+      final user = User(
+        id: '', // This will be set by the backend
+        email: '', // This will be set by the backend
+        name: _hometownController.text,
+        age: DateTime.now().difference(_selectedDate!).inDays ~/ 365,
+        sex: _selectedSex == 'Male' ? 'm' : _selectedSex == 'Female' ? 'f' : 'other',
+        seekingGender: _selectedWishToFind == 'Male' ? 'm' : _selectedWishToFind == 'Female' ? 'f' : 'any',
+        location: const {
+          'coordinates': [0.0, 0.0], // [longitude, latitude]
+        },
+        preferredAgeRange: {
+          'lower_limit': _ageRange.start.round(),
+          'upper_limit': _ageRange.end.round(),
+        },
+        hometown: _hometownController.text,
+        bio: _bioController.text,
+        interests: _selectedInterests,
+        objectives: _selectedObjective != null ? [_selectedObjective!] : [],
+       
+      );
+      context.read<ProfileBloc>().add(SaveProfile(user));
     }
   }
 
@@ -312,6 +334,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                 .read<ProfileBloc>()
                                 .add(UpdateInterests(interests));
                           },
+                          authRepository: context.read<AuthRepository>(),
                         ),
                       ],
                     ),

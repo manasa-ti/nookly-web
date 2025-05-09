@@ -9,6 +9,7 @@ import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:hushmate/presentation/bloc/purchased_features/purchased_features_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 import 'package:hushmate/presentation/pages/splash/splash_screen.dart';
+import 'package:hushmate/domain/repositories/auth_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -43,6 +44,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => di.sl<ProfileBloc>(),
+        ),
+        RepositoryProvider(
+          create: (context) => di.sl<AuthRepository>(),
         ),
       ],
       child: MaterialApp(

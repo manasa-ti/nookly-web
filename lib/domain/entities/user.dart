@@ -5,52 +5,43 @@ class User extends Equatable {
   final String email;
   final String name;
   final int? age;
-  final String? gender;
-  final String bio;
-  final List<String> interests;
-  final String? profilePicture;
-  final Map<String, double>? location;
-  final Map<String, dynamic>? preferences;
-  final DateTime? birthdate;
   final String? sex;
-  final String? wishToFind;
+  final String? seekingGender;
+  final Map<String, dynamic>? location;
+  final Map<String, dynamic>? preferredAgeRange;
   final String? hometown;
-  final int? minAgePreference;
-  final int? maxAgePreference;
-  final String? profilePictureUrl;
-  final String? objective;
+  final String? bio;
+  final List<String>? interests;
+  final List<String>? objectives;
+  final String? profilePic;
 
   const User({
     required this.id,
     required this.email,
     required this.name,
     this.age,
-    this.gender,
-    required this.bio,
-    required this.interests,
-    this.profilePicture,
-    this.location,
-    this.preferences,
-    this.birthdate,
     this.sex,
-    this.wishToFind,
+    this.seekingGender,
+    this.location,
+    this.preferredAgeRange,
     this.hometown,
-    this.minAgePreference,
-    this.maxAgePreference,
-    this.profilePictureUrl,
-    this.objective,
+    this.bio,
+    this.interests,
+    this.objectives,
+    this.profilePic,
   });
 
   bool get isProfileComplete => 
-    birthdate != null && 
+    age != null && 
     sex != null && 
-    wishToFind != null && 
+    seekingGender != null && 
+    location != null && 
+    preferredAgeRange != null && 
     hometown != null && 
-    minAgePreference != null && 
-    maxAgePreference != null && 
-    profilePictureUrl != null && 
-    objective != null &&
-    interests.isNotEmpty;
+    bio != null && 
+    interests != null && 
+    objectives != null && 
+    profilePic != null;
 
   factory User.fromJson(Map<String, dynamic> json) {
     // Temporary handling until API includes name field
@@ -67,52 +58,38 @@ class User extends Equatable {
       email: json['email'] as String,
       name: name,
       age: json['age'] as int?,
-      gender: json['sex'] as String?,
-      bio: json['bio'] as String? ?? '',
-      interests: (json['interests'] as List<dynamic>?)?.cast<String>() ?? [],
-      profilePicture: json['profile_pic'] as String?,
+      sex: json['sex'] as String?,
+      seekingGender: json['seeking_gender'] as String?,
       location: json['location'] != null ? {
         'latitude': (json['location']['coordinates'][0] as num?)?.toDouble() ?? 0.0,
         'longitude': (json['location']['coordinates'][1] as num?)?.toDouble() ?? 0.0,
       } : null,
-      preferences: json['preferred_age_range'] != null ? {
-        'ageRange': {
-          'min': json['preferred_age_range']['lower_limit'] as int? ?? 18,
-          'max': json['preferred_age_range']['upper_limit'] as int? ?? 99,
-        },
-        'seekingGender': json['seeking_gender'] as String? ?? 'any',
+      preferredAgeRange: json['preferred_age_range'] != null ? {
+        'lower_limit': json['preferred_age_range']['min'] as int? ?? 18,
+        'upper_limit': json['preferred_age_range']['max'] as int? ?? 99,
       } : null,
-      birthdate: null, // Not provided in API
-      sex: json['sex'] as String?,
-      wishToFind: json['seeking_gender'] as String?,
       hometown: json['hometown'] as String?,
-      minAgePreference: json['preferred_age_range']?['lower_limit'] as int?,
-      maxAgePreference: json['preferred_age_range']?['upper_limit'] as int?,
-      profilePictureUrl: json['profile_pic'] as String?,
-      objective: (json['objectives'] as List<dynamic>?)?.firstOrNull as String?,
+      bio: json['bio'] as String?,
+      interests: (json['interests'] as List<dynamic>?)?.cast<String>(),
+      objectives: (json['objectives'] as List<dynamic>?)?.cast<String>(),
+      profilePic: json['profile_pic'] as String?,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
+      '_id': id,
       'email': email,
-      'name': name,
       'age': age,
-      'gender': gender,
+      'sex': sex,
+      'seeking_gender': seekingGender,
+      'location': location,
+      'preferred_age_range': preferredAgeRange,
+      'hometown': hometown,
       'bio': bio,
       'interests': interests,
-      'profilePicture': profilePicture,
-      'location': location,
-      'preferences': preferences,
-      'birthdate': birthdate?.toIso8601String(),
-      'sex': sex,
-      'wishToFind': wishToFind,
-      'hometown': hometown,
-      'minAgePreference': minAgePreference,
-      'maxAgePreference': maxAgePreference,
-      'profilePictureUrl': profilePictureUrl,
-      'objective': objective,
+      'objectives': objectives,
+      'profile_pic': profilePic,
     };
   }
 
@@ -122,19 +99,14 @@ class User extends Equatable {
         email,
         name,
         age,
-        gender,
+        sex,
+        seekingGender,
+        location,
+        preferredAgeRange,
+        hometown,
         bio,
         interests,
-        profilePicture,
-        location,
-        preferences,
-        birthdate,
-        sex,
-        wishToFind,
-        hometown,
-        minAgePreference,
-        maxAgePreference,
-        profilePictureUrl,
-        objective,
+        objectives,
+        profilePic,
       ];
 } 

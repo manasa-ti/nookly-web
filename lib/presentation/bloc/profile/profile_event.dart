@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:hushmate/domain/entities/user.dart';
 
 abstract class ProfileEvent extends Equatable {
   const ProfileEvent();
@@ -105,4 +106,11 @@ class UpdateObjective extends ProfileEvent {
   List<Object?> get props => [objective];
 }
 
-class SaveProfile extends ProfileEvent {} 
+class SaveProfile extends ProfileEvent {
+  final User user;
+
+  const SaveProfile(this.user);
+
+  @override
+  List<Object?> get props => [user];
+} 

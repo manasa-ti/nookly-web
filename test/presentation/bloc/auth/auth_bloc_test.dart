@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:bloc_test/bloc_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hushmate/data/repositories/auth_repository_impl.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
@@ -7,10 +9,12 @@ import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
 void main() {
   late AuthBloc bloc;
   late AuthRepositoryImpl repository;
+  late SharedPreferences prefs;
 
-  setUp(() {
-    repository = AuthRepositoryImpl();
-    bloc = AuthBloc(repository: repository);
+  setUp(() async {
+    prefs = await SharedPreferences.getInstance();
+    repository = AuthRepositoryImpl(prefs);
+    bloc = AuthBloc(authRepository: repository);
   });
 
   tearDown(() {
@@ -23,7 +27,7 @@ void main() {
     });
 
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthAuthenticated] when SignInWithEmailAndPassword is successful',
+      'emits [AuthLoading, Authenticated] when SignInWithEmailAndPassword is successful',
       build: () => bloc,
       act: (bloc) => bloc.add(
         const SignInWithEmailAndPassword(
@@ -33,7 +37,7 @@ void main() {
       ),
       expect: () => [
         isA<AuthLoading>(),
-        isA<AuthAuthenticated>(),
+        isA<Authenticated>(),
       ],
     );
 
@@ -53,7 +57,7 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthAuthenticated] when SignUpWithEmailAndPassword is successful',
+      'emits [AuthLoading, Authenticated] when SignUpWithEmailAndPassword is successful',
       build: () => bloc,
       act: (bloc) => bloc.add(
         SignUpWithEmailAndPassword(
@@ -63,7 +67,7 @@ void main() {
       ),
       expect: () => [
         isA<AuthLoading>(),
-        isA<AuthAuthenticated>(),
+        isA<Authenticated>(),
       ],
     );
 
@@ -83,22 +87,22 @@ void main() {
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthUnauthenticated] when SignOut is called',
+      'emits [AuthLoading, Unauthenticated] when SignOut is called',
       build: () => bloc,
       act: (bloc) => bloc.add(SignOut()),
       expect: () => [
         isA<AuthLoading>(),
-        isA<AuthUnauthenticated>(),
+        isA<Unauthenticated>(),
       ],
     );
 
     blocTest<AuthBloc, AuthState>(
-      'emits [AuthLoading, AuthAuthenticated] when CheckAuthStatus is called and user is authenticated',
+      'emits [AuthLoading, Authenticated] when CheckAuthStatus is called and user is authenticated',
       build: () => bloc,
       act: (bloc) => bloc.add(CheckAuthStatus()),
       expect: () => [
         isA<AuthLoading>(),
-        isA<AuthAuthenticated>(),
+        isA<Authenticated>(),
       ],
     );
   });

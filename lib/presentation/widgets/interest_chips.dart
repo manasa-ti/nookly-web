@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:hushmate/domain/repositories/auth_repository.dart';
 
 class InterestChips extends StatefulWidget {
   final List<String> selectedInterests;
   final Function(List<String>) onInterestsChanged;
+  final AuthRepository authRepository;
 
   const InterestChips({
     super.key,
     required this.selectedInterests,
     required this.onInterestsChanged,
+    required this.authRepository,
   });
 
   @override
@@ -15,41 +18,36 @@ class InterestChips extends StatefulWidget {
 }
 
 class _InterestChipsState extends State<InterestChips> {
-  final List<String> _availableInterests = [
-    'Travel',
-    'Music',
-    'Movies',
-    'Books',
-    'Sports',
-    'Fitness',
-    'Cooking',
-    'Photography',
-    'Art',
-    'Gaming',
-    'Technology',
-    'Nature',
-    'Fashion',
-    'Food',
-    'Dancing',
-    'Writing',
-    'Languages',
-    'Science',
-    'History',
-    'Politics',
-    'Business',
-    'Fitness',
-    'Yoga',
-    'Meditation',
-    'Fashion',
-    'Beauty',
-    'Pets',
-    'Coffee',
-    'Wine',
-    'Craft Beer',
-  ];
+  List<String> _availableInterests = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadInterests();
+  }
+
+  Future<void> _loadInterests() async {
+    try {
+      final interests = await widget.authRepository.getPredefinedInterests();
+      setState(() {
+        _availableInterests = interests;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      // You might want to show an error message to the user here
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     return Wrap(
       spacing: 8,
       runSpacing: 8,

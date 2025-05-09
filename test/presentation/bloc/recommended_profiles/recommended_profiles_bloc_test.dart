@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:bloc_test/bloc_test.dart';
 import 'package:hushmate/data/repositories/recommended_profiles_repository_impl.dart';
 import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
-import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_event.dart';
-import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_state.dart';
 
 void main() {
   late RecommendedProfilesBloc bloc;
@@ -35,8 +34,8 @@ void main() {
     blocTest<RecommendedProfilesBloc, RecommendedProfilesState>(
       'emits [RecommendedProfilesLoading, RecommendedProfilesLoaded] when LikeProfile is successful',
       build: () => bloc,
-      act: (bloc) async {
-        await bloc.add(LoadRecommendedProfiles());
+      act: (bloc) {
+        bloc.add(LoadRecommendedProfiles());
         final profiles = (bloc.state as RecommendedProfilesLoaded).profiles;
         bloc.add(LikeProfile(profiles.first.id));
       },
@@ -51,8 +50,8 @@ void main() {
     blocTest<RecommendedProfilesBloc, RecommendedProfilesState>(
       'emits [RecommendedProfilesLoading, RecommendedProfilesLoaded] when DislikeProfile is successful',
       build: () => bloc,
-      act: (bloc) async {
-        await bloc.add(LoadRecommendedProfiles());
+      act: (bloc) {
+        bloc.add(LoadRecommendedProfiles());
         final profiles = (bloc.state as RecommendedProfilesLoaded).profiles;
         bloc.add(DislikeProfile(profiles.first.id));
       },

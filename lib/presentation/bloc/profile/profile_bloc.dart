@@ -42,20 +42,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           email: '',
           name: '',
           age: 0,
-          gender: '',
-          bio: '',
-          interests: [],
-          profilePicture: null,
-          location: null,
-          preferences: null,
-          birthdate: null,
           sex: null,
-          wishToFind: null,
+          seekingGender: null,
+          location: null,
+          preferredAgeRange: null,
           hometown: null,
-          minAgePreference: 18,
-          maxAgePreference: 80,
-          profilePictureUrl: null,
-          objective: null,
+          bio: null,
+          interests: null,
+          objectives: null,
+          profilePic: null,
         );
         _emitLoadedState();
       }
@@ -76,21 +71,16 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       id: _currentUser.id,
       email: _currentUser.email,
       name: _currentUser.name,
-      age: _currentUser.age,
-      gender: _currentUser.gender,
+      age: DateTime.now().difference(event.birthdate).inDays ~/ 365,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: event.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -101,20 +91,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: event.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: event.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -125,20 +110,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: event.wishToFind,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: event.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -149,47 +129,37 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: event.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: event.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
 
-  void _onUpdateAgePreferences(
-    UpdateAgePreferences event,
-    Emitter<ProfileState> emit,
-  ) {
+  void _onUpdateAgePreferences(UpdateAgePreferences event, Emitter<ProfileState> emit) {
     _currentUser = User(
       id: _currentUser.id,
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: {
+        'lower_limit': event.minAge,
+        'upper_limit': event.maxAge,
+      },
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: event.minAge,
-      maxAgePreference: event.maxAge,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -200,20 +170,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: event.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -224,20 +189,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: event.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -248,29 +208,21 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     _onUpdateName(UpdateName(generatedName), emit);
   }
 
-  void _onUpdateProfilePicture(
-    UpdateProfilePicture event,
-    Emitter<ProfileState> emit,
-  ) {
+  void _onUpdateProfilePicture(UpdateProfilePicture event, Emitter<ProfileState> emit) {
     _currentUser = User(
       id: _currentUser.id,
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: event.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: event.profilePictureUrl,
     );
     _emitLoadedState();
   }
@@ -291,20 +243,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: event.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: _currentUser.objective,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -315,20 +262,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       email: _currentUser.email,
       name: _currentUser.name,
       age: _currentUser.age,
-      gender: _currentUser.gender,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      profilePicture: _currentUser.profilePicture,
-      location: _currentUser.location,
-      preferences: _currentUser.preferences,
-      birthdate: _currentUser.birthdate,
-      sex: _currentUser.sex,
-      wishToFind: _currentUser.wishToFind,
-      hometown: _currentUser.hometown,
-      minAgePreference: _currentUser.minAgePreference,
-      maxAgePreference: _currentUser.maxAgePreference,
-      profilePictureUrl: _currentUser.profilePictureUrl,
-      objective: event.objective,
+      objectives: [event.objective],
+      profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();
   }
@@ -336,38 +278,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   Future<void> _onSaveProfile(SaveProfile event, Emitter<ProfileState> emit) async {
     try {
       emit(ProfileLoading());
-      // Get the current user from auth repository
-      final currentUser = await _authRepository.getCurrentUser();
-      if (currentUser == null) {
-        emit(const ProfileError('No authenticated user found'));
-        return;
-      }
-
-      // Update the current user with the latest changes
-      _currentUser = User(
-        id: currentUser.id,
-        email: currentUser.email,
-        name: _currentUser.name,
-        age: _currentUser.age,
-        gender: _currentUser.gender,
-        bio: _currentUser.bio,
-        interests: _currentUser.interests,
-        profilePicture: _currentUser.profilePicture,
-        location: _currentUser.location,
-        preferences: _currentUser.preferences,
-        birthdate: _currentUser.birthdate,
-        sex: _currentUser.sex,
-        wishToFind: _currentUser.wishToFind,
-        hometown: _currentUser.hometown,
-        minAgePreference: _currentUser.minAgePreference,
-        maxAgePreference: _currentUser.maxAgePreference,
-        profilePictureUrl: _currentUser.profilePictureUrl,
-        objective: _currentUser.objective,
-      );
-
-      // Save the profile
-      await _authRepository.updateUserProfile(_currentUser);
-      emit(ProfileSaved(_currentUser));
+      await _authRepository.updateUserProfile(event.user);
+      emit(ProfileSaved(event.user));
     } catch (e) {
       emit(ProfileError(e.toString()));
     }
