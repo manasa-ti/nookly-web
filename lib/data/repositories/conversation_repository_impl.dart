@@ -1,219 +1,220 @@
 import 'dart:async';
+import 'package:dio/dio.dart';
+import 'package:hushmate/core/network/network_service.dart'; // Use NetworkService
 import 'package:hushmate/domain/entities/conversation.dart';
 import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/domain/repositories/conversation_repository.dart';
+import 'package:hushmate/domain/repositories/auth_repository.dart'; // Still needed for currentUserId
+import 'package:hushmate/domain/entities/user.dart'; 
 
 class ConversationRepositoryImpl implements ConversationRepository {
+  // Dio instance is now managed by NetworkService
+  final AuthRepository _authRepository; // Still needed for currentUserId
+
   final Map<String, StreamController<List<Message>>> _messageControllers = {};
-  final Map<String, List<Message>> _messages = {};
-  final Map<String, Conversation> _conversations = {
-    '1': Conversation(
-      id: '1',
-      participantId: 'user1',
-      participantName: 'Sarah',
-      participantAvatar: 'https://example.com/profile1.jpg',
-      messages: [
-        Message(
-          id: 'm1',
-          senderId: 'user1',
-          content: 'Hey, how are you doing?',
-          timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-          type: MessageType.text,
-        ),
-      ],
-      lastMessageTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      isOnline: true,
-      unreadCount: 1,
-      userId: 'currentUser',
-    ),
-    '2': Conversation(
-      id: '2',
-      participantId: 'user2',
-      participantName: 'Michael',
-      participantAvatar: 'https://example.com/profile2.jpg',
-      messages: [
-        Message(
-          id: 'm2',
-          senderId: 'user2',
-          content: 'I saw you like photography too! What kind of camera do you use?',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          type: MessageType.text,
-        ),
-      ],
-      lastMessageTime: DateTime.now().subtract(const Duration(hours: 2)),
-      isOnline: false,
-      unreadCount: 0,
-      userId: 'currentUser',
-    ),
-  };
+
+  ConversationRepositoryImpl(this._authRepository); // Updated constructor
 
   @override
   Future<List<Conversation>> getConversations() async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    return _conversations.values.toList();
+    try {
+      final User? currentUser = await _authRepository.getCurrentUser();
+      if (currentUser == null) {
+        throw Exception('Current user not found for conversation context.');
+      }
+      final String currentUserId = currentUser.id;
+
+      // NetworkService interceptor handles token and base URL
+      final response = await NetworkService.dio.get('/messages/conversations'); // Endpoint path
+
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> apiResponseData = response.data as List<dynamic>;
+        final List<Conversation> conversations = [];
+
+        for (var item in apiResponseData) {
+          final itemMap = item as Map<String, dynamic>;
+          final userJson = itemMap['user'] as Map<String, dynamic>; 
+          final lastMessageJson = itemMap['lastMessage'] as Map<String, dynamic>?;
+
+          Message? lastMessage;
+          DateTime lastMessageTime;
+
+          if (lastMessageJson != null) {
+            lastMessage = Message.fromJson(lastMessageJson);
+            lastMessageTime = lastMessage.timestamp;
+          } else {
+            lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
+          }
+          
+          final participantIdFromJson = userJson['_id'] as String;
+
+          conversations.add(Conversation(
+            id: participantIdFromJson, 
+            participantId: participantIdFromJson, 
+            participantName: userJson['name'] as String? ?? 'Unknown',
+            participantAvatar: userJson['profile_pic'] as String?,
+            messages: lastMessage != null ? [lastMessage] : [],
+            lastMessageTime: lastMessageTime,
+            isOnline: userJson['isOnline'] as bool? ?? false, 
+            unreadCount: itemMap['unreadCount'] as int? ?? 0,
+            userId: currentUserId, 
+          ));
+        }
+        return conversations;
+      } else {
+        throw Exception('Failed to load conversations: Status ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('DioError fetching conversations: ${e.response?.data ?? e.message}');
+      throw Exception('Failed to load conversations: ${e.response?.data?['message'] ?? e.message}');
+    } catch (e) {
+      print('Error fetching conversations: $e');
+      throw Exception('Failed to load conversations: An unexpected error occurred: $e');
+    }
   }
 
   @override
-  Future<Conversation> getConversation(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final conversation = _conversations[conversationId];
-    if (conversation == null) {
-      throw Exception('Conversation not found');
+  Future<Conversation> getConversation(
+    String participantId,
+    // Receive participant details from the caller
+    String participantName,
+    String? participantAvatar,
+    bool isOnline,
+  ) async {
+    try {
+      final User? currentUser = await _authRepository.getCurrentUser();
+      if (currentUser == null) {
+        throw Exception('Current user not found to fetch conversation details.');
+      }
+      final String currentUserId = currentUser.id;
+
+      final response = await NetworkService.dio.get('/messages/chat/$participantId');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final List<dynamic> messagesJson = response.data as List<dynamic>;
+        final List<Message> messages = messagesJson
+            .map((json) => Message.fromJson(json as Map<String, dynamic>))
+            .toList();
+
+        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+
+        DateTime lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
+        if (messages.isNotEmpty) {
+          lastMessageTime = messages.last.timestamp;
+        }
+
+        return Conversation(
+          id: participantId, 
+          participantId: participantId, 
+          // Use passed-in details
+          participantName: participantName, 
+          participantAvatar: participantAvatar,
+          messages: messages,
+          lastMessageTime: lastMessageTime,
+          isOnline: isOnline, 
+          unreadCount: 0, // API doesn't provide this for chat history endpoint
+          userId: currentUserId,
+        );
+      } else {
+        throw Exception('Failed to load chat history: Status ${response.statusCode}');
+      }
+    } on DioException catch (e) {
+      print('DioError fetching chat history for $participantId: ${e.response?.data ?? e.message}');
+      throw Exception('Failed to load chat history: ${e.response?.data?['message'] ?? e.message}');
+    } catch (e) {
+      print('Error fetching chat history for $participantId: $e');
+      throw Exception('Failed to load chat history: An unexpected error occurred: $e');
     }
-    return conversation;
   }
 
   @override
   Future<void> sendTextMessage(String conversationId, String content) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'currentUser',
-      content: content,
-      timestamp: DateTime.now(),
-    );
-    
-    _messages[conversationId]?.add(message);
-    _messageControllers[conversationId]?.add(_messages[conversationId]!);
+    // conversationId here is the participantId (receiverId for the message)
+    try {
+      await NetworkService.dio.post(
+        '/messages',
+        data: {
+          'receiver': conversationId, 
+          'content': content,
+          'messageType': 'text',
+        },
+      );
+    } on DioException catch (e) {
+      print('DioError sending message: ${e.response?.data ?? e.message}');
+      throw Exception('Failed to send message: ${e.response?.data?['message'] ?? e.message}');
+    } catch (e) {
+      print('Error sending message: $e');
+      throw Exception('Failed to send message: An unexpected error occurred.');
+    }
   }
 
   @override
   Future<void> sendVoiceMessage(String conversationId, String audioPath, Duration duration) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'currentUser',
-      content: audioPath,
-      timestamp: DateTime.now(),
-      type: MessageType.voice,
-      metadata: {'duration': duration.inSeconds},
-    );
-    
-    _messages[conversationId]?.add(message);
-    _messageControllers[conversationId]?.add(_messages[conversationId]!);
+    throw UnimplementedError('sendVoiceMessage not implemented with API yet.');
   }
 
   @override
   Future<void> sendFileMessage(String conversationId, String filePath, String fileName, int fileSize) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'currentUser',
-      content: filePath,
-      timestamp: DateTime.now(),
-      type: MessageType.file,
-      metadata: {
-        'fileName': fileName,
-        'fileSize': fileSize,
-      },
-    );
-    
-    _messages[conversationId]?.add(message);
-    _messageControllers[conversationId]?.add(_messages[conversationId]!);
+    throw UnimplementedError('sendFileMessage not implemented with API yet.');
   }
 
   @override
   Future<void> sendImageMessage(String conversationId, String imagePath) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final message = Message(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
-      senderId: 'currentUser',
-      content: imagePath,
-      timestamp: DateTime.now(),
-      type: MessageType.image,
-    );
-    
-    _messages[conversationId]?.add(message);
-    _messageControllers[conversationId]?.add(_messages[conversationId]!);
+    throw UnimplementedError('sendImageMessage not implemented with API yet.');
   }
 
   @override
   Future<void> markMessageAsRead(String messageId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would update the message status in the database
+    throw UnimplementedError('markMessageAsRead not implemented with API yet.');
   }
 
   @override
   Future<void> blockUser(String userId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would update the user's blocked status in the database
+    throw UnimplementedError('blockUser not implemented with API yet.');
   }
 
   @override
   Future<void> unblockUser(String userId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would update the user's blocked status in the database
+    throw UnimplementedError('unblockUser not implemented with API yet.');
   }
 
   @override
   Future<void> muteConversation(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would update the conversation's muted status in the database
+    throw UnimplementedError('muteConversation not implemented with API yet.');
   }
 
   @override
   Future<void> unmuteConversation(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would update the conversation's muted status in the database
+    throw UnimplementedError('unmuteConversation not implemented with API yet.');
   }
 
   @override
   Future<void> leaveConversation(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would remove the user from the conversation in the database
+    throw UnimplementedError('leaveConversation not implemented with API yet.');
   }
 
   @override
   Future<void> startAudioCall(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would initiate an audio call
+    throw UnimplementedError('startAudioCall not implemented with API yet.');
   }
 
   @override
   Future<void> startVideoCall(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would initiate a video call
+    throw UnimplementedError('startVideoCall not implemented with API yet.');
   }
 
   @override
   Future<void> endCall(String conversationId) async {
-    // Simulate network delay
-    await Future.delayed(const Duration(milliseconds: 500));
-    // In a real app, this would end the active call
+    throw UnimplementedError('endCall not implemented with API yet.');
   }
 
   @override
   Stream<List<Message>> listenToMessages(String conversationId) {
     if (!_messageControllers.containsKey(conversationId)) {
       _messageControllers[conversationId] = StreamController<List<Message>>.broadcast();
-      _messages[conversationId] = [];
+      print('listenToMessages for $conversationId is using a mock stream controller.');
     }
     return _messageControllers[conversationId]!.stream;
-  }
-
-  void _notifyMessageListeners(String conversationId, List<Message> messages) {
-    if (_messageControllers.containsKey(conversationId)) {
-      _messageControllers[conversationId]!.add(messages);
-    }
   }
 
   void dispose() {
@@ -221,7 +222,5 @@ class ConversationRepositoryImpl implements ConversationRepository {
       controller.close();
     }
     _messageControllers.clear();
-    _messages.clear();
-    _conversations.clear();
   }
 } 

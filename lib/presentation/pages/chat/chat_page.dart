@@ -9,10 +9,16 @@ import 'package:hushmate/presentation/widgets/message_bubble.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
+  final String participantName;
+  final String? participantAvatar;
+  final bool isOnline;
 
   const ChatPage({
     Key? key,
     required this.conversationId,
+    required this.participantName,
+    this.participantAvatar,
+    required this.isOnline,
   }) : super(key: key);
 
   @override
@@ -35,7 +41,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     // Load conversation when the page is initialized
-    context.read<ConversationBloc>().add(LoadConversation(widget.conversationId));
+    context.read<ConversationBloc>().add(LoadConversation(
+      participantId: widget.conversationId,
+      participantName: widget.participantName,
+      participantAvatar: widget.participantAvatar,
+      isOnline: widget.isOnline,
+    ));
     
     // Add scroll listener for pagination
     _scrollController.addListener(_onScroll);
@@ -115,7 +126,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _messageController.clear();
 
     context.read<ConversationBloc>().add(
-      SendTextMessage(widget.conversationId, content),
+      SendTextMessage(conversationId: widget.conversationId, content: content),
     );
 
     _scrollToBottom();
@@ -125,7 +136,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // In a real app, this would use image_picker
     // For now, we'll just send a mock image URL
     context.read<ConversationBloc>().add(
-      SendImageMessage(widget.conversationId, 'https://example.com/mock_image.jpg'),
+      SendImageMessage(conversationId: widget.conversationId, imagePath: 'https://example.com/mock_image.jpg'),
     );
     
     _scrollToBottom();
@@ -143,10 +154,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     context.read<ConversationBloc>().add(
       SendFileMessage(
-        widget.conversationId,
-        'https://example.com/mock_file.pdf',
-        'document.pdf',
-        1024 * 1024, // 1MB
+        conversationId: widget.conversationId,
+        filePath: 'https://example.com/mock_file.pdf',
+        fileName: 'document.pdf',
+        fileSize: 1024 * 1024, // 1MB
       ),
     );
     
@@ -162,9 +173,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // For now, we'll just send a mock voice message
     context.read<ConversationBloc>().add(
       SendVoiceMessage(
-        widget.conversationId,
-        'https://example.com/mock_voice.m4a',
-        const Duration(seconds: 30), // 30 seconds
+        conversationId: widget.conversationId,
+        audioPath: 'https://example.com/mock_voice.m4a',
+        duration: const Duration(seconds: 30), // 30 seconds
       ),
     );
     
@@ -446,7 +457,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     title: const Text('Block User'),
                     onTap: () {
                       context.read<ConversationBloc>().add(
-                        BlockUser(conversation.participantId),
+                        BlockUser(userId: conversation.participantId),
                       );
                     },
                   ),
@@ -455,7 +466,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     title: const Text('Mute Conversation'),
                     onTap: () {
                       context.read<ConversationBloc>().add(
-                        MuteConversation(widget.conversationId),
+                        MuteConversation(conversationId: widget.conversationId),
                       );
                     },
                   ),
@@ -464,7 +475,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     title: const Text('Leave Conversation'),
                     onTap: () {
                       context.read<ConversationBloc>().add(
-                        LeaveConversation(widget.conversationId),
+                        LeaveConversation(conversationId: widget.conversationId),
                       );
                     },
                   ),

@@ -98,12 +98,12 @@ class UpdateInterests extends ProfileEvent {
 }
 
 class UpdateObjective extends ProfileEvent {
-  final String objective;
+  final List<String> objectives;
 
-  const UpdateObjective(this.objective);
+  const UpdateObjective(this.objectives);
 
   @override
-  List<Object?> get props => [objective];
+  List<Object?> get props => [objectives];
 }
 
 class SaveProfile extends ProfileEvent {

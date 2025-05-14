@@ -269,7 +269,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       hometown: _currentUser.hometown,
       bio: _currentUser.bio,
       interests: _currentUser.interests,
-      objectives: [event.objective],
+      objectives: event.objectives,
       profilePic: _currentUser.profilePic,
     );
     _emitLoadedState();

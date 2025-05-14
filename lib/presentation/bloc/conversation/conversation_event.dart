@@ -8,19 +8,27 @@ abstract class ConversationEvent extends Equatable {
 }
 
 class LoadConversation extends ConversationEvent {
-  final String conversationId;
+  final String participantId;
+  final String participantName;
+  final String? participantAvatar;
+  final bool isOnline;
 
-  const LoadConversation(this.conversationId);
+  const LoadConversation({
+    required this.participantId,
+    required this.participantName,
+    this.participantAvatar,
+    required this.isOnline,
+  });
 
   @override
-  List<Object?> get props => [conversationId];
+  List<Object?> get props => [participantId, participantName, participantAvatar, isOnline];
 }
 
 class SendTextMessage extends ConversationEvent {
   final String conversationId;
   final String content;
 
-  const SendTextMessage(this.conversationId, this.content);
+  const SendTextMessage({required this.conversationId, required this.content});
 
   @override
   List<Object?> get props => [conversationId, content];
@@ -31,7 +39,11 @@ class SendVoiceMessage extends ConversationEvent {
   final String audioPath;
   final Duration duration;
 
-  const SendVoiceMessage(this.conversationId, this.audioPath, this.duration);
+  const SendVoiceMessage({
+    required this.conversationId,
+    required this.audioPath,
+    required this.duration,
+  });
 
   @override
   List<Object?> get props => [conversationId, audioPath, duration];
@@ -43,12 +55,12 @@ class SendFileMessage extends ConversationEvent {
   final String fileName;
   final int fileSize;
 
-  const SendFileMessage(
-    this.conversationId,
-    this.filePath,
-    this.fileName,
-    this.fileSize,
-  );
+  const SendFileMessage({
+    required this.conversationId,
+    required this.filePath,
+    required this.fileName,
+    required this.fileSize,
+  });
 
   @override
   List<Object?> get props => [conversationId, filePath, fileName, fileSize];
@@ -58,7 +70,7 @@ class SendImageMessage extends ConversationEvent {
   final String conversationId;
   final String imagePath;
 
-  const SendImageMessage(this.conversationId, this.imagePath);
+  const SendImageMessage({required this.conversationId, required this.imagePath});
 
   @override
   List<Object?> get props => [conversationId, imagePath];
@@ -67,7 +79,7 @@ class SendImageMessage extends ConversationEvent {
 class MarkMessageAsRead extends ConversationEvent {
   final String messageId;
 
-  const MarkMessageAsRead(this.messageId);
+  const MarkMessageAsRead({required this.messageId});
 
   @override
   List<Object?> get props => [messageId];
@@ -76,7 +88,7 @@ class MarkMessageAsRead extends ConversationEvent {
 class BlockUser extends ConversationEvent {
   final String userId;
 
-  const BlockUser(this.userId);
+  const BlockUser({required this.userId});
 
   @override
   List<Object?> get props => [userId];
@@ -85,7 +97,7 @@ class BlockUser extends ConversationEvent {
 class UnblockUser extends ConversationEvent {
   final String userId;
 
-  const UnblockUser(this.userId);
+  const UnblockUser({required this.userId});
 
   @override
   List<Object?> get props => [userId];
@@ -94,7 +106,7 @@ class UnblockUser extends ConversationEvent {
 class MuteConversation extends ConversationEvent {
   final String conversationId;
 
-  const MuteConversation(this.conversationId);
+  const MuteConversation({required this.conversationId});
 
   @override
   List<Object?> get props => [conversationId];
@@ -103,7 +115,7 @@ class MuteConversation extends ConversationEvent {
 class UnmuteConversation extends ConversationEvent {
   final String conversationId;
 
-  const UnmuteConversation(this.conversationId);
+  const UnmuteConversation({required this.conversationId});
 
   @override
   List<Object?> get props => [conversationId];
@@ -112,7 +124,7 @@ class UnmuteConversation extends ConversationEvent {
 class LeaveConversation extends ConversationEvent {
   final String conversationId;
 
-  const LeaveConversation(this.conversationId);
+  const LeaveConversation({required this.conversationId});
 
   @override
   List<Object?> get props => [conversationId];
@@ -121,7 +133,7 @@ class LeaveConversation extends ConversationEvent {
 class StartAudioCall extends ConversationEvent {
   final String conversationId;
 
-  const StartAudioCall(this.conversationId);
+  const StartAudioCall({required this.conversationId});
 
   @override
   List<Object?> get props => [conversationId];
@@ -130,7 +142,7 @@ class StartAudioCall extends ConversationEvent {
 class StartVideoCall extends ConversationEvent {
   final String conversationId;
 
-  const StartVideoCall(this.conversationId);
+  const StartVideoCall({required this.conversationId});
 
   @override
   List<Object?> get props => [conversationId];
@@ -139,7 +151,7 @@ class StartVideoCall extends ConversationEvent {
 class EndCall extends ConversationEvent {
   final String conversationId;
 
-  const EndCall(this.conversationId);
+  const EndCall({required this.conversationId});
 
   @override
   List<Object?> get props => [conversationId];

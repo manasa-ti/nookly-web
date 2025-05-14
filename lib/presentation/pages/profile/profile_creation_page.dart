@@ -4,6 +4,7 @@ import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_event.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_state.dart';
 import 'package:hushmate/presentation/widgets/interest_chips.dart';
+import 'package:hushmate/presentation/widgets/objective_chips.dart';
 import 'package:hushmate/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
 import 'package:hushmate/domain/entities/user.dart';
@@ -26,7 +27,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   String? _selectedWishToFind;
   RangeValues _ageRange = const RangeValues(18, 80);
   List<String> _selectedInterests = [];
-  String? _selectedObjective;
+  List<String> _selectedObjectives = [];
   List<String> _availableObjectives = [];
   bool _usedFallbackObjectives = false;
 
@@ -107,7 +108,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           isValid = _bioController.text.isNotEmpty && _selectedInterests.isNotEmpty;
           break;
         case 3: // Objective
-          isValid = _selectedObjective != null;
+          isValid = _selectedObjectives.isNotEmpty;
           break;
       }
 
@@ -117,9 +118,9 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please fill in all required fields'),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(_currentStep == 3 ? 'Please select at least one objective' : 'Please fill in all required fields'),
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -155,8 +156,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         hometown: _hometownController.text,
         bio: _bioController.text,
         interests: _selectedInterests,
-        objectives: _selectedObjective != null ? [_selectedObjective!] : [],
-       
+        objectives: _selectedObjectives,
       );
       context.read<ProfileBloc>().add(SaveProfile(user));
     }
@@ -384,35 +384,25 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                   Step(
                     title: const Text('Objective'),
                     content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        DropdownButtonFormField<String>(
-                          value: _selectedObjective,
-                          decoration: const InputDecoration(
-                            labelText: 'What are you looking for?',
-                          ),
-                          items: _availableObjectives.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedObjective = newValue;
-                            });
-                            if (newValue != null) {
+                        const Text('What are you looking for?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        if (_availableObjectives.isEmpty)
+                          const Center(child: CircularProgressIndicator())
+                        else
+                          ObjectiveChips(
+                            availableObjectives: _availableObjectives,
+                            selectedObjectives: _selectedObjectives,
+                            onObjectivesChanged: (objectives) {
+                              setState(() {
+                                _selectedObjectives = objectives;
+                              });
                               context
                                   .read<ProfileBloc>()
-                                  .add(UpdateObjective(newValue));
-                            }
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select your objective';
-                            }
-                            return null;
-                          },
-                        ),
+                                  .add(UpdateObjective(objectives));
+                            },
+                          ),
                       ],
                     ),
                     isActive: _currentStep >= 3,

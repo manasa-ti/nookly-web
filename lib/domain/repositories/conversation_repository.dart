@@ -3,7 +3,12 @@ import 'package:hushmate/domain/entities/message.dart';
 
 abstract class ConversationRepository {
   Future<List<Conversation>> getConversations();
-  Future<Conversation> getConversation(String conversationId);
+  Future<Conversation> getConversation(
+    String participantId,
+    String participantName,
+    String? participantAvatar,
+    bool isOnline,
+  );
   Future<void> sendTextMessage(String conversationId, String content);
   Future<void> sendVoiceMessage(String conversationId, String audioPath, Duration duration);
   Future<void> sendFileMessage(String conversationId, String filePath, String fileName, int fileSize);

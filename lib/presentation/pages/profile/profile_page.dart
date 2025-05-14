@@ -156,6 +156,25 @@ class _ProfilePageState extends State<ProfilePage> {
                               backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
                             )).toList(),
                           ),
+                          const SizedBox(height: 24),
+                          const Text(
+                            'Seeking',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: (_user!.objectives ?? [])
+                                .map((objective) => Chip(
+                                      label: Text(objective),
+                                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                                    ))
+                                .toList(),
+                          ),
                         ],
                       ),
                     ),
