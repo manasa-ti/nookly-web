@@ -27,10 +27,13 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   RangeValues _ageRange = const RangeValues(18, 80);
   List<String> _selectedInterests = [];
   String? _selectedObjective;
+  List<String> _availableObjectives = [];
+  bool _usedFallbackObjectives = false;
 
   final List<String> _sexOptions = ['Male', 'Female', 'Other'];
   final List<String> _wishToFindOptions = ['Male', 'Female', 'Any'];
-  final List<String> _objectiveOptions = [
+
+  static const List<String> _fallbackObjectives = [
     'Short Term',
     'Long Term',
     'Serious Committed Relationship',
@@ -40,6 +43,31 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     'Friends to Hang Out',
     'Emotional Connection',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadObjectives();
+  }
+
+  Future<void> _loadObjectives() async {
+    try {
+      final authRepository = context.read<AuthRepository>();
+      _availableObjectives = await authRepository.getPredefinedObjectives();
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      _availableObjectives = _fallbackObjectives;
+      _usedFallbackObjectives = true;
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading objectives. Using default list. Error: $e')),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -136,6 +164,19 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_usedFallbackObjectives) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_usedFallbackObjectives) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Using default objectives list'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          _usedFallbackObjectives = false;
+        }
+      });
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create Profile'),
@@ -349,7 +390,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                           decoration: const InputDecoration(
                             labelText: 'What are you looking for?',
                           ),
-                          items: _objectiveOptions.map((String value) {
+                          items: _availableObjectives.map((String value) {
                             return DropdownMenuItem<String>(
                               value: value,
                               child: Text(value),

@@ -2,13 +2,45 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:hushmate/data/repositories/received_likes_repository_impl.dart';
 import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
+import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
+import 'package:hushmate/domain/entities/recommended_profile.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+
+@GenerateMocks([RecommendedProfilesRepository])
+import 'received_likes_bloc_test.mocks.dart';
 
 void main() {
   late ReceivedLikesBloc bloc;
   late ReceivedLikesRepositoryImpl repository;
+  late MockRecommendedProfilesRepository mockRecommendedProfilesRepository;
 
   setUp(() {
-    repository = ReceivedLikesRepositoryImpl();
+    mockRecommendedProfilesRepository = MockRecommendedProfilesRepository();
+    
+    // Setup mock data
+    when(mockRecommendedProfilesRepository.getProfilesThatLikedMe()).thenAnswer(
+      (_) async => [
+        RecommendedProfile(
+          id: '1',
+          name: 'Test User',
+          age: 25,
+          sex: 'Female',
+          location: {'lat': 0.0, 'lng': 0.0},
+          hometown: 'Test City',
+          bio: 'Test Bio',
+          interests: ['Test'],
+          objectives: ['Test'],
+          distance: 5.0,
+          commonInterests: ['Test'],
+          commonObjectives: ['Test'],
+        ),
+      ],
+    );
+
+    repository = ReceivedLikesRepositoryImpl(
+      recommendedProfilesRepository: mockRecommendedProfilesRepository,
+    );
     bloc = ReceivedLikesBloc(repository: repository);
   });
 

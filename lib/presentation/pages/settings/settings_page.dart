@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hushmate/core/config/app_config.dart';
+import 'package:hushmate/core/utils/logger.dart';
+import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
+import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
+import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:get_it/get_it.dart';
+import 'package:hushmate/presentation/pages/profile/edit_profile_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -11,118 +20,70 @@ class SettingsPage extends StatelessWidget {
         title: const Text('Settings'),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(AppConfig.defaultPadding),
         children: [
-          _buildSection(
-            context,
-            title: 'Account',
-            items: [
-              _SettingsItem(
-                icon: Icons.person,
-                title: 'Edit Profile',
-                onTap: () {
-                  // TODO: Navigate to edit profile
-                },
-              ),
-              _SettingsItem(
-                icon: Icons.notifications,
-                title: 'Notifications',
-                onTap: () {
-                  // TODO: Navigate to notifications settings
-                },
-              ),
-              _SettingsItem(
-                icon: Icons.privacy_tip,
-                title: 'Privacy',
-                onTap: () {
-                  // TODO: Navigate to privacy settings
-                },
-              ),
-            ],
+          _SettingsItem(
+            icon: Icons.edit,
+            title: 'Edit Profile',
+            onTap: () async {
+              final authRepository = GetIt.instance<AuthRepository>();
+              final user = await authRepository.getCurrentUser();
+              if (user != null && context.mounted) {
+                AppLogger.debug("User in Settings : $user.toString()");
+                final updated = await Navigator.push<bool>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => EditProfilePage(user: user),
+                  ),
+                );
+                if (updated == true && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Profile updated successfully')),
+                  );
+                }
+              }
+            },
           ),
-          const SizedBox(height: 24),
-          _buildSection(
-            context,
-            title: 'Preferences',
-            items: [
-              _SettingsItem(
-                icon: Icons.location_on,
-                title: 'Location',
-                onTap: () {
-                  // TODO: Navigate to location settings
-                },
-              ),
-              _SettingsItem(
-                icon: Icons.language,
-                title: 'Language',
-                onTap: () {
-                  // TODO: Navigate to language settings
-                },
-              ),
-              _SettingsItem(
-                icon: Icons.dark_mode,
-                title: 'Theme',
-                onTap: () {
-                  // TODO: Navigate to theme settings
-                },
-              ),
-            ],
+          _SettingsItem(
+            icon: Icons.notifications,
+            title: 'Notifications',
+            onTap: () {
+              // TODO: Implement notifications settings
+            },
           ),
-          const SizedBox(height: 24),
-          _buildSection(
-            context,
-            title: 'Support',
-            items: [
-              _SettingsItem(
-                icon: Icons.help,
-                title: 'Help Center',
-                onTap: () {
-                  // TODO: Navigate to help center
-                },
-              ),
-              _SettingsItem(
-                icon: Icons.info,
-                title: 'About',
-                onTap: () {
-                  // TODO: Navigate to about page
-                },
-              ),
-              _SettingsItem(
-                icon: Icons.logout,
-                title: 'Logout',
-                onTap: () {
-                  // TODO: Implement logout
-                },
-              ),
-            ],
+          _SettingsItem(
+            icon: Icons.privacy_tip,
+            title: 'Privacy',
+            onTap: () {
+              // TODO: Implement privacy settings
+            },
+          ),
+          _SettingsItem(
+            icon: Icons.help,
+            title: 'Help & Support',
+            onTap: () {
+              // TODO: Implement help & support
+            },
+          ),
+          _SettingsItem(
+            icon: Icons.info,
+            title: 'About',
+            onTap: () {
+              // TODO: Implement about page
+            },
+          ),
+          _SettingsItem(
+            icon: Icons.logout,
+            title: 'Logout',
+            onTap: () async {
+              final authRepository = GetIt.instance<AuthRepository>();
+              await authRepository.logout();
+              if (context.mounted) {
+                Navigator.pushReplacementNamed(context, '/login');
+              }
+            },
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildSection(
-    BuildContext context, {
-    required String title,
-    required List<Widget> items,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          child: Column(
-            children: items,
-          ),
-        ),
-      ],
     );
   }
 }

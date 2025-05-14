@@ -1,51 +1,60 @@
-import 'package:hushmate/data/models/received_like_model.dart';
+import 'package:hushmate/core/network/network_service.dart';
+import 'package:hushmate/core/utils/logger.dart';
 import 'package:hushmate/domain/entities/received_like.dart';
 import 'package:hushmate/domain/repositories/received_likes_repository.dart';
+import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
 
 class ReceivedLikesRepositoryImpl implements ReceivedLikesRepository {
+  final RecommendedProfilesRepository recommendedProfilesRepository;
+
+  ReceivedLikesRepositoryImpl({required this.recommendedProfilesRepository});
+
   @override
   Future<List<ReceivedLike>> getReceivedLikes() async {
-    // Mock data for now
-    await Future.delayed(const Duration(seconds: 1)); // Simulate network delay
-    
-    return [
-      ReceivedLikeModel(
-        id: '1',
-        name: 'Sarah',
-        age: 25,
-        gender: 'Female',
-        distance: 3,
-        bio: 'Love traveling and trying new cuisines. Looking for someone who shares my passion for adventure.',
-        interests: ['Travel', 'Food', 'Photography', 'Yoga'],
-        profilePicture: 'https://example.com/profile1.jpg',
-        likedAt: DateTime.now().subtract(const Duration(days: 2)),
-      ),
-      ReceivedLikeModel(
-        id: '2',
-        name: 'Michael',
-        age: 28,
-        gender: 'Male',
-        distance: 5,
-        bio: 'Tech enthusiast and coffee lover. Always up for a good conversation about the latest gadgets.',
-        interests: ['Technology', 'Coffee', 'Gaming', 'Music'],
-        profilePicture: 'https://example.com/profile2.jpg',
-        likedAt: DateTime.now().subtract(const Duration(days: 1)),
-      ),
-      // Add more mock likes as needed
-    ];
+    try {
+      // Get profiles that liked the current user
+      final profiles = await recommendedProfilesRepository.getProfilesThatLikedMe();
+      
+      // Convert profiles to received likes
+      final likes = profiles.map((profile) => ReceivedLike(
+        id: profile.id,
+        name: profile.name,
+        age: profile.age,
+        gender: profile.sex,
+        distance: (profile.distance ?? 0.0).toInt(),
+        bio: profile.bio,
+        interests: profile.interests,
+        profilePicture: profile.profilePic ?? '',
+        likedAt: DateTime.now(), // TODO: Get actual timestamp from API
+      )).toList();
+
+      AppLogger.info('Successfully fetched ${likes.length} received likes');
+      return likes;
+    } catch (e) {
+      AppLogger.error('Failed to fetch received likes: $e');
+      throw Exception('Failed to fetch received likes: $e');
+    }
   }
 
   @override
   Future<void> acceptLike(String likeId) async {
-    // Mock implementation for now
-    await Future.delayed(const Duration(milliseconds: 500));
-    // TODO: Implement actual API call
+    try {
+      await NetworkService.dio.post('/users/like/$likeId');
+      AppLogger.info('Successfully accepted like: $likeId');
+    } catch (e) {
+      AppLogger.error('Failed to accept like: $e');
+      throw Exception('Failed to accept like: $e');
+    }
   }
 
   @override
   Future<void> rejectLike(String likeId) async {
-    // Mock implementation for now
-    await Future.delayed(const Duration(milliseconds: 500));
-    // TODO: Implement actual API call
+    try {
+      await NetworkService.dio.post('/users/dislikes/$likeId');
+      AppLogger.info('Successfully rejected like: $likeId');
+    } catch (e) {
+      AppLogger.error('Failed to reject like: $e');
+      throw Exception('Failed to reject like: $e');
+    }
   }
 } 

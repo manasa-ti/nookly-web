@@ -76,16 +76,21 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             itemCount: state.profiles.length,
             itemBuilder: (context, index) {
               final profile = state.profiles[index];
+              print('Profile distance: ${profile.distance}');
               return ProfileCard(
                 profile: {
                   'id': profile.id,
                   'name': profile.name,
                   'age': profile.age,
-                  'gender': profile.gender,
+                  'sex': profile.sex,
                   'distance': profile.distance,
                   'bio': profile.bio,
                   'interests': profile.interests,
-                  'profilePicture': profile.profilePicture,
+                  'profilePicture': profile.profilePic,
+                  'hometown': profile.hometown,
+                  'objectives': profile.objectives,
+                  'commonInterests': profile.commonInterests,
+                  'commonObjectives': profile.commonObjectives,
                 },
                 onSwipeRight: () {
                   context.read<RecommendedProfilesBloc>().add(
@@ -105,11 +110,15 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                         'id': profile.id,
                         'name': profile.name,
                         'age': profile.age,
-                        'gender': profile.gender,
+                        'sex': profile.sex,
                         'distance': profile.distance,
                         'bio': profile.bio,
                         'interests': profile.interests,
-                        'profilePicture': profile.profilePicture,
+                        'profilePicture': profile.profilePic,
+                        'hometown': profile.hometown,
+                        'objectives': profile.objectives,
+                        'commonInterests': profile.commonInterests,
+                        'commonObjectives': profile.commonObjectives,
                       },
                     ),
                   );

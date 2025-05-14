@@ -31,17 +31,36 @@ class User extends Equatable {
     this.profilePic,
   });
 
-  bool get isProfileComplete => 
-    age != null && 
-    sex != null && 
-    seekingGender != null && 
-    location != null && 
-    preferredAgeRange != null && 
-    hometown != null && 
-    bio != null && 
-    interests != null && 
-    objectives != null && 
-    profilePic != null;
+  bool get isProfileComplete {
+    // Age check: complete if age is not null and not 0
+    final isAgeSet = age != null && age != 0;
+    
+    // Name check: complete if not null and not empty
+    final isNameSet = name.isNotEmpty; // name is non-nullable in constructor, so just check isNotEmpty
+
+    // Bio check: complete if not null and not empty
+    final isBioSet = bio != null && bio!.isNotEmpty;
+
+    // Hometown check: complete if not null and not empty
+    final isHometownSet = hometown != null && hometown!.isNotEmpty;
+
+    // Profile Pic check: complete if not null and not empty
+    final isProfilePicSet = profilePic != null && profilePic!.isNotEmpty;
+
+    // Interests check: complete if not null and not empty list
+    final isInterestsSet = interests != null && interests!.isNotEmpty;
+
+    // Objectives check: complete if not null and not empty list
+    final isObjectivesSet = objectives != null && objectives!.isNotEmpty;
+
+    return isAgeSet &&
+        isNameSet &&
+        isBioSet &&
+        isHometownSet &&
+        isProfilePicSet &&
+        isInterestsSet &&
+        isObjectivesSet;
+  }
 
   factory User.fromJson(Map<String, dynamic> json) {
     // Temporary handling until API includes name field
@@ -49,7 +68,7 @@ class User extends Equatable {
     if (json['name'] != null) {
       name = json['name'] as String;
     } else {
-      // TODO: Remove this temporary solution once API includes name field
+      
       name = 'User ${json['_id'].toString().substring(0, 6)}';
     }
     
@@ -65,8 +84,8 @@ class User extends Equatable {
         'longitude': (json['location']['coordinates'][1] as num?)?.toDouble() ?? 0.0,
       } : null,
       preferredAgeRange: json['preferred_age_range'] != null ? {
-        'lower_limit': json['preferred_age_range']['min'] as int? ?? 18,
-        'upper_limit': json['preferred_age_range']['max'] as int? ?? 99,
+        'lower_limit': json['preferred_age_range']['lower_limit'] as int? ?? 18,
+        'upper_limit': json['preferred_age_range']['upper_limit'] as int? ?? 80,
       } : null,
       hometown: json['hometown'] as String?,
       bio: json['bio'] as String?,
@@ -80,6 +99,7 @@ class User extends Equatable {
     return {
       '_id': id,
       'email': email,
+      'name': name,
       'age': age,
       'sex': sex,
       'seeking_gender': seekingGender,

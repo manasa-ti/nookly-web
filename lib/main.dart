@@ -10,6 +10,9 @@ import 'package:hushmate/presentation/bloc/purchased_features/purchased_features
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 import 'package:hushmate/presentation/pages/splash/splash_screen.dart';
 import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:hushmate/presentation/pages/home/home_page.dart';
+import 'package:hushmate/presentation/pages/auth/login_page.dart';
+import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +59,11 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
         ),
         home: const SplashScreen(),
+        routes: {
+          '/home': (context) => const HomePage(),
+          '/login': (context) => const LoginPage(),
+          '/signup': (context) => const SignUpPage(),
+        },
       ),
     );
   }

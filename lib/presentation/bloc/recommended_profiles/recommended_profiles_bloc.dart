@@ -5,7 +5,17 @@ import 'package:hushmate/domain/repositories/recommended_profiles_repository.dar
 // Events
 abstract class RecommendedProfilesEvent {}
 
-class LoadRecommendedProfiles extends RecommendedProfilesEvent {}
+class LoadRecommendedProfiles extends RecommendedProfilesEvent {
+  final double? radius;
+  final int? limit;
+  final int? skip;
+
+  LoadRecommendedProfiles({
+    this.radius,
+    this.limit,
+    this.skip,
+  });
+}
 
 class LikeProfile extends RecommendedProfilesEvent {
   final String profileId;
@@ -26,7 +36,8 @@ class RecommendedProfilesLoading extends RecommendedProfilesState {}
 
 class RecommendedProfilesLoaded extends RecommendedProfilesState {
   final List<RecommendedProfile> profiles;
-  RecommendedProfilesLoaded(this.profiles);
+  final bool hasMore;
+  RecommendedProfilesLoaded(this.profiles, {this.hasMore = true});
 }
 
 class RecommendedProfilesError extends RecommendedProfilesState {
@@ -37,6 +48,8 @@ class RecommendedProfilesError extends RecommendedProfilesState {
 // Bloc
 class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, RecommendedProfilesState> {
   final RecommendedProfilesRepository repository;
+  int _currentSkip = 0;
+  static const int _defaultLimit = 20;
 
   RecommendedProfilesBloc({required this.repository}) : super(RecommendedProfilesInitial()) {
     on<LoadRecommendedProfiles>(_onLoadRecommendedProfiles);
@@ -48,10 +61,20 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     LoadRecommendedProfiles event,
     Emitter<RecommendedProfilesState> emit,
   ) async {
-    emit(RecommendedProfilesLoading());
     try {
-      final profiles = await repository.getRecommendedProfiles();
-      emit(RecommendedProfilesLoaded(profiles));
+      emit(RecommendedProfilesLoading());
+      
+      final skip = event.skip ?? _currentSkip;
+      final profiles = await repository.getRecommendedProfiles(
+        radius: event.radius,
+        limit: event.limit ?? _defaultLimit,
+        skip: skip,
+      );
+
+      _currentSkip = skip + (event.limit ?? _defaultLimit);
+      final hasMore = profiles.length == (event.limit ?? _defaultLimit);
+      
+      emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
     } catch (e) {
       emit(RecommendedProfilesError(e.toString()));
     }
@@ -63,8 +86,8 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
   ) async {
     try {
       await repository.likeProfile(event.profileId);
-      // Optionally refresh the profiles list after liking
-      add(LoadRecommendedProfiles());
+      // Refresh the profiles list after liking
+      add(LoadRecommendedProfiles(skip: 0)); // Reset pagination
     } catch (e) {
       emit(RecommendedProfilesError(e.toString()));
     }
@@ -76,10 +99,14 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
   ) async {
     try {
       await repository.dislikeProfile(event.profileId);
-      // Optionally refresh the profiles list after disliking
-      add(LoadRecommendedProfiles());
+      // Refresh the profiles list after disliking
+      add(LoadRecommendedProfiles(skip: 0)); // Reset pagination
     } catch (e) {
       emit(RecommendedProfilesError(e.toString()));
     }
+  }
+
+  void resetPagination() {
+    _currentSkip = 0;
   }
 } 

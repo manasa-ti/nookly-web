@@ -37,7 +37,7 @@ Future<void> init() async {
   );
   
   sl.registerLazySingleton<ReceivedLikesRepository>(
-    () => ReceivedLikesRepositoryImpl(),
+    () => ReceivedLikesRepositoryImpl(recommendedProfilesRepository: sl()),
   );
   
   sl.registerLazySingleton<ChatRepository>(

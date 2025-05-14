@@ -179,7 +179,7 @@ class AuthRepositoryImpl implements AuthRepository {
         throw Exception('Invalid user data: Interests is missing');
       }
       
-      AppLogger.info('Successfully fetched user profile');
+      AppLogger.info('Successfully fetched user profile $userData.toString()');
       return User.fromJson(userData);
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
@@ -243,6 +243,22 @@ class AuthRepositoryImpl implements AuthRepository {
         'Failed to fetch predefined interests: ${e.message}',
       );
       throw Exception('Failed to fetch predefined interests: ${e.message}');
+    }
+  }
+
+  @override
+  Future<List<String>> getPredefinedObjectives() async {
+    try {
+      final response = await NetworkService.dio.get('/users/objectives');
+      final data = response.data as Map<String, dynamic>;
+      final objectives = List<String>.from(data['objectives'] as List);
+      AppLogger.info('Successfully fetched ${objectives.length} predefined objectives');
+      return objectives;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to fetch predefined objectives: ${e.message}',
+      );
+      throw Exception('Failed to fetch predefined objectives: ${e.message}');
     }
   }
 

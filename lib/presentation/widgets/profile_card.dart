@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:developer' as developer;
 
 class ProfileCard extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -116,13 +118,27 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                           shape: BoxShape.circle,
                           color: Colors.pink[100],
                         ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.hexagon_outlined,
-                            color: Colors.white,
-                            size: 24.0,
-                          ),
-                        ),
+                        child: widget.profile['profilePicture'] != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(26),
+                                child: SvgPicture.network(
+                                  widget.profile['profilePicture'],
+                                  fit: BoxFit.cover,
+                                  placeholderBuilder: (context) => const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : const Center(
+                                child: Icon(
+                                  Icons.person,
+                                  color: Colors.white,
+                                  size: 24.0,
+                                ),
+                              ),
                       ),
                       const SizedBox(width: 12),
                       // Name, Age and Location
@@ -131,7 +147,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${widget.profile['age']}, ${widget.profile['gender']}',
+                              '${widget.profile['name']}, ${widget.profile['age']}',
                               style: const TextStyle(
                                 fontSize: 18.0,
                                 fontWeight: FontWeight.w600,
@@ -148,7 +164,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                 const SizedBox(width: 2),
                                 Flexible(
                                   child: Text(
-                                    '${widget.profile['distance']} miles away',
+                                    '${(widget.profile['distance'] ?? 0.0).toStringAsFixed(1)} km away',
                                     style: TextStyle(
                                       color: Colors.grey[600],
                                       fontSize: 13.0,

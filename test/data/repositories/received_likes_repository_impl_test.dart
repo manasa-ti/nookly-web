@@ -1,12 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hushmate/data/repositories/received_likes_repository_impl.dart';
 import 'package:hushmate/domain/entities/received_like.dart';
+import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
+import 'package:mockito/mockito.dart';
+import 'package:mockito/annotations.dart';
+
+@GenerateMocks([RecommendedProfilesRepository])
+import 'received_likes_repository_impl_test.mocks.dart';
 
 void main() {
   late ReceivedLikesRepositoryImpl repository;
+  late MockRecommendedProfilesRepository mockRecommendedProfilesRepository;
 
   setUp(() {
-    repository = ReceivedLikesRepositoryImpl();
+    mockRecommendedProfilesRepository = MockRecommendedProfilesRepository();
+    repository = ReceivedLikesRepositoryImpl(
+      recommendedProfilesRepository: mockRecommendedProfilesRepository,
+    );
   });
 
   group('ReceivedLikesRepositoryImpl', () {

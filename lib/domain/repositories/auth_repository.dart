@@ -18,4 +18,5 @@ abstract class AuthRepository {
   Future<bool> isLoggedIn();
   Future<String?> getToken();
   Future<List<String>> getPredefinedInterests();
+  Future<List<String>> getPredefinedObjectives();
 } 
