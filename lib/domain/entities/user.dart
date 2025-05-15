@@ -3,7 +3,7 @@ import 'package:equatable/equatable.dart';
 class User extends Equatable {
   final String id;
   final String email;
-  final String name;
+  final String? name;
   final int? age;
   final String? sex;
   final String? seekingGender;
@@ -18,7 +18,7 @@ class User extends Equatable {
   const User({
     required this.id,
     required this.email,
-    required this.name,
+    this.name,
     this.age,
     this.sex,
     this.seekingGender,
@@ -36,7 +36,7 @@ class User extends Equatable {
     final isAgeSet = age != null && age != 0;
     
     // Name check: complete if not null and not empty
-    final isNameSet = name.isNotEmpty; // name is non-nullable in constructor, so just check isNotEmpty
+    final isNameSet = name != null && name!.isNotEmpty; // name is non-nullable in constructor, so just check isNotEmpty
 
     // Bio check: complete if not null and not empty
     final isBioSet = bio != null && bio!.isNotEmpty;

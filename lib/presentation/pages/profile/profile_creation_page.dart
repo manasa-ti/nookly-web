@@ -142,7 +142,6 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       final user = User(
         id: '', // This will be set by the backend
         email: '', // This will be set by the backend
-        name: _hometownController.text,
         age: DateTime.now().difference(_selectedDate!).inDays ~/ 365,
         sex: _selectedSex == 'Male' ? 'm' : _selectedSex == 'Female' ? 'f' : 'other',
         seekingGender: _selectedWishToFind == 'Male' ? 'm' : _selectedWishToFind == 'Female' ? 'f' : 'any',

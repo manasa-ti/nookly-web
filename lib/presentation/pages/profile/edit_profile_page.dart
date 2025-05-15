@@ -116,7 +116,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
       
       // Initialize form with current user data
-      _nameController.text = _currentUser.name;
+      _nameController.text = _currentUser.name ?? '';
       _bioController.text = _currentUser.bio ?? '';
       _selectedInterests = _currentUser.interests ?? [];
       _selectedObjectives = _currentUser.objectives ?? [];
