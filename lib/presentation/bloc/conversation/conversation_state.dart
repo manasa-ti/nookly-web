@@ -1,6 +1,4 @@
-import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/message.dart';
+part of 'conversation_bloc.dart';
 
 abstract class ConversationState extends Equatable {
   const ConversationState();
@@ -16,32 +14,36 @@ class ConversationLoading extends ConversationState {}
 class ConversationLoaded extends ConversationState {
   final Conversation conversation;
   final List<Message> messages;
+  final bool hasMoreMessages;
   final bool isCallActive;
   final bool isAudioCall;
 
   const ConversationLoaded({
     required this.conversation,
     required this.messages,
+    this.hasMoreMessages = false,
     this.isCallActive = false,
     this.isAudioCall = false,
   });
 
+  @override
+  List<Object?> get props => [conversation, messages, hasMoreMessages, isCallActive, isAudioCall];
+
   ConversationLoaded copyWith({
     Conversation? conversation,
     List<Message>? messages,
+    bool? hasMoreMessages,
     bool? isCallActive,
     bool? isAudioCall,
   }) {
     return ConversationLoaded(
       conversation: conversation ?? this.conversation,
       messages: messages ?? this.messages,
+      hasMoreMessages: hasMoreMessages ?? this.hasMoreMessages,
       isCallActive: isCallActive ?? this.isCallActive,
       isAudioCall: isAudioCall ?? this.isAudioCall,
     );
   }
-
-  @override
-  List<Object?> get props => [conversation, messages, isCallActive, isAudioCall];
 }
 
 class ConversationLeft extends ConversationState {}

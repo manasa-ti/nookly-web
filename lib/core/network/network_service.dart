@@ -6,17 +6,26 @@ import 'dart:io' show Platform;
 class NetworkService {
   static Dio? _dio;
   static SharedPreferences? _prefs;
+  static String? _customBaseUrl;
 
-  static String get _baseUrl {
+  static String get baseUrl {
+    if (_customBaseUrl != null) {
+      return _customBaseUrl!;
+    }
     if (Platform.isAndroid) {
       return 'http://10.0.2.2:3000/api'; // Android emulator
     }
     return 'http://localhost:3000/api'; // iOS simulator and others
   }
 
+  static void setBaseUrl(String url) {
+    _customBaseUrl = url;
+    _dio = null; // Force recreation of Dio instance with new baseUrl
+  }
+
   static Dio get dio {
     _dio ??= Dio(BaseOptions(
-      baseUrl: _baseUrl,
+      baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 5),
       receiveTimeout: const Duration(seconds: 3),
       headers: {
@@ -35,18 +44,40 @@ class NetworkService {
       ))
       ..interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) async {
-          // Get token from SharedPreferences
-          _prefs ??= await SharedPreferences.getInstance();
-          final token = _prefs?.getString('token');
-          if (token != null) {
-            options.headers['Authorization'] = 'Bearer $token';
+          try {
+            // Get token from SharedPreferences
+            _prefs ??= await SharedPreferences.getInstance();
+            final token = _prefs?.getString('token');
+            if (token != null) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+            return handler.next(options);
+          } catch (e) {
+            return handler.reject(
+              DioException(
+                requestOptions: options,
+                error: 'Failed to process request: $e',
+              ),
+            );
           }
-          return handler.next(options);
         },
         onResponse: (response, handler) {
           return handler.next(response);
         },
         onError: (DioException e, handler) {
+          if (e.type == DioExceptionType.connectionTimeout ||
+              e.type == DioExceptionType.receiveTimeout) {
+            return handler.reject(
+              DioException(
+                requestOptions: e.requestOptions,
+                error: 'Connection timed out. Please check your internet connection and try again.',
+              ),
+            );
+          }
+          if (e.response?.statusCode == 401) {
+            // Clear token on authentication error
+            clearAuthToken();
+          }
           return handler.next(e);
         },
       ));
@@ -60,5 +91,6 @@ class NetworkService {
 
   static void clearAuthToken() {
     _dio?.options.headers.remove('Authorization');
+    _prefs?.remove('token');
   }
 } 

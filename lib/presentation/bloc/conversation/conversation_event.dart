@@ -1,4 +1,4 @@
-import 'package:equatable/equatable.dart';
+part of 'conversation_bloc.dart';
 
 abstract class ConversationEvent extends Equatable {
   const ConversationEvent();
@@ -23,6 +23,8 @@ class LoadConversation extends ConversationEvent {
   @override
   List<Object?> get props => [participantId, participantName, participantAvatar, isOnline];
 }
+
+class LoadMoreMessages extends ConversationEvent {}
 
 class SendTextMessage extends ConversationEvent {
   final String conversationId;
@@ -155,4 +157,88 @@ class EndCall extends ConversationEvent {
 
   @override
   List<Object?> get props => [conversationId];
+}
+
+class MessageReceived extends ConversationEvent {
+  final Message message;
+  const MessageReceived(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+class MessageDelivered extends ConversationEvent {
+  final String messageId;
+  final DateTime deliveredAt;
+  const MessageDelivered(this.messageId, this.deliveredAt);
+  @override
+  List<Object?> get props => [messageId, deliveredAt];
+}
+
+class MessageRead extends ConversationEvent {
+  final String messageId;
+  final DateTime readAt;
+  const MessageRead(this.messageId, this.readAt);
+  @override
+  List<Object?> get props => [messageId, readAt];
+}
+
+class Typing extends ConversationEvent {
+  final String fromUserId;
+  const Typing(this.fromUserId);
+  @override
+  List<Object?> get props => [fromUserId];
+}
+
+class StopTyping extends ConversationEvent {
+  final String fromUserId;
+  const StopTyping(this.fromUserId);
+  @override
+  List<Object?> get props => [fromUserId];
+}
+
+class MessageEdited extends ConversationEvent {
+  final String messageId;
+  final String newContent;
+  final DateTime editedAt;
+  const MessageEdited(this.messageId, this.newContent, this.editedAt);
+  @override
+  List<Object?> get props => [messageId, newContent, editedAt];
+}
+
+class MessageDeleted extends ConversationEvent {
+  final String messageId;
+  const MessageDeleted(this.messageId);
+  @override
+  List<Object?> get props => [messageId];
+}
+
+class MessageSent extends ConversationEvent {
+  final Message message;
+  const MessageSent(this.message);
+  @override
+  List<Object?> get props => [message];
+}
+
+class ConversationUpdated extends ConversationEvent {
+  final String conversationId;
+  final Message? lastMessage;
+  final DateTime updatedAt;
+  final bool? isTyping;
+
+  ConversationUpdated({
+    required this.conversationId,
+    this.lastMessage,
+    required this.updatedAt,
+    this.isTyping,
+  });
+
+  @override
+  List<Object?> get props => [conversationId, lastMessage, updatedAt, isTyping];
+}
+
+class UpdateCurrentUserId extends ConversationEvent {
+  final String userId;
+  const UpdateCurrentUserId(this.userId);
+  @override
+  List<Object?> get props => [userId];
 } 

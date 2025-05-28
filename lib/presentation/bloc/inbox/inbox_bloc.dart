@@ -4,6 +4,7 @@ import 'package:hushmate/domain/entities/conversation.dart';
 import 'package:hushmate/domain/repositories/conversation_repository.dart';
 import 'package:hushmate/domain/entities/matched_profile.dart'; 
 import 'package:hushmate/domain/repositories/matches_repository.dart';
+import 'package:hushmate/core/utils/logger.dart';
 
 part 'inbox_event.dart';
 part 'inbox_state.dart';
@@ -28,6 +29,7 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
        _currentUserId = currentUserId,
        super(InboxInitial()) {
     on<LoadInbox>(_onLoadInbox);
+    on<MarkConversationAsRead>(_onMarkConversationAsRead);
   }
 
   Future<void> _onLoadInbox(LoadInbox event, Emitter<InboxState> emit) async {
@@ -38,41 +40,88 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
 
       final results = await Future.wait([conversationsFuture, matchesFuture]);
 
-      final List<Conversation> existingConversations = results[0] as List<Conversation>; // Conversations with current user
-      final List<MatchedProfile> matchedProfiles = results[1] as List<MatchedProfile>; // Matched users
+      final List<Conversation> existingConversations = results[0] as List<Conversation>;
+      final List<MatchedProfile> matchedProfiles = results[1] as List<MatchedProfile>;
+
+      // Store current state before merging
+      final Map<String, Conversation> currentConversations = {};
+      if (state is InboxLoaded) {
+        final currentState = state as InboxLoaded;
+        for (var conversation in currentState.conversations) {
+          currentConversations[conversation.id] = conversation;
+        }
+      }
 
       final List<Conversation> mergedConversations = List.from(existingConversations);
-      // Create a set of participant IDs from existing conversations for quick lookup.
-      // This assumes Conversation.participantId is the ID of the *other* user.
       final Set<String> existingParticipantIds = existingConversations.map((c) => c.participantId).toSet();
 
       for (var match in matchedProfiles) {
-        // If the matched user is not already part of an existing conversation,
-        // create a new conversation entry for them.
         if (!existingParticipantIds.contains(match.id)) {
+          final currentConversation = currentConversations[match.id];
           final newConversation = Conversation(
-            // Conversation ID is the other participant's ID, same as participantId
-            id: match.id, 
-            participantId: match.id, 
-            participantName: match.name, 
+            id: match.id,
+            participantId: match.id,
+            participantName: match.name,
             participantAvatar: match.profilePicUrl,
-            messages: [], // No messages initially
-            lastMessageTime: DateTime.fromMillisecondsSinceEpoch(0), // Default timestamp
-            isOnline: false, // Assume offline until presence system updates this
-            unreadCount: 0, 
-            userId: _currentUserId, // Use the passed-in current user ID
-            // isMuted, isBlocked will use default values from Conversation constructor
+            messages: currentConversation?.messages ?? [],
+            lastMessage: currentConversation?.lastMessage,
+            lastMessageTime: currentConversation?.lastMessageTime ?? DateTime.fromMillisecondsSinceEpoch(0),
+            isOnline: false,
+            unreadCount: currentConversation?.unreadCount ?? 0,
+            userId: _currentUserId,
+            updatedAt: currentConversation?.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
           );
           mergedConversations.add(newConversation);
         }
       }
       
+      // Preserve current state for existing conversations
+      for (var i = 0; i < mergedConversations.length; i++) {
+        final conversation = mergedConversations[i];
+        final currentConversation = currentConversations[conversation.id];
+        if (currentConversation != null) {
+          mergedConversations[i] = conversation.copyWith(
+            unreadCount: currentConversation.unreadCount,
+            lastMessage: currentConversation.lastMessage,
+            lastMessageTime: currentConversation.lastMessageTime,
+            messages: currentConversation.messages,
+            updatedAt: currentConversation.updatedAt,
+          );
+        }
+      }
+      
       mergedConversations.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
+
+      // Log conversation details
+      for (var conversation in mergedConversations) {
+        AppLogger.info('🔵 Conversation ${conversation.participantName}:');
+        AppLogger.info('  - Unread count: ${conversation.unreadCount}');
+        AppLogger.info('  - Last message: ${conversation.lastMessage?.content}');
+        AppLogger.info('  - Last message time: ${conversation.lastMessageTime}');
+      }
 
       emit(InboxLoaded(mergedConversations));
 
     } catch (e) {
       emit(InboxError('Failed to load inbox: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onMarkConversationAsRead(
+    MarkConversationAsRead event,
+    Emitter<InboxState> emit,
+  ) async {
+    if (state is InboxLoaded) {
+      final currentState = state as InboxLoaded;
+      final updatedConversations = currentState.conversations.map((conversation) {
+        if (conversation.id == event.conversationId) {
+          AppLogger.info('🔵 Marking conversation ${conversation.participantName} as read. Previous unread count: ${conversation.unreadCount}');
+          return conversation.copyWith(unreadCount: 0);
+        }
+        return conversation;
+      }).toList();
+      
+      emit(InboxLoaded(updatedConversations));
     }
   }
 

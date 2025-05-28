@@ -7,3 +7,12 @@ abstract class InboxEvent {
 }
 
 class LoadInbox extends InboxEvent {} 
+
+class MarkConversationAsRead extends InboxEvent {
+  final String conversationId;
+  
+  const MarkConversationAsRead(this.conversationId);
+  
+  @override
+  List<Object> get props => [conversationId];
+} 

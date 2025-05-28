@@ -15,21 +15,24 @@ class ChatRepositoryImpl implements ChatRepository {
       messages: [
         Message(
           id: 'm1',
-          senderId: 'user1',
+          sender: 'user1',
+          receiver: 'currentUser',
           content: 'Hey, how are you doing?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
           type: MessageType.text,
         ),
         Message(
           id: 'm2',
-          senderId: 'currentUser',
+          sender: 'currentUser',
+          receiver: 'user1',
           content: 'I\'m good! How about you?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
           type: MessageType.text,
         ),
         Message(
           id: 'm3',
-          senderId: 'user1',
+          sender: 'user1',
+          receiver: 'currentUser',
           content: 'Great! Would you like to grab coffee sometime?',
           timestamp: DateTime.now().subtract(const Duration(minutes: 20)),
           type: MessageType.text,
@@ -39,6 +42,7 @@ class ChatRepositoryImpl implements ChatRepository {
       isOnline: true,
       unreadCount: 1,
       userId: 'currentUser',
+      updatedAt: DateTime.now().subtract(const Duration(minutes: 20)),
     ),
     '2': Conversation(
       id: '2',
@@ -48,7 +52,8 @@ class ChatRepositoryImpl implements ChatRepository {
       messages: [
         Message(
           id: 'm4',
-          senderId: 'user2',
+          sender: 'user2',
+          receiver: 'currentUser',
           content: 'I saw you like photography too! What kind of camera do you use?',
           timestamp: DateTime.now().subtract(const Duration(hours: 2)),
           type: MessageType.text,
@@ -58,6 +63,7 @@ class ChatRepositoryImpl implements ChatRepository {
       isOnline: false,
       unreadCount: 0,
       userId: 'currentUser',
+      updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
     ),
   };
 
@@ -142,7 +148,8 @@ class ChatRepositoryImpl implements ChatRepository {
 
     final newMessage = Message(
       id: 'm${DateTime.now().millisecondsSinceEpoch}',
-      senderId: 'currentUser',
+      sender: 'currentUser',
+      receiver: conversationId,
       content: content,
       timestamp: DateTime.now(),
       type: MessageType.text,

@@ -23,6 +23,7 @@ import 'package:hushmate/presentation/bloc/purchased_features/purchased_features
 import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
 import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
+import 'package:hushmate/core/network/socket_service.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -60,6 +61,8 @@ Future<void> init() async {
     () => PurchasedFeaturesRepositoryImpl(),
   );
   
+  sl.registerLazySingleton<SocketService>(() => SocketService());
+  
   // Blocs
   sl.registerFactory(
     () => AuthBloc(authRepository: sl()),
@@ -78,7 +81,11 @@ Future<void> init() async {
   );
   
   sl.registerFactory(
-    () => ConversationBloc(repository: sl()),
+    () => ConversationBloc(
+      conversationRepository: sl(),
+      socketService: sl(),
+      currentUserId: '', // Will be updated after initialization
+    ),
   );
 
   sl.registerFactoryParam<InboxBloc, String, void>(

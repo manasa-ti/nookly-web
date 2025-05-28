@@ -1,0 +1,229 @@
+import 'dart:io';
+
+import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:flutter/foundation.dart';
+import 'package:hushmate/core/utils/logger.dart';
+
+class SocketService {
+  static final SocketService _instance = SocketService._internal();
+  factory SocketService() => _instance;
+  SocketService._internal();
+
+  IO.Socket? _socket;
+  String? _userId;
+  String? _token;
+
+  bool get isConnected => _socket?.connected ?? false;
+
+    static String get socketUrl {
+    if (Platform.isAndroid) {
+      return 'http://10.0.2.2:3000'; // Android emulator
+    }
+    return 'http://localhost:3000'; // iOS simulator and others
+  }
+
+  void connect({required String serverUrl, required String token, required String userId}) {
+    AppLogger.info('🔵 SocketService: Starting connection process');
+    AppLogger.info('🔵 Server URL: $serverUrl');
+    AppLogger.info('🔵 User ID: $userId');
+    AppLogger.info('🔵 Token available: ${token.isNotEmpty}');
+    
+    if (_socket != null && _socket!.connected) {
+      AppLogger.info('Socket already connected, skipping connection');
+      return;
+    }
+
+    AppLogger.info('Initializing socket connection to $serverUrl');
+    _userId = userId;
+    _token = token;
+    
+    try {
+      _socket = IO.io(
+        serverUrl,
+        IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .setAuth({'token': token, 'userId': userId})
+          .disableAutoConnect()
+          .build(),
+      );
+      AppLogger.info('✅ Socket instance created successfully');
+    } catch (e) {
+      AppLogger.error('❌ Failed to create socket instance: $e');
+      return;
+    }
+
+    _setupSocketListeners();
+    AppLogger.info('Attempting to connect socket...');
+    _socket!.connect();
+  }
+
+  void joinPrivateChat(String otherUserId) {
+    AppLogger.info('🔵 Attempting to join private chat room with user: $otherUserId');
+    AppLogger.info('🔵 Current user ID: $_userId');
+    AppLogger.info('🔵 Socket connected: ${_socket?.connected}');
+    
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot join private chat: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('Cannot join private chat: Current user ID is null');
+      return;
+    }
+    
+    AppLogger.info('Joining private chat room with other user: $otherUserId');
+    _socket!.emit('join_private_chat', {'otherUserId': otherUserId});
+  }
+
+  void leavePrivateChat(String otherUserId) {
+    AppLogger.info('🔵 Leaving private chat room with user: $otherUserId');
+    
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot leave private chat: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('Cannot leave private chat: Current user ID is null');
+      return;
+    }
+    
+    AppLogger.info('Leaving private chat room with other user: $otherUserId');
+    _socket!.emit('leave_private_chat', {'otherUserId': otherUserId});
+  }
+
+  void sendMessage(Map<String, dynamic> message) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot send message: Socket not connected');
+      return;
+    }
+    
+    if (!message.containsKey('to')) {
+      AppLogger.error('Cannot send message: Recipient ID (to) is required');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('Cannot send message: Current user ID is null');
+      return;
+    }
+    
+    // Ensure the message has the correct format
+    final messageData = {
+      ...message,
+      'from': _userId,
+      'timestamp': DateTime.now().toIso8601String(),
+    };
+    
+    AppLogger.info('Sending private message: ${messageData.toString()}');
+    _socket!.emit('private_message', messageData);
+  }
+
+  void _setupSocketListeners() {
+    if (_socket == null) {
+      AppLogger.error('Cannot setup listeners: Socket is null');
+      return;
+    }
+
+    AppLogger.info('🔵 Setting up socket listeners');
+
+    _socket!.onConnect((_) {
+      AppLogger.info('✅ Socket connected successfully');
+      AppLogger.info('🔵 Emitting join event with userId: $_userId');
+      _socket!.emit('join', {'userId': _userId});
+    });
+
+    _socket!.on('roomJoined', (data) {
+      AppLogger.info('✅ Joined room: $data');
+    });
+
+    _socket!.on('private_chat_joined', (data) {
+      AppLogger.info('✅ Joined private chat room: $data');
+    });
+
+    _socket!.on('private_chat_left', (data) {
+      AppLogger.info('✅ Left private chat room: $data');
+    });
+
+    _socket!.on('conversation_updated', (data) {
+      AppLogger.info('✅ Conversation updated: $data');
+      // This event will be handled by the conversation list
+    });
+
+    _socket!.onDisconnect((_) {
+      AppLogger.warning('⚠️ Socket disconnected');
+    });
+
+    _socket!.on('error', (data) {
+      AppLogger.error('❌ Socket error: $data');
+    });
+
+    _socket!.on('connect_error', (data) {
+      AppLogger.error('❌ Socket connection error: $data');
+    });
+
+    _socket!.on('connect_timeout', (data) {
+      AppLogger.error('❌ Socket connection timeout: $data');
+    });
+
+    _socket!.on('reconnect', (data) {
+      AppLogger.info('✅ Socket reconnected: $data');
+    });
+
+    _socket!.on('reconnect_attempt', (data) {
+      AppLogger.info('🔵 Socket reconnection attempt: $data');
+    });
+
+    _socket!.on('reconnect_error', (data) {
+      AppLogger.error('❌ Socket reconnection error: $data');
+    });
+
+    _socket!.on('reconnect_failed', (data) {
+      AppLogger.error('❌ Socket reconnection failed: $data');
+    });
+    
+    AppLogger.info('✅ Socket listeners setup complete');
+  }
+
+  void disconnect() {
+    if (_socket != null) {
+      AppLogger.info('Disconnecting socket...');
+      _socket!.disconnect();
+      _socket = null;
+      AppLogger.info('Socket disconnected and cleaned up');
+    }
+  }
+
+  void emit(String event, dynamic data) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot emit $event: Socket not connected');
+      return;
+    }
+    AppLogger.info('Emitting event $event with data: ${data.toString()}');
+    _socket!.emit(event, data);
+  }
+
+  void on(String event, Function(dynamic) handler) {
+    if (_socket == null) {
+      AppLogger.error('Cannot add listener for $event: Socket not initialized');
+      return;
+    }
+    AppLogger.info('Adding listener for event: $event');
+    _socket!.on(event, (data) {
+      AppLogger.info('Received event $event: ${data.toString()}');
+      handler(data);
+    });
+  }
+
+  void off(String event) {
+    if (_socket == null) {
+      AppLogger.error('Cannot remove listener for $event: Socket not initialized');
+      return;
+    }
+    AppLogger.info('Removing listener for event: $event');
+    _socket!.off(event);
+  }
+
+  bool get isSocketConnected => _socket?.connected ?? false;
+} 

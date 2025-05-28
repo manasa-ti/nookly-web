@@ -36,7 +36,7 @@ class User extends Equatable {
     final isAgeSet = age != null && age != 0;
     
     // Name check: complete if not null and not empty
-    final isNameSet = name != null && name!.isNotEmpty; // name is non-nullable in constructor, so just check isNotEmpty
+    final isNameSet = name != null && name!.isNotEmpty;
 
     // Bio check: complete if not null and not empty
     final isBioSet = bio != null && bio!.isNotEmpty;
@@ -63,35 +63,26 @@ class User extends Equatable {
   }
 
   factory User.fromJson(Map<String, dynamic> json) {
-    // Temporary handling until API includes name field
-    String name;
-    if (json['name'] != null) {
-      name = json['name'] as String;
-    } else {
-      
-      name = 'User ${json['_id'].toString().substring(0, 6)}';
-    }
-    
     return User(
       id: json['_id'] as String,
       email: json['email'] as String,
-      name: name,
+      name: json['name'] as String?,
       age: json['age'] as int?,
       sex: json['sex'] as String?,
-      seekingGender: json['seeking_gender'] as String?,
+      seekingGender: json['seekingGender'] as String?,
       location: json['location'] != null ? {
         'latitude': (json['location']['coordinates'][0] as num?)?.toDouble() ?? 0.0,
         'longitude': (json['location']['coordinates'][1] as num?)?.toDouble() ?? 0.0,
       } : null,
-      preferredAgeRange: json['preferred_age_range'] != null ? {
-        'lower_limit': json['preferred_age_range']['lower_limit'] as int? ?? 18,
-        'upper_limit': json['preferred_age_range']['upper_limit'] as int? ?? 80,
+      preferredAgeRange: json['preferredAgeRange'] != null ? {
+        'lower_limit': json['preferredAgeRange']['lower_limit'] as int? ?? 18,
+        'upper_limit': json['preferredAgeRange']['upper_limit'] as int? ?? 80,
       } : null,
       hometown: json['hometown'] as String?,
       bio: json['bio'] as String?,
       interests: (json['interests'] as List<dynamic>?)?.cast<String>(),
       objectives: (json['objectives'] as List<dynamic>?)?.cast<String>(),
-      profilePic: json['profile_pic'] as String?,
+      profilePic: json['profilePic'] as String?,
     );
   }
 

@@ -6,44 +6,74 @@ class MessageBubble extends StatelessWidget {
   final Message message;
   final bool isMe;
   final VoidCallback? onTap;
+  final bool showAvatar;
+  final String? avatarUrl;
+  final Widget? statusWidget;
 
   const MessageBubble({
     Key? key,
     required this.message,
     required this.isMe,
     this.onTap,
+    this.showAvatar = false,
+    this.avatarUrl,
+    this.statusWidget,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Align(
-        alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isMe ? Theme.of(context).primaryColor : Colors.grey[300],
-            borderRadius: BorderRadius.circular(16),
-          ),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.7,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildMessageContent(context),
-              const SizedBox(height: 4),
-              Text(
-                _formatTime(message.timestamp),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isMe ? Colors.white70 : Colors.black54,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (showAvatar && !isMe) ...[
+              CircleAvatar(
+                radius: 16,
+                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
+                child: avatarUrl == null ? const Icon(Icons.person, size: 16) : null,
+              ),
+              const SizedBox(width: 8),
+            ],
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isMe ? Theme.of(context).primaryColor : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildMessageContent(context),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          _formatTime(message.timestamp),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: isMe ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                        if (isMe) ...[
+                          const SizedBox(width: 4),
+                          statusWidget ?? _buildStatusIcon(message.status),
+                        ],
+                      ],
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -156,5 +186,17 @@ class MessageBubble extends StatelessWidget {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  Widget _buildStatusIcon(String status) {
+    switch (status) {
+      case 'read':
+        return Icon(Icons.done_all, size: 18, color: Colors.blueAccent);
+      case 'delivered':
+        return Icon(Icons.done_all, size: 18, color: Colors.grey);
+      case 'sent':
+      default:
+        return Icon(Icons.check, size: 18, color: Colors.grey);
+    }
   }
 } 

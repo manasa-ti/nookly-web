@@ -13,11 +13,31 @@ import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:hushmate/presentation/pages/home/home_page.dart';
 import 'package:hushmate/presentation/pages/auth/login_page.dart';
 import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
+import 'package:logger/logger.dart';
+
+// Create a global logger instance
+final logger = Logger(
+  printer: PrettyPrinter(
+    methodCount: 2,
+    errorMethodCount: 8,
+    lineLength: 120,
+    colors: true,
+    printEmojis: true,
+    printTime: true,
+  ),
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Add some initial logging
+  logger.i('Initializing HushMate application...');
+  
   await di.init();
+  logger.i('Dependency injection initialized');
+  
   runApp(const MyApp());
+  logger.i('Application started');
 }
 
 class MyApp extends StatelessWidget {

@@ -57,7 +57,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
             lastMessageTime: lastMessageTime,
             isOnline: userJson['isOnline'] as bool? ?? false, 
             unreadCount: itemMap['unreadCount'] as int? ?? 0,
-            userId: currentUserId, 
+            userId: currentUserId,
+            updatedAt: lastMessageTime,
           ));
         }
         return conversations;
@@ -93,10 +94,21 @@ class ConversationRepositoryImpl implements ConversationRepository {
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> messagesJson = response.data as List<dynamic>;
         final List<Message> messages = messagesJson
-            .map((json) => Message.fromJson(json as Map<String, dynamic>))
+            .map((json) => Message.fromJson({
+                  '_id': json['_id'],
+                  'sender': json['sender'],
+                  'receiver': json['receiver'],
+                  'content': json['content'],
+                  'createdAt': json['createdAt'],
+                  'messageType': json['messageType'],
+                  'isRead': json['isRead'],
+                  'status': json['status'],
+                  'isDisappearing': json['isDisappearing'],
+                  'updatedAt': json['updatedAt'],
+                }))
             .toList();
 
-        messages.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
         DateTime lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
         if (messages.isNotEmpty) {
@@ -114,6 +126,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
           isOnline: isOnline, 
           unreadCount: 0, // API doesn't provide this for chat history endpoint
           userId: currentUserId,
+          updatedAt: lastMessageTime,
         );
       } else {
         throw Exception('Failed to load chat history: Status ${response.statusCode}');
@@ -215,6 +228,46 @@ class ConversationRepositoryImpl implements ConversationRepository {
       print('listenToMessages for $conversationId is using a mock stream controller.');
     }
     return _messageControllers[conversationId]!.stream;
+  }
+
+  @override
+  Future<Map<String, dynamic>> getMessages({
+    required String participantId,
+    required int page,
+    required int pageSize,
+  }) async {
+    try {
+      final response = await NetworkService.dio.get(
+        '/messages/chat/$participantId',
+        queryParameters: {
+          'page': page,
+          'pageSize': pageSize,
+        },
+      );
+
+      print('API Response data: ${response.data}');
+      final data = response.data as Map<String, dynamic>;
+      print('Messages data: ${data['messages']}');
+      
+      final messages = (data['messages'] as List)
+          .map((msg) {
+            print('Processing message: $msg');
+            if (msg is! Map<String, dynamic>) {
+              print('Warning: Message is not a Map: $msg');
+              msg = {'id': DateTime.now().millisecondsSinceEpoch.toString(), 'content': msg.toString()};
+            }
+            return Message.fromJson(msg);
+          })
+          .toList();
+
+      return {
+        'messages': messages,
+        'pagination': data['pagination'],
+      };
+    } catch (e) {
+      print('Error getting messages: $e');
+      rethrow;
+    }
   }
 
   void dispose() {

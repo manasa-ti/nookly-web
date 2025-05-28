@@ -3,9 +3,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hushmate/domain/entities/conversation.dart';
 import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
-import 'package:hushmate/presentation/bloc/conversation/conversation_event.dart';
-import 'package:hushmate/presentation/bloc/conversation/conversation_state.dart';
 import 'package:hushmate/presentation/widgets/message_bubble.dart';
+import 'package:hushmate/core/network/socket_service.dart';
+import 'package:hushmate/core/network/network_service.dart';
+import 'package:hushmate/core/di/injection_container.dart';
+import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:hushmate/core/utils/logger.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -36,10 +40,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   late AnimationController _menuAnimationController;
   late Animation<double> _menuAnimation;
   bool _isMenuOpen = false;
+  bool _isTyping = false;
+  bool _otherUserTyping = false;
+  String? _currentUserId;
+  String? _jwtToken;
+  SocketService? _socketService;
 
   @override
   void initState() {
     super.initState();
+    _initSocketAndUser();
     // Load conversation when the page is initialized
     context.read<ConversationBloc>().add(LoadConversation(
       participantId: widget.conversationId,
@@ -67,6 +77,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    // Remove all socket listeners before disposing
+    if (_socketService != null) {
+      _socketService!.off('private_message');
+      _socketService!.off('private_message_sent');
+      _socketService!.off('message_delivered');
+      _socketService!.off('message_read');
+      _socketService!.off('typing');
+      _socketService!.off('stop_typing');
+      _socketService!.off('message_edited');
+      _socketService!.off('message_deleted');
+      _socketService!.off('error');
+      
+      // Leave the private chat room
+      _socketService!.leavePrivateChat(widget.conversationId);
+    }
     _messageController.dispose();
     _scrollController.dispose();
     _menuAnimationController.dispose();
@@ -92,19 +117,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   void _loadMoreMessages() {
     final state = context.read<ConversationBloc>().state;
-    if (state is ConversationLoaded) {
+    if (state is ConversationLoaded && state.hasMoreMessages) {
       setState(() {
         _isLoadingMore = true;
       });
       
-      // In a real app, this would load more messages from the repository
-      // For now, we'll simulate loading more messages
-      Future.delayed(const Duration(seconds: 1), () {
-        if (mounted) {
-          setState(() {
-            _isLoadingMore = false;
-          });
-        }
+      context.read<ConversationBloc>().add(LoadMoreMessages());
+      
+      setState(() {
+        _isLoadingMore = false;
       });
     }
   }
@@ -112,24 +133,238 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0, // Since messages are now in chronological order, 0 is the bottom
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
     }
   }
 
+  Future<void> _initSocketAndUser() async {
+    AppLogger.info('🔵 Initializing socket and user for chat page');
+    AppLogger.info('🔵 Other user ID: ${widget.conversationId}');
+    
+    final authRepository = sl<AuthRepository>();
+    final user = await authRepository.getCurrentUser();
+    final token = await authRepository.getToken();
+    
+    AppLogger.info('🔵 User data: ${user?.toJson()}');
+    AppLogger.info('🔵 Token available: ${token != null}');
+    
+    if (user != null && token != null) {
+      AppLogger.info('✅ User authenticated, initializing socket connection');
+      _currentUserId = user.id;
+      _jwtToken = token;
+      _socketService = sl<SocketService>();
+      
+      // Update the ConversationBloc with the current user ID
+      if (mounted) {
+        context.read<ConversationBloc>().add(UpdateCurrentUserId(user.id));
+      }
+      
+      AppLogger.info('🔵 Connecting to socket with URL: ${SocketService.socketUrl}');
+      AppLogger.info('🔵 User ID: $_currentUserId');
+      AppLogger.info('🔵 Token: ${token.substring(0, 10)}...');
+      
+      _socketService!.connect(
+        serverUrl: SocketService.socketUrl, 
+        token: token,
+        userId: user.id,
+      );
+      
+      // Add a small delay to ensure socket is connected
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      if (_socketService!.isConnected) {
+        AppLogger.info('✅ Socket connected successfully');
+        AppLogger.info('🔵 Joining private chat room with user: ${widget.conversationId}');
+        // Join the private chat room
+        _socketService!.joinPrivateChat(widget.conversationId);
+      } else {
+        AppLogger.error('❌ Socket failed to connect');
+      }
+      
+      _registerSocketListeners();
+    } else {
+      AppLogger.error('❌ Failed to initialize socket: User or token is null');
+      AppLogger.error('❌ User: ${user?.toJson()}');
+      AppLogger.error('❌ Token available: ${token != null}');
+    }
+  }
+
+  void _registerSocketListeners() {
+    if (_socketService == null) {
+      AppLogger.error('❌ Cannot register socket listeners: SocketService is null');
+      return;
+    }
+
+    AppLogger.info('🔵 Registering socket listeners for chat page');
+    
+    // Add listener for all events
+    _socketService!.on('connect', (data) {
+      AppLogger.info('✅ Socket connected');
+    });
+    
+    _socketService!.on('disconnect', (data) {
+      AppLogger.warning('⚠️ Socket disconnected');
+    });
+    
+    _socketService!.on('error', (data) {
+      AppLogger.error('❌ Socket error: $data');
+    });
+    
+    _socketService!.on('private_message', (data) {
+      if (!mounted) return;
+      AppLogger.info('🔵 Socket Event: private_message received');
+      AppLogger.info('🔵 Message data: ${data.toString()}');
+      try {
+        final msg = Message.fromJson({
+          '_id': data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          'sender': data['sender'] ?? data['from'],
+          'receiver': data['receiver'] ?? data['to'],
+          'content': data['content'] ?? '',
+          'createdAt': data['createdAt'] ?? DateTime.now().toIso8601String(),
+          'messageType': data['messageType'] ?? 'text',
+          'status': data['status'] ?? 'sent',
+        });
+        AppLogger.info('🔵 Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}');
+        
+        // Only process messages from the other participant
+        if (msg.sender == widget.conversationId) {
+          AppLogger.info('✅ Processing received message from other user: ${msg.content}');
+          context.read<ConversationBloc>().add(MessageReceived(msg));
+          
+          // Update conversation with new message
+          context.read<ConversationBloc>().add(ConversationUpdated(
+            conversationId: widget.conversationId,
+            lastMessage: msg,
+            updatedAt: DateTime.now(),
+          ));
+          
+          // Scroll to bottom when receiving a new message
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (_scrollController.hasClients) {
+              _scrollController.animateTo(
+                0,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+        } else {
+          AppLogger.warning('⚠️ Received message from unknown sender: ${msg.sender}, expected: ${widget.conversationId}');
+        }
+      } catch (e) {
+        AppLogger.error('❌ Error processing message: $e');
+      }
+    });
+
+    // Add typing indicator listeners
+    _socketService!.on('typing', (data) {
+      if (!mounted) return;
+      if (data['userId'] == widget.conversationId) {
+        setState(() {
+          _otherUserTyping = true;
+        });
+        // Update conversation typing status
+        context.read<ConversationBloc>().add(ConversationUpdated(
+          conversationId: widget.conversationId,
+          isTyping: true,
+          updatedAt: DateTime.now(),
+        ));
+      }
+    });
+
+    _socketService!.on('stop_typing', (data) {
+      if (!mounted) return;
+      if (data['userId'] == widget.conversationId) {
+        setState(() {
+          _otherUserTyping = false;
+        });
+        // Update conversation typing status
+        context.read<ConversationBloc>().add(ConversationUpdated(
+          conversationId: widget.conversationId,
+          isTyping: false,
+          updatedAt: DateTime.now(),
+        ));
+      }
+    });
+
+    // Add message status listeners
+    _socketService!.on('message_delivered', (data) {
+      if (!mounted) return;
+      final messageId = data['messageId'];
+      final deliveredAt = DateTime.parse(data['deliveredAt']);
+      context.read<ConversationBloc>().add(MessageDelivered(
+        messageId,
+        deliveredAt,
+      ));
+    });
+
+    _socketService!.on('message_read', (data) {
+      if (!mounted) return;
+      final messageId = data['messageId'];
+      final readAt = DateTime.parse(data['readAt']);
+      context.read<ConversationBloc>().add(MessageRead(
+        messageId,
+        readAt,
+      ));
+    });
+  }
+
   Future<void> _sendTextMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
+    if (_messageController.text.trim().isEmpty) {
+      AppLogger.warning('Attempted to send empty message');
+      return;
+    }
 
     final content = _messageController.text.trim();
+    AppLogger.info('🔵 Sending text message: $content');
     _messageController.clear();
 
-    context.read<ConversationBloc>().add(
-      SendTextMessage(conversationId: widget.conversationId, content: content),
-    );
+    if (_socketService != null && _currentUserId != null) {
+      try {
+        AppLogger.info('🔵 Current user ID: $_currentUserId');
+        AppLogger.info('🔵 Recipient ID (conversationId): ${widget.conversationId}');
+        
+        // Create message data
+        final messageData = {
+          'from': _currentUserId,
+          'to': widget.conversationId,
+          'content': content,
+          'messageType': 'text',
+          'status': 'sent',
+          'createdAt': DateTime.now().toIso8601String(),
+        };
 
-    _scrollToBottom();
+        AppLogger.info('🔵 Emitting private_message with data: $messageData');
+        // Send message through socket
+        _socketService!.emit('private_message', messageData);
+        
+        // Add message to local state immediately
+        final msg = Message.fromJson(messageData);
+        AppLogger.info('✅ Added message to local state: ${msg.content}');
+        context.read<ConversationBloc>().add(MessageSent(msg));
+        
+        // Scroll to bottom after sending message
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToBottom();
+        });
+      } catch (e) {
+        AppLogger.error('❌ Failed to send message: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send message. Please try again.')),
+        );
+      }
+    } else {
+      AppLogger.error('❌ Cannot send message: SocketService or currentUserId is null');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connection error. Please try again.')),
+      );
+    }
+
+    setState(() => _isTyping = false);
+    _socketService?.emit('stop_typing', {'to': widget.conversationId});
   }
 
   Future<void> _pickImage() async {
@@ -233,120 +468,92 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ConversationBloc, ConversationState>(
-      builder: (context, state) {
-        if (state is ConversationLoading) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
-
-        if (state is ConversationError) {
-          return Scaffold(
-            body: Center(
-              child: Text('Error: ${state.message}'),
-            ),
-          );
-        }
-
-        if (state is ConversationLoaded) {
-          final conversation = state.conversation;
-          final messages = state.messages;
-
-          return Scaffold(
-            appBar: AppBar(
-              title: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundImage: conversation.participantAvatar != null
-                        ? NetworkImage(conversation.participantAvatar!)
-                        : null,
-                    child: conversation.participantAvatar == null
-                        ? Text(conversation.participantName[0])
-                        : null,
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(conversation.participantName),
-                      if (conversation.isOnline)
-                        const Text(
-                          'Online',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.green,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.more_vert),
-                  onPressed: _toggleMenu,
-                ),
-              ],
-            ),
-            body: Stack(
+    return Scaffold(
+      appBar: AppBar(
+        title: Row(
+          children: [
+            _buildAvatar(),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        reverse: true,
-                        itemCount: messages.length + (_isLoadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (index == messages.length) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(8.0),
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          }
-
-                          final message = messages[index];
-                          final isCurrentUser = message.senderId == 'currentUser';
-
-                          return MessageBubble(
-                            message: Message(
-                              id: message.id,
-                              senderId: message.senderId,
-                              content: message.content,
-                              timestamp: message.timestamp,
-                              type: message.type,
-                              metadata: message.metadata,
-                            ),
-                            isMe: isCurrentUser,
-                            onTap: () {
-                              if (message.type == MessageType.voice) {
-                                _playVoiceMessage(message);
-                              }
-                            },
-                          );
-                        },
-                      ),
+                Text(widget.participantName),
+                if (_otherUserTyping)
+                  const Text(
+                    'typing...',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
                     ),
-                    _buildMessageInput(),
-                  ],
-                ),
-                _buildSideMenu(conversation),
+                  ),
               ],
             ),
-          );
-        }
-
-        return const Scaffold(
-          body: Center(
-            child: Text('Something went wrong'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: _toggleMenu,
           ),
-        );
-      },
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: BlocListener<ConversationBloc, ConversationState>(
+              listener: (context, state) {
+                if (state is ConversationLoaded) {
+                  // Scroll to bottom when new messages arrive
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    _scrollToBottom();
+                  });
+                }
+              },
+              child: BlocBuilder<ConversationBloc, ConversationState>(
+                builder: (context, state) {
+                  if (state is ConversationLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (state is ConversationError) {
+                    return Center(child: Text('Error: ${state.message}'));
+                  }
+                  if (state is ConversationLoaded) {
+                    return ListView.builder(
+                      controller: _scrollController,
+                      reverse: true,
+                      itemCount: state.messages.length + (_isLoadingMore ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (index == state.messages.length) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        }
+                        final message = state.messages[index];
+                        final isMe = message.sender == _currentUserId;
+                        
+                        return MessageBubble(
+                          message: message,
+                          isMe: isMe,
+                          showAvatar: false,
+                          avatarUrl: widget.participantAvatar,
+                          statusWidget: isMe ? _buildMessageStatus(message) : null,
+                        );
+                      },
+                    );
+                  }
+                  return const Center(child: Text('No messages yet'));
+                },
+              ),
+            ),
+          ),
+          _buildTypingIndicator(),
+          _buildMessageInput(),
+        ],
+      ),
     );
   }
 
@@ -379,6 +586,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 ),
                 maxLines: null,
                 textCapitalization: TextCapitalization.sentences,
+                onChanged: (text) {
+                  if (!_isTyping && text.isNotEmpty) {
+                    setState(() => _isTyping = true);
+                    _socketService?.emit('typing', {'to': widget.conversationId});
+                  } else if (_isTyping && text.isEmpty) {
+                    setState(() => _isTyping = false);
+                    _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                  }
+                },
+                onEditingComplete: () {
+                  setState(() => _isTyping = false);
+                  _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                },
               ),
             ),
             IconButton(
@@ -485,6 +705,107 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ),
         );
       },
+    );
+  }
+
+  // Add typing indicator to the UI
+  Widget _buildTypingIndicator() {
+    if (!_otherUserTyping) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 8),
+          Text(
+            '${widget.participantName} is typing...',
+            style: const TextStyle(
+              color: Colors.grey,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Add message status indicator
+  Widget _buildMessageStatus(Message message) {
+    if (message.sender != _currentUserId) return const SizedBox.shrink();
+    
+    Widget statusIcon;
+    switch (message.status) {
+      case 'sent':
+        statusIcon = const Icon(Icons.check, size: 16, color: Colors.grey);
+        break;
+      case 'delivered':
+        statusIcon = const Icon(Icons.done_all, size: 16, color: Colors.grey);
+        break;
+      case 'read':
+        statusIcon = const Icon(Icons.done_all, size: 16, color: Colors.blue);
+        break;
+      default:
+        statusIcon = const Icon(Icons.check, size: 16, color: Colors.grey);
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: statusIcon,
+    );
+  }
+
+  Widget _buildAvatar() {
+    return Stack(
+      children: [
+        CircleAvatar(
+          radius: 28,
+          backgroundColor: Colors.grey[300],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(28),
+            child: (widget.participantAvatar == null || widget.participantAvatar!.isEmpty)
+                ? Icon(Icons.person, color: Colors.grey[600], size: 40)
+                : (widget.participantAvatar!.toLowerCase().contains('dicebear') || widget.participantAvatar!.toLowerCase().endsWith('.svg'))
+                    ? SvgPicture.network(
+                        widget.participantAvatar!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        placeholderBuilder: (context) => const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : Image.network(
+                        widget.participantAvatar!,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(Icons.person, color: Colors.grey[600], size: 40);
+                        },
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          );
+                        },
+                      ),
+          ),
+        ),
+        if (widget.isOnline)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white, width: 2),
+              ),
+            ),
+          ),
+      ],
     );
   }
 } 

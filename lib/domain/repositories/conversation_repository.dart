@@ -3,6 +3,11 @@ import 'package:hushmate/domain/entities/message.dart';
 
 abstract class ConversationRepository {
   Future<List<Conversation>> getConversations();
+  Future<Map<String, dynamic>> getMessages({
+    required String participantId,
+    required int page,
+    required int pageSize,
+  });
   Future<Conversation> getConversation(
     String participantId,
     String participantName,
