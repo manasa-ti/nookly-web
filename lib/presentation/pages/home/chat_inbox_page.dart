@@ -179,6 +179,59 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       }
     });
 
+    // Add typing indicator listeners
+    _socketService!.on('typing', (data) {
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        final conversation = conversations.where((c) => c.id == data['from']).firstOrNull;
+        AppLogger.info('conversations on event typing: $conversations');
+        if (conversation != null) {
+          AppLogger.info('🔵 User is typing: ${conversation.participantName}');
+          
+          // Create updated conversation with typing status
+          final updatedConversation = conversation.copyWith(
+            isTyping: true,
+            updatedAt: DateTime.now(),
+          );
+          
+          // Update the conversations list
+          final updatedConversations = conversations.map((c) => 
+            c.id == conversation.id ? updatedConversation : c
+          ).toList();
+          
+          // Emit updated state immediately
+          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+        }
+      }
+    });
+
+    _socketService!.on('stop_typing', (data) {
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        final conversation = conversations.where((c) => c.id == data['from']).firstOrNull;
+        AppLogger.info('conversations on event stop typing: $conversations');
+        if (conversation != null) {
+          AppLogger.info('🔵 User stopped typing: ${conversation.participantName}');
+          
+          // Create updated conversation with typing status
+          final updatedConversation = conversation.copyWith(
+            isTyping: false,
+            updatedAt: DateTime.now(),
+          );
+          
+          // Update the conversations list
+          final updatedConversations = conversations.map((c) => 
+            c.id == conversation.id ? updatedConversation : c
+          ).toList();
+          
+          // Emit updated state immediately
+          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+        }
+      }
+    });
+
     _socketService!.on('conversation_updated', (data) {
       AppLogger.info('🔵 Conversation updated event received: $data');
       if (_inboxBloc?.state is InboxLoaded) {
@@ -386,13 +439,21 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                   onTap: () => _onConversationTap(conversation),
                   leading: _buildAvatar(conversation),
                   title: Text(conversation.participantName),
-                  subtitle: lastMessage != null
-                      ? Text(
-                          isMe ? 'You: ${lastMessage.content}' : lastMessage.content,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                  subtitle: conversation.isTyping == true
+                      ? const Text(
+                          'typing...',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey,
+                          ),
                         )
-                      : const Text('No messages yet'),
+                      : lastMessage != null
+                          ? Text(
+                              isMe ? 'You: ${lastMessage.content}' : lastMessage.content,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            )
+                          : const Text('No messages yet'),
                   trailing: Text(
                     _formatTimestamp(conversation.lastMessageTime),
                     style: TextStyle(

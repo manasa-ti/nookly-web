@@ -56,6 +56,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<MessageSent>(_onMessageSent);
     on<ConversationUpdated>(_onConversationUpdated);
     on<UpdateCurrentUserId>(_onUpdateCurrentUserId);
+    on<BulkMessageDelivered>(_onBulkMessageDelivered);
+    on<BulkMessageRead>(_onBulkMessageRead);
   }
 
   Future<void> _onLoadConversation(
@@ -374,26 +376,174 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   void _onMessageDelivered(MessageDelivered event, Emitter<ConversationState> emit) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updating message status to delivered in bloc: ${event.messageId}');
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current messages before update: ${currentState.messages.map((m) => '${m.id}: ${m.status}').join(', ')}');
+      
       final updatedMessages = currentState.messages.map((msg) {
         if (msg.id == event.messageId) {
-          return msg.copyWith(status: 'delivered', deliveredAt: event.deliveredAt);
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Found message to update: ${msg.id}');
+          final deliveredAt = event.deliveredAt ?? DateTime.now();
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Setting deliveredAt to: $deliveredAt');
+          return msg.copyWith(
+            status: 'delivered',
+            deliveredAt: deliveredAt,
+          );
         }
         return msg;
       }).toList();
-      emit(currentState.copyWith(messages: updatedMessages));
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (deliveredAt: ${m.deliveredAt})').join(', ')}');
+      
+      // Update both the messages list and the lastMessage in the conversation
+      final updatedLastMessage = currentState.conversation.lastMessage?.id == event.messageId
+          ? currentState.conversation.lastMessage?.copyWith(
+              status: 'delivered',
+              deliveredAt: event.deliveredAt ?? DateTime.now(),
+            )
+          : currentState.conversation.lastMessage;
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updated last message: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (deliveredAt: ${updatedLastMessage?.deliveredAt})');
+      
+      // Create a new state to force UI rebuild
+      emit(ConversationLoaded(
+        conversation: currentState.conversation.copyWith(
+          lastMessage: updatedLastMessage,
+          updatedAt: DateTime.now(),
+        ),
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        isCallActive: currentState.isCallActive,
+        isAudioCall: currentState.isAudioCall,
+      ));
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state with updated message status');
+    }
+  }
+
+  void _onBulkMessageDelivered(BulkMessageDelivered event, Emitter<ConversationState> emit) {
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updating bulk message status to delivered in bloc: ${event.messageIds.join(', ')}');
+      
+      final deliveredAt = DateTime.now();
+      final updatedMessages = currentState.messages.map((msg) {
+        if (event.messageIds.contains(msg.id)) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Found message to update: ${msg.id}');
+          return msg.copyWith(
+            status: 'delivered',
+            deliveredAt: deliveredAt,
+          );
+        }
+        return msg;
+      }).toList();
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Messages after bulk update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (deliveredAt: ${m.deliveredAt})').join(', ')}');
+      
+      // Update lastMessage if it's in the bulk update
+      final updatedLastMessage = event.messageIds.contains(currentState.conversation.lastMessage?.id)
+          ? currentState.conversation.lastMessage?.copyWith(
+              status: 'delivered',
+              deliveredAt: deliveredAt,
+            )
+          : currentState.conversation.lastMessage;
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updated last message in bulk update: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (deliveredAt: ${updatedLastMessage?.deliveredAt})');
+      
+      emit(ConversationLoaded(
+        conversation: currentState.conversation.copyWith(
+          lastMessage: updatedLastMessage,
+          updatedAt: DateTime.now(),
+        ),
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        isCallActive: currentState.isCallActive,
+        isAudioCall: currentState.isAudioCall,
+      ));
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state with bulk updated message status');
     }
   }
 
   void _onMessageRead(MessageRead event, Emitter<ConversationState> emit) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 Updating message status to read in bloc: ${event.messageId}');
+      AppLogger.info('🔵 Current messages before update: ${currentState.messages.map((m) => '${m.id}: ${m.status}').join(', ')}');
+      
       final updatedMessages = currentState.messages.map((msg) {
         if (msg.id == event.messageId) {
-          return msg.copyWith(status: 'read', readAt: event.readAt);
+          AppLogger.info('🔵 Found message to update: ${msg.id}');
+          final readAt = event.readAt ?? DateTime.now();
+          AppLogger.info('🔵 Setting readAt to: $readAt');
+          return msg.copyWith(
+            status: 'read',
+            readAt: readAt,
+          );
         }
         return msg;
       }).toList();
-      emit(currentState.copyWith(messages: updatedMessages));
+      
+      AppLogger.info('🔵 Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (readAt: ${m.readAt})').join(', ')}');
+      
+      // Update both the messages list and the lastMessage in the conversation
+      final updatedLastMessage = currentState.conversation.lastMessage?.id == event.messageId
+          ? currentState.conversation.lastMessage?.copyWith(
+              status: 'read',
+              readAt: event.readAt ?? DateTime.now(),
+            )
+          : currentState.conversation.lastMessage;
+      
+      AppLogger.info('🔵 Updated last message: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (readAt: ${updatedLastMessage?.readAt})');
+      
+      // Create a new state to force UI rebuild
+      emit(ConversationLoaded(
+        conversation: currentState.conversation.copyWith(
+          lastMessage: updatedLastMessage,
+          updatedAt: DateTime.now(),
+        ),
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        isCallActive: currentState.isCallActive,
+        isAudioCall: currentState.isAudioCall,
+      ));
+    }
+  }
+
+  void _onBulkMessageRead(BulkMessageRead event, Emitter<ConversationState> emit) {
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 Updating bulk message status to read in bloc: ${event.messageIds.join(', ')}');
+      
+      final readAt = DateTime.now();
+      final updatedMessages = currentState.messages.map((msg) {
+        if (event.messageIds.contains(msg.id)) {
+          AppLogger.info('🔵 Found message to update: ${msg.id}');
+          return msg.copyWith(
+            status: 'read',
+            readAt: readAt,
+          );
+        }
+        return msg;
+      }).toList();
+      
+      // Update lastMessage if it's in the bulk update
+      final updatedLastMessage = event.messageIds.contains(currentState.conversation.lastMessage?.id)
+          ? currentState.conversation.lastMessage?.copyWith(
+              status: 'read',
+              readAt: readAt,
+            )
+          : currentState.conversation.lastMessage;
+      
+      emit(ConversationLoaded(
+        conversation: currentState.conversation.copyWith(
+          lastMessage: updatedLastMessage,
+          updatedAt: DateTime.now(),
+        ),
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        isCallActive: currentState.isCallActive,
+        isAudioCall: currentState.isAudioCall,
+      ));
     }
   }
 
@@ -453,15 +603,56 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
-      final updatedConversation = currentState.conversation.copyWith(
-        lastMessage: event.lastMessage,
-        updatedAt: event.updatedAt,
-      );
-      emit(ConversationLoaded(
-        conversation: updatedConversation,
-        messages: currentState.messages,
-        hasMoreMessages: currentState.hasMoreMessages,
-      ));
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Processing conversation update event');
+      
+      // If we have a lastMessage, update its status in the messages list
+      if (event.lastMessage != null) {
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updating message status from conversation update');
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Last message: id=${event.lastMessage!.id}, status=${event.lastMessage!.status}');
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Last message timestamps: deliveredAt=${event.lastMessage!.deliveredAt}, readAt=${event.lastMessage!.readAt}');
+        
+        final updatedMessages = currentState.messages.map((msg) {
+          if (msg.id == event.lastMessage!.id) {
+            AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Found message to update: ${msg.id}');
+            return msg.copyWith(
+              status: event.lastMessage!.status,
+              deliveredAt: event.lastMessage!.deliveredAt,
+              readAt: event.lastMessage!.readAt,
+            );
+          }
+          return msg;
+        }).toList();
+        
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (deliveredAt: ${m.deliveredAt}, readAt: ${m.readAt})').join(', ')}');
+        
+        emit(ConversationLoaded(
+          conversation: currentState.conversation.copyWith(
+            lastMessage: event.lastMessage,
+            updatedAt: event.updatedAt,
+            isTyping: event.isTyping,
+          ),
+          messages: updatedMessages,
+          hasMoreMessages: currentState.hasMoreMessages,
+          isCallActive: currentState.isCallActive,
+          isAudioCall: currentState.isAudioCall,
+        ));
+        
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state from conversation update');
+      } else {
+        // If no lastMessage, just update the conversation
+        emit(ConversationLoaded(
+          conversation: currentState.conversation.copyWith(
+            updatedAt: event.updatedAt,
+            isTyping: event.isTyping,
+          ),
+          messages: currentState.messages,
+          hasMoreMessages: currentState.hasMoreMessages,
+          isCallActive: currentState.isCallActive,
+          isAudioCall: currentState.isAudioCall,
+        ));
+        
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state without message update');
+      }
     }
   }
 

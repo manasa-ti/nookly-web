@@ -241,4 +241,30 @@ class UpdateCurrentUserId extends ConversationEvent {
   const UpdateCurrentUserId(this.userId);
   @override
   List<Object?> get props => [userId];
+}
+
+class BulkMessageDelivered extends ConversationEvent {
+  final List<String> messageIds;
+  final DateTime? deliveredAt;
+
+  const BulkMessageDelivered({
+    required this.messageIds,
+    this.deliveredAt,
+  });
+
+  @override
+  List<Object?> get props => [messageIds, deliveredAt];
+}
+
+class BulkMessageRead extends ConversationEvent {
+  final List<String> messageIds;
+  final DateTime? readAt;
+
+  const BulkMessageRead({
+    required this.messageIds,
+    this.readAt,
+  });
+
+  @override
+  List<Object?> get props => [messageIds, readAt];
 } 

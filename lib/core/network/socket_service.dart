@@ -14,6 +14,7 @@ class SocketService {
   String? _token;
 
   bool get isConnected => _socket?.connected ?? false;
+  String? get socketId => _socket?.id;
 
     static String get socketUrl {
     if (Platform.isAndroid) {
@@ -61,6 +62,7 @@ class SocketService {
     AppLogger.info('🔵 Attempting to join private chat room with user: $otherUserId');
     AppLogger.info('🔵 Current user ID: $_userId');
     AppLogger.info('🔵 Socket connected: ${_socket?.connected}');
+    AppLogger.info('🔵 Socket ID: ${_socket?.id}');
     
     if (_socket == null || !_socket!.connected) {
       AppLogger.error('Cannot join private chat: Socket not connected');
@@ -73,7 +75,11 @@ class SocketService {
     }
     
     AppLogger.info('Joining private chat room with other user: $otherUserId');
-    _socket!.emit('join_private_chat', {'otherUserId': otherUserId});
+    _socket!.emit('join_private_chat', {
+      'otherUserId': otherUserId,
+      'currentUserId': _userId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
   }
 
   void leavePrivateChat(String otherUserId) {
@@ -130,57 +136,82 @@ class SocketService {
 
     _socket!.onConnect((_) {
       AppLogger.info('✅ Socket connected successfully');
+      AppLogger.info('🔵 Socket ID: ${_socket!.id}');
+      AppLogger.info('🔵 Current user ID: $_userId');
       AppLogger.info('🔵 Emitting join event with userId: $_userId');
-      _socket!.emit('join', {'userId': _userId});
+      _socket!.emit('join', _userId);
     });
 
     _socket!.on('roomJoined', (data) {
       AppLogger.info('✅ Joined room: $data');
+      AppLogger.info('🔵 Room details: ${data.toString()}');
     });
 
     _socket!.on('private_chat_joined', (data) {
       AppLogger.info('✅ Joined private chat room: $data');
+      AppLogger.info('🔵 Room details: ${data.toString()}');
+      AppLogger.info('🔵 Socket ID: ${_socket!.id}');
+      AppLogger.info('🔵 Current user ID: $_userId');
     });
 
     _socket!.on('private_chat_left', (data) {
       AppLogger.info('✅ Left private chat room: $data');
+      AppLogger.info('🔵 Room details: ${data.toString()}');
     });
 
-    _socket!.on('conversation_updated', (data) {
-      AppLogger.info('✅ Conversation updated: $data');
-      // This event will be handled by the conversation list
+    _socket!.on('message_delivered', (data) {
+      AppLogger.info('🔵 Received message_delivered event: $data');
+      AppLogger.info('🔵 Socket ID: ${_socket!.id}');
+      AppLogger.info('🔵 Current user ID: $_userId');
+      AppLogger.info('🔵 Event details: ${data.toString()}');
     });
 
     _socket!.onDisconnect((_) {
       AppLogger.warning('⚠️ Socket disconnected');
+      AppLogger.warning('⚠️ Socket ID: ${_socket?.id}');
+      AppLogger.warning('⚠️ Current user ID: $_userId');
     });
 
     _socket!.on('error', (data) {
       AppLogger.error('❌ Socket error: $data');
+      AppLogger.error('❌ Socket ID: ${_socket?.id}');
+      AppLogger.error('❌ Current user ID: $_userId');
     });
 
     _socket!.on('connect_error', (data) {
       AppLogger.error('❌ Socket connection error: $data');
+      AppLogger.error('❌ Socket ID: ${_socket?.id}');
+      AppLogger.error('❌ Current user ID: $_userId');
     });
 
     _socket!.on('connect_timeout', (data) {
       AppLogger.error('❌ Socket connection timeout: $data');
+      AppLogger.error('❌ Socket ID: ${_socket?.id}');
+      AppLogger.error('❌ Current user ID: $_userId');
     });
 
     _socket!.on('reconnect', (data) {
       AppLogger.info('✅ Socket reconnected: $data');
+      AppLogger.info('🔵 Socket ID: ${_socket!.id}');
+      AppLogger.info('🔵 Current user ID: $_userId');
     });
 
     _socket!.on('reconnect_attempt', (data) {
       AppLogger.info('🔵 Socket reconnection attempt: $data');
+      AppLogger.info('🔵 Socket ID: ${_socket?.id}');
+      AppLogger.info('🔵 Current user ID: $_userId');
     });
 
     _socket!.on('reconnect_error', (data) {
       AppLogger.error('❌ Socket reconnection error: $data');
+      AppLogger.error('❌ Socket ID: ${_socket?.id}');
+      AppLogger.error('❌ Current user ID: $_userId');
     });
 
     _socket!.on('reconnect_failed', (data) {
       AppLogger.error('❌ Socket reconnection failed: $data');
+      AppLogger.error('❌ Socket ID: ${_socket?.id}');
+      AppLogger.error('❌ Current user ID: $_userId');
     });
     
     AppLogger.info('✅ Socket listeners setup complete');
@@ -209,7 +240,7 @@ class SocketService {
       AppLogger.error('Cannot add listener for $event: Socket not initialized');
       return;
     }
-    AppLogger.info('Adding listener for event: $event');
+    AppLogger.info('On event: $event');
     _socket!.on(event, (data) {
       AppLogger.info('Received event $event: ${data.toString()}');
       handler(data);

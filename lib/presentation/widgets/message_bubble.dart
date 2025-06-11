@@ -3,21 +3,23 @@ import 'package:hushmate/domain/entities/message.dart';
 import 'package:intl/intl.dart';
 
 class MessageBubble extends StatelessWidget {
-  final Message message;
+  final Message? message;
   final bool isMe;
   final VoidCallback? onTap;
   final bool showAvatar;
   final String? avatarUrl;
   final Widget? statusWidget;
+  final bool isTyping;
 
   const MessageBubble({
     Key? key,
-    required this.message,
+    this.message,
     required this.isMe,
     this.onTap,
     this.showAvatar = false,
     this.avatarUrl,
     this.statusWidget,
+    this.isTyping = false,
   }) : super(key: key);
 
   @override
@@ -51,24 +53,51 @@ class MessageBubble extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildMessageContent(context),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _formatTime(message.timestamp),
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isMe ? Colors.white70 : Colors.black54,
+                    if (isTyping)
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                isMe ? Colors.white70 : Colors.black54,
+                              ),
+                            ),
                           ),
-                        ),
-                        if (isMe) ...[
-                          const SizedBox(width: 4),
-                          statusWidget ?? _buildStatusIcon(message.status),
+                          const SizedBox(width: 8),
+                          Text(
+                            'typing...',
+                            style: TextStyle(
+                              color: isMe ? Colors.white70 : Colors.black54,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                         ],
-                      ],
-                    ),
+                      )
+                    else
+                      _buildMessageContent(context),
+                    if (!isTyping && message != null) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatTime(message!.timestamp),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isMe ? Colors.white70 : Colors.black54,
+                            ),
+                          ),
+                          if (isMe) ...[
+                            const SizedBox(width: 4),
+                            statusWidget ?? _buildStatusIcon(message!.status),
+                          ],
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -80,10 +109,10 @@ class MessageBubble extends StatelessWidget {
   }
 
   Widget _buildMessageContent(BuildContext context) {
-    switch (message.type) {
+    switch (message!.type) {
       case MessageType.text:
         return Text(
-          message.content,
+          message!.content,
           style: TextStyle(
             color: isMe ? Colors.white : Colors.black,
             fontSize: 16,
@@ -93,7 +122,7 @@ class MessageBubble extends StatelessWidget {
         return ClipRRect(
           borderRadius: BorderRadius.circular(8),
           child: Image.network(
-            message.content,
+            message!.content,
             fit: BoxFit.cover,
             loadingBuilder: (context, child, loadingProgress) {
               if (loadingProgress == null) return child;
@@ -117,7 +146,7 @@ class MessageBubble extends StatelessWidget {
           ),
         );
       case MessageType.voice:
-        final duration = message.metadata?['duration'] as int? ?? 0;
+        final duration = message!.metadata?['duration'] as int? ?? 0;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -135,8 +164,8 @@ class MessageBubble extends StatelessWidget {
           ],
         );
       case MessageType.file:
-        final fileName = message.metadata?['fileName'] as String? ?? 'File';
-        final fileSize = message.metadata?['fileSize'] as int? ?? 0;
+        final fileName = message!.metadata?['fileName'] as String? ?? 'File';
+        final fileSize = message!.metadata?['fileSize'] as int? ?? 0;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [

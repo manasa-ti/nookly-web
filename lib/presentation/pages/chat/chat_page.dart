@@ -10,6 +10,8 @@ import 'package:hushmate/core/di/injection_container.dart';
 import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:hushmate/core/utils/logger.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
+import 'dart:async';
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -45,6 +47,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   String? _currentUserId;
   String? _jwtToken;
   SocketService? _socketService;
+  final Set<String> _processedMessageIds = {}; // Track processed message IDs
 
   @override
   void initState() {
@@ -57,6 +60,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       participantAvatar: widget.participantAvatar,
       isOnline: widget.isOnline,
     ));
+    
+    // Initialize _processedMessageIds with existing messages
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      for (final message in state.messages) {
+        if (message.status == 'delivered') {
+          _processedMessageIds.add(message.id);
+        }
+        if (message.status == 'read') {
+          _processedMessageIds.add('${message.id}_read');
+        }
+      }
+    }
     
     // Add scroll listener for pagination
     _scrollController.addListener(_onScroll);
@@ -77,6 +93,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    // Don't clear _processedMessageIds here anymore
+    // _processedMessageIds.clear();
+    
     // Remove all socket listeners before disposing
     if (_socketService != null) {
       _socketService!.off('private_message');
@@ -203,43 +222,131 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Add listener for all events
     _socketService!.on('connect', (data) {
       AppLogger.info('✅ Socket connected');
+      AppLogger.info('🔵 Socket ID: ${_socketService!.socketId}');
+      AppLogger.info('🔵 Current user ID: $_currentUserId');
+      AppLogger.info('🔵 Conversation ID: ${widget.conversationId}');
     });
     
     _socketService!.on('disconnect', (data) {
       AppLogger.warning('⚠️ Socket disconnected');
+      AppLogger.warning('⚠️ Disconnect reason: $data');
     });
     
     _socketService!.on('error', (data) {
       AppLogger.error('❌ Socket error: $data');
     });
+
+    // Add listener for room joining confirmation
+    _socketService!.on('joined_room', (data) {
+      AppLogger.info('✅ Joined room: $data');
+      AppLogger.info('🔵 Room details: ${data.toString()}');
+    });
+
+    // Add listener for room joining error
+    _socketService!.on('join_error', (data) {
+      AppLogger.error('❌ Failed to join room: $data');
+    });
+
+    // Add bulk message status listeners
+    _socketService!.on('bulk_message_delivered', (data) {
+      if (!mounted) return;
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received bulk_message_delivered event: $data');
+      try {
+        final messageIds = List<String>.from(data['messageIds'] ?? []);
+        final deliveredAt = data['timestamp'] != null 
+            ? DateTime.parse(data['timestamp']) 
+            : DateTime.now();
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Delivered at: $deliveredAt');
+        
+        if (messageIds.isNotEmpty) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding BulkMessageDelivered event to bloc');
+          context.read<ConversationBloc>().add(BulkMessageDelivered(
+            messageIds: messageIds,
+            deliveredAt: deliveredAt,
+          ));
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed bulk_message_delivered event');
+        }
+      } catch (e) {
+        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing bulk_message_delivered event: $e');
+      }
+    });
+
+    _socketService!.on('bulk_message_read', (data) {
+      if (!mounted) return;
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received bulk_message_read event: $data');
+      try {
+        final messageIds = List<String>.from(data['messageIds'] ?? []);
+        final readAt = data['timestamp'] != null 
+            ? DateTime.parse(data['timestamp']) 
+            : DateTime.now();
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Read at: $readAt');
+        
+        if (messageIds.isNotEmpty) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding BulkMessageRead event to bloc');
+          context.read<ConversationBloc>().add(BulkMessageRead(
+            messageIds: messageIds,
+            readAt: readAt,
+          ));
+          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed bulk_message_read event');
+        }
+      } catch (e) {
+        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing bulk_message_read event: $e');
+      }
+    });
+
+    // Debounce timer for typing events
+    Timer? _typingDebounce;
     
     _socketService!.on('private_message', (data) {
       if (!mounted) return;
       AppLogger.info('🔵 Socket Event: private_message received');
-      AppLogger.info('🔵 Message data: ${data.toString()}');
+      AppLogger.info('🔵 Message data on private_message event: ${data.toString()}');
       try {
-        final msg = Message.fromJson({
-          '_id': data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-          'sender': data['sender'] ?? data['from'],
-          'receiver': data['receiver'] ?? data['to'],
-          'content': data['content'] ?? '',
-          'createdAt': data['createdAt'] ?? DateTime.now().toIso8601String(),
-          'messageType': data['messageType'] ?? 'text',
-          'status': data['status'] ?? 'sent',
-        });
-        AppLogger.info('🔵 Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}');
+        // Store the server's message ID
+        final serverMessageId = data['_id']?.toString() ?? data['id']?.toString();
+        AppLogger.info('🔵 Server message ID: $serverMessageId');
+        
+        // Parse the server's timestamp
+        final serverTimestamp = data['createdAt']?.toString() ?? data['timestamp']?.toString();
+        AppLogger.info('🔵 Server timestamp: $serverTimestamp');
+        
+        // Convert dynamic map to Map<String, dynamic>
+        final Map<String, dynamic> messageData = {
+          '_id': serverMessageId,
+          'sender': data['sender']?.toString() ?? data['from']?.toString(),
+          'receiver': data['receiver']?.toString() ?? data['to']?.toString(),
+          'content': data['content']?.toString() ?? '',
+          'createdAt': serverTimestamp, // Use server's timestamp
+          'messageType': data['messageType']?.toString() ?? 'text',
+          'status': data['status']?.toString() ?? 'sent',
+        };
+        
+        final msg = Message.fromJson(messageData);
+        AppLogger.info('🔵 Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}');
         
         // Only process messages from the other participant
         if (msg.sender == widget.conversationId) {
           AppLogger.info('✅ Processing received message from other user: ${msg.content}');
-          context.read<ConversationBloc>().add(MessageReceived(msg));
           
-          // Update conversation with new message
+          // Batch state updates
+          context.read<ConversationBloc>().add(MessageReceived(msg));
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
             lastMessage: msg,
             updatedAt: DateTime.now(),
           ));
+          
+          // Mark message as delivered immediately after receiving
+          AppLogger.info('on_private_message processedIds contains? ${_processedMessageIds.contains(msg.id)}');
+          if (_socketService != null && !_processedMessageIds.contains(msg.id)) {
+            AppLogger.info('🔵 Marking message as delivered: $serverMessageId');
+            _socketService!.emit('message_delivered', {
+              'messageId': serverMessageId,
+              'conversationId': widget.conversationId,
+              'timestamp': DateTime.now().toIso8601String(),
+            });
+            _processedMessageIds.add(msg.id);
+          }
           
           // Scroll to bottom when receiving a new message
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -251,64 +358,114 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               );
             }
           });
-        } else {
-          AppLogger.warning('⚠️ Received message from unknown sender: ${msg.sender}, expected: ${widget.conversationId}');
         }
       } catch (e) {
         AppLogger.error('❌ Error processing message: $e');
+        AppLogger.error('❌ Message data: $data');
       }
     });
 
-    // Add typing indicator listeners
+    // Add typing indicator listeners with debounce
     _socketService!.on('typing', (data) {
       if (!mounted) return;
-      if (data['userId'] == widget.conversationId) {
-        setState(() {
-          _otherUserTyping = true;
+      if (data['from'] == widget.conversationId) {
+        _typingDebounce?.cancel();
+        _typingDebounce = Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _otherUserTyping = true;
+            });
+            context.read<ConversationBloc>().add(ConversationUpdated(
+              conversationId: widget.conversationId,
+              isTyping: true,
+              updatedAt: DateTime.now(),
+            ));
+          }
         });
-        // Update conversation typing status
-        context.read<ConversationBloc>().add(ConversationUpdated(
-          conversationId: widget.conversationId,
-          isTyping: true,
-          updatedAt: DateTime.now(),
-        ));
       }
     });
 
     _socketService!.on('stop_typing', (data) {
       if (!mounted) return;
-      if (data['userId'] == widget.conversationId) {
-        setState(() {
-          _otherUserTyping = false;
+      if (data['from'] == widget.conversationId) {
+        _typingDebounce?.cancel();
+        _typingDebounce = Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            setState(() {
+              _otherUserTyping = false;
+            });
+            context.read<ConversationBloc>().add(ConversationUpdated(
+              conversationId: widget.conversationId,
+              isTyping: false,
+              updatedAt: DateTime.now(),
+            ));
+          }
         });
-        // Update conversation typing status
-        context.read<ConversationBloc>().add(ConversationUpdated(
-          conversationId: widget.conversationId,
-          isTyping: false,
-          updatedAt: DateTime.now(),
-        ));
       }
     });
 
-    // Add message status listeners
+    // Add individual message status listeners for backward compatibility
     _socketService!.on('message_delivered', (data) {
       if (!mounted) return;
-      final messageId = data['messageId'];
-      final deliveredAt = DateTime.parse(data['deliveredAt']);
-      context.read<ConversationBloc>().add(MessageDelivered(
-        messageId,
-        deliveredAt,
-      ));
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received message_delivered event: $data');
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current socket ID: ${_socketService!.socketId}');
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current user ID: $_currentUserId');
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Conversation ID: ${widget.conversationId}');
+      try {
+        final messageId = data['messageId'];
+        final deliveredAt = data['deliveredAt'] != null 
+            ? DateTime.parse(data['deliveredAt']) 
+            : DateTime.now();
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Delivered at: $deliveredAt');
+        
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding MessageDelivered event to bloc');
+        context.read<ConversationBloc>().add(MessageDelivered(
+          messageId,
+          deliveredAt,
+        ));
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed message_delivered event');
+      } catch (e) {
+        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing message_delivered event: $e');
+      }
     });
 
     _socketService!.on('message_read', (data) {
       if (!mounted) return;
-      final messageId = data['messageId'];
-      final readAt = DateTime.parse(data['readAt']);
-      context.read<ConversationBloc>().add(MessageRead(
-        messageId,
-        readAt,
-      ));
+      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received message_read event: $data');
+      try {
+        final messageId = data['messageId'];
+        final readAt = data['timestamp'] != null 
+            ? DateTime.parse(data['timestamp']) 
+            : DateTime.now();
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Read at: $readAt');
+        
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding MessageRead event to bloc');
+        context.read<ConversationBloc>().add(MessageRead(
+          messageId,
+          readAt,
+        ));
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed message_read event');
+      } catch (e) {
+        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing message_read event: $e');
+      }
+    });
+
+    _socketService!.on('new_message', (data) {
+      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Raw timestamp from socket: ${data['timestamp']}');
+      final timestamp = DateTime.parse(data['timestamp'] as String);
+      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Parsed timestamp: $timestamp');
+      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Local timezone: ${DateTime.now().timeZoneName}');
+      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Local time: ${DateTime.now()}');
+      
+      final message = Message.fromJson({
+        ...data,
+        'timestamp': timestamp.toIso8601String(),
+      });
+      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Message timestamp after fromJson: ${message.timestamp}');
+      
+      if (message.sender == widget.conversationId) {
+        context.read<ConversationBloc>().add(MessageReceived(message));
+      }
     });
   }
 
@@ -319,31 +476,42 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
 
     final content = _messageController.text.trim();
-    AppLogger.info('🔵 Sending text message: $content');
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Starting to send text message: $content');
     _messageController.clear();
 
     if (_socketService != null && _currentUserId != null) {
       try {
-        AppLogger.info('🔵 Current user ID: $_currentUserId');
-        AppLogger.info('🔵 Recipient ID (conversationId): ${widget.conversationId}');
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current user ID: $_currentUserId');
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Recipient ID: ${widget.conversationId}');
         
-        // Create message data
+        // Create message data with initial 'sent' status
         final messageData = {
+          'id': DateTime.now().millisecondsSinceEpoch.toString(),
           'from': _currentUserId,
           'to': widget.conversationId,
           'content': content,
           'messageType': 'text',
-          'status': 'sent',
+          'status': 'sent', // Start with 'sent' status
           'createdAt': DateTime.now().toIso8601String(),
         };
 
-        AppLogger.info('🔵 Emitting private_message with data: $messageData');
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitting private_message with data: $messageData');
         // Send message through socket
         _socketService!.emit('private_message', messageData);
         
-        // Add message to local state immediately
-        final msg = Message.fromJson(messageData);
-        AppLogger.info('✅ Added message to local state: ${msg.content}');
+        // Add message to local state immediately with 'sent' status
+        final msg = Message.fromJson({
+          '_id': messageData['id'],
+          'sender': messageData['from'],
+          'receiver': messageData['to'],
+          'content': messageData['content'],
+          'createdAt': messageData['createdAt'],
+          'messageType': messageData['messageType'],
+          'status': 'sent', // Start with 'sent' status
+          'timestamp': DateTime.now(), // Add timestamp for sent status
+        });
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Added message to local state: ${msg.content}');
+        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message status in local state: ${msg.status}');
         context.read<ConversationBloc>().add(MessageSent(msg));
         
         // Scroll to bottom after sending message
@@ -351,13 +519,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _scrollToBottom();
         });
       } catch (e) {
-        AppLogger.error('❌ Failed to send message: $e');
+        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Failed to send message: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send message. Please try again.')),
         );
       }
     } else {
-      AppLogger.error('❌ Cannot send message: SocketService or currentUserId is null');
+      AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Cannot send message: SocketService or currentUserId is null');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connection error. Please try again.')),
       );
@@ -508,49 +676,178 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _scrollToBottom();
                   });
+
+                  // Collect messages that need to be marked as delivered
+                  final messagesToDeliver = state.messages
+                      .where((message) => 
+                          message.sender == widget.conversationId && 
+                          message.status == 'sent' && 
+                          !_processedMessageIds.contains(message.id))
+                      .map((m) => m.id)
+                      .toList();
+
+                  AppLogger.info('🔵 Messages to deliver: ${messagesToDeliver.length}');
+                  AppLogger.info('🔵 Processed message IDs: $_processedMessageIds');
+
+                  // Collect messages that need to be marked as read
+                  final messagesToRead = state.messages
+                      .where((message) => 
+                          message.sender == widget.conversationId && 
+                          message.status == 'delivered' && 
+                          !_processedMessageIds.contains('${message.id}_read'))
+                      .map((m) => m.id)
+                      .toList();
+
+                  AppLogger.info('🔵 Messages to read: ${messagesToRead.length}');
+
+                  // Emit bulk events if there are messages to update
+                  if (_socketService != null) {
+                    if (messagesToDeliver.isNotEmpty) {
+                      final timestamp = DateTime.now().toIso8601String();
+                      AppLogger.info('🔵 Emitting bulk_message_delivered for messages: ${messagesToDeliver.join(', ')}');
+                      try {
+                        _socketService!.emit('bulk_message_delivered', {
+                          'messageIds': messagesToDeliver,
+                          'conversationId': widget.conversationId,
+                          'timestamp': timestamp,
+                        });
+                        // Add to processed set
+                        for (final id in messagesToDeliver) {
+                          _processedMessageIds.add(id);
+                          AppLogger.info('✅ Added to processed IDs: $id');
+                        }
+                        AppLogger.info('✅ Successfully emitted bulk_message_delivered event');
+                      } catch (e) {
+                        AppLogger.error('❌ Failed to emit bulk_message_delivered event: $e');
+                      }
+                    }
+
+                    if (messagesToRead.isNotEmpty) {
+                      final timestamp = DateTime.now().toIso8601String();
+                      AppLogger.info('🔵 Emitting bulk_message_read for messages: ${messagesToRead.join(', ')}');
+                      try {
+                        _socketService!.emit('bulk_message_read', {
+                          'messageIds': messagesToRead,
+                          'conversationId': widget.conversationId,
+                          'timestamp': timestamp,
+                          'readBy': _currentUserId,
+                        });
+                        // Add to processed set
+                        for (final id in messagesToRead) {
+                          final readId = '${id}_read';
+                          _processedMessageIds.add(readId);
+                          AppLogger.info('✅ Added to processed IDs: $readId');
+                        }
+                        AppLogger.info('✅ Successfully emitted bulk_message_read event');
+                      } catch (e) {
+                        AppLogger.error('❌ Failed to emit bulk_message_read event: $e');
+                      }
+                    }
+                  }
                 }
               },
-              child: BlocBuilder<ConversationBloc, ConversationState>(
-                builder: (context, state) {
-                  if (state is ConversationLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (state is ConversationError) {
-                    return Center(child: Text('Error: ${state.message}'));
-                  }
-                  if (state is ConversationLoaded) {
-                    return ListView.builder(
-                      controller: _scrollController,
-                      reverse: true,
-                      itemCount: state.messages.length + (_isLoadingMore ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == state.messages.length) {
-                          return const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        }
-                        final message = state.messages[index];
-                        final isMe = message.sender == _currentUserId;
+              child: Column(
+                children: [
+                  // Message List - Only rebuilds when messages change
+                  Expanded(
+                    child: BlocSelector<ConversationBloc, ConversationState, List<Message>>(
+                      selector: (state) => state is ConversationLoaded ? state.messages : [],
+                      builder: (context, messages) {
+                        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Rendering messages list. Total messages: ${messages.length}');
                         
-                        return MessageBubble(
-                          message: message,
-                          isMe: isMe,
-                          showAvatar: false,
-                          avatarUrl: widget.participantAvatar,
-                          statusWidget: isMe ? _buildMessageStatus(message) : null,
+                        return NotificationListener<ScrollNotification>(
+                          onNotification: (notification) {
+                            if (notification is ScrollEndNotification) {
+                              AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Scroll ended at position: ${_scrollController.position.pixels}');
+                            }
+                            return false;
+                          },
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            reverse: true,
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                            itemCount: messages.length + (_isLoadingMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index == messages.length) {
+                                if (_isLoadingMore) {
+                                  return const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.all(8.0),
+                                      child: CircularProgressIndicator(),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              }
+                              
+                              final message = messages[index];
+                              final isMe = message.sender == _currentUserId;
+                              
+                              // Emit message_read when message is visible and from other user
+                              if (!isMe && 
+                                  message.status == 'delivered' && 
+                                  _socketService != null &&
+                                  !_processedMessageIds.contains('${message.id}_read')) {
+                                AppLogger.info('🔵 Emitting message_read for message: ${message.id}');
+                                try {
+                                  _socketService!.emit('message_read', {
+                                    'messageId': message.id,
+                                    'conversationId': widget.conversationId,
+                                    'timestamp': DateTime.now().toIso8601String(),
+                                    'readBy': _currentUserId,
+                                  });
+                                  _processedMessageIds.add('${message.id}_read');
+                                  AppLogger.info('✅ Successfully emitted message_read event');
+                                } catch (e) {
+                                  AppLogger.error('❌ Failed to emit message status events: $e');
+                                }
+                              }
+                              
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 4),
+                                child: MessageBubble(
+                                  key: ValueKey(message.id),
+                                  message: message,
+                                  isMe: isMe,
+                                  showAvatar: false,
+                                  avatarUrl: widget.participantAvatar,
+                                  statusWidget: isMe ? _buildMessageStatus(message) : null,
+                                ),
+                              );
+                            },
+                          ),
                         );
                       },
-                    );
-                  }
-                  return const Center(child: Text('No messages yet'));
-                },
+                    ),
+                  ),
+                  
+                  // Typing Indicator - Only rebuilds when typing status changes
+                  BlocSelector<ConversationBloc, ConversationState, bool>(
+                    selector: (state) => _otherUserTyping,
+                    builder: (context, isTyping) {
+                      if (!isTyping) return const SizedBox.shrink();
+                      
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: [
+                            const SizedBox(width: 8),
+                            Text(
+                              '${widget.participantName} is typing...',
+                              style: const TextStyle(
+                                color: Colors.grey,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
           ),
-          _buildTypingIndicator(),
           _buildMessageInput(),
         ],
       ),
@@ -708,49 +1005,60 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
-  // Add typing indicator to the UI
-  Widget _buildTypingIndicator() {
-    if (!_otherUserTyping) return const SizedBox.shrink();
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          const SizedBox(width: 8),
-          Text(
-            '${widget.participantName} is typing...',
-            style: const TextStyle(
-              color: Colors.grey,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Add message status indicator
   Widget _buildMessageStatus(Message message) {
     if (message.sender != _currentUserId) return const SizedBox.shrink();
     
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Building message status for message: ${message.id}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message status: ${message.status}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message deliveredAt: ${message.deliveredAt}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message readAt: ${message.readAt}');
+    
     Widget statusIcon;
-    switch (message.status) {
-      case 'sent':
-        statusIcon = const Icon(Icons.check, size: 16, color: Colors.grey);
-        break;
-      case 'delivered':
-        statusIcon = const Icon(Icons.done_all, size: 16, color: Colors.grey);
-        break;
-      case 'read':
-        statusIcon = const Icon(Icons.done_all, size: 16, color: Colors.blue);
-        break;
-      default:
-        statusIcon = const Icon(Icons.check, size: 16, color: Colors.grey);
+    String? timestamp;
+    
+    // Properly handle status progression
+    if (message.status == 'read' && message.readAt != null) {
+      statusIcon = Opacity(
+        opacity: 0, // Hide the icon
+        child: const Icon(Icons.done_all, size: 16, color: Colors.blue),
+      );
+      timestamp = DateFormat('HH:mm').format(message.readAt!);
+    } else if (message.status == 'delivered' && message.deliveredAt != null) {
+      statusIcon = Opacity(
+        opacity: 0, // Hide the icon
+        child: const Icon(Icons.done_all, size: 16, color: Colors.grey),
+      );
+      timestamp = DateFormat('HH:mm').format(message.deliveredAt!);
+    } else {
+      // Default to sent status
+      statusIcon = Opacity(
+        opacity: 0, // Hide the icon
+        child: const Icon(Icons.check, size: 16, color: Colors.grey),
+      );
+      timestamp = DateFormat('HH:mm').format(message.timestamp);
     }
+    
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Selected status icon: ${message.status}');
     
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: statusIcon,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          statusIcon,
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Text(
+              timestamp,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

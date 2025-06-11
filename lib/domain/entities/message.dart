@@ -58,10 +58,22 @@ class Message extends Equatable {
       throw Exception('Missing receiver in message: ' + json.toString());
     }
 
-    // Get timestamp from createdAt
-    final timestamp = json['createdAt'] != null 
-        ? DateTime.parse(json['createdAt'] as String)
-        : DateTime.now();
+    // Get timestamp from createdAt or timestamp field
+    DateTime timestamp;
+    try {
+      final timestampStr = json['createdAt'] as String? ?? json['timestamp'] as String?;
+      if (timestampStr != null) {
+        // Parse the ISO 8601 timestamp
+        timestamp = DateTime.parse(timestampStr).toLocal();
+        print('Parsed timestamp: $timestamp (local time)');
+      } else {
+        timestamp = DateTime.now();
+        print('No timestamp provided, using current time: $timestamp');
+      }
+    } catch (e) {
+      print('Error parsing timestamp: $e');
+      timestamp = DateTime.now();
+    }
 
     // Get message type
     MessageType messageType;
@@ -73,6 +85,42 @@ class Message extends Equatable {
       );
     } catch (e) {
       messageType = MessageType.text;
+    }
+
+    // Parse timestamps
+    DateTime? deliveredAt;
+    DateTime? readAt;
+    if (json['metadata'] != null) {
+      final metadata = json['metadata'] as Map<String, dynamic>;
+      if (metadata['deliveredAt'] != null) {
+        try {
+          deliveredAt = DateTime.parse(metadata['deliveredAt'] as String).toLocal();
+          print('Parsed deliveredAt: $deliveredAt (local time)');
+        } catch (e) {
+          print('Error parsing deliveredAt: $e');
+        }
+      }
+      
+      if (metadata['readAt'] != null) {
+        try {
+          readAt = DateTime.parse(metadata['readAt'] as String).toLocal();
+          print('Parsed readAt: $readAt (local time)');
+        } catch (e) {
+          print('Error parsing readAt: $e');
+        }
+      }
+    }
+
+    print('Message timestamps - deliveredAt: $deliveredAt, readAt: $readAt');
+
+    // Determine status based on timestamps
+    String status = 'sent';
+    if (readAt != null) {
+      status = 'read';
+    } else if (deliveredAt != null) {
+      status = 'delivered';
+    } else if (json['status'] != null) {
+      status = json['status'] as String;
     }
 
     return Message(
@@ -87,12 +135,9 @@ class Message extends Equatable {
         if (json['isDisappearing'] != null) 'isDisappearing': json['isDisappearing'],
         if (json['updatedAt'] != null) 'updatedAt': json['updatedAt'],
       },
-      status: json['status'] as String? ?? 'sent',
-      deliveredAt: json['deliveredAt'] != null ? DateTime.parse(json['deliveredAt']) : null,
-      readAt: json['readAt'] != null ? DateTime.parse(json['readAt']) : null,
-      // metadata can be constructed based on type if needed, e.g. for image/file URLs
-      // isDisappearing: json['isDisappearing'] as bool?,
-      // disappearingTime: json['disappearingTime'] as String?,
+      status: status,
+      deliveredAt: deliveredAt,
+      readAt: readAt,
     );
   }
 
@@ -126,8 +171,6 @@ class Message extends Equatable {
     String? status,
     DateTime? deliveredAt,
     DateTime? readAt,
-    // bool? isDisappearing,
-    // String? disappearingTime,
   }) {
     return Message(
       id: id ?? this.id,
@@ -141,8 +184,6 @@ class Message extends Equatable {
       status: status ?? this.status,
       deliveredAt: deliveredAt ?? this.deliveredAt,
       readAt: readAt ?? this.readAt,
-      // isDisappearing: isDisappearing ?? this.isDisappearing,
-      // disappearingTime: disappearingTime ?? this.disappearingTime,
     );
   }
 
@@ -159,7 +200,35 @@ class Message extends Equatable {
         status,
         deliveredAt,
         readAt,
-        // isDisappearing,
-        // disappearingTime,
       ];
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Message &&
+        other.id == id &&
+        other.sender == sender &&
+        other.receiver == receiver &&
+        other.content == content &&
+        other.timestamp == timestamp &&
+        other.type == type &&
+        other.isRead == isRead &&
+        other.status == status &&
+        other.deliveredAt == deliveredAt &&
+        other.readAt == readAt;
+  }
+
+  @override
+  int get hashCode => Object.hash(
+        id,
+        sender,
+        receiver,
+        content,
+        timestamp,
+        type,
+        isRead,
+        status,
+        deliveredAt,
+        readAt,
+      );
 } 
