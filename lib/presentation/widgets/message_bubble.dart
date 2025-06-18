@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hushmate/domain/entities/message.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
+import 'package:hushmate/core/services/image_url_service.dart';
+import 'package:hushmate/core/utils/logger.dart';
 
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   final Message? message;
   final bool isMe;
   final VoidCallback? onTap;
@@ -10,6 +13,8 @@ class MessageBubble extends StatelessWidget {
   final String? avatarUrl;
   final Widget? statusWidget;
   final bool isTyping;
+  final VoidCallback? onImageTap;
+  final Function(String)? onImageUrlReady;
 
   const MessageBubble({
     Key? key,
@@ -20,84 +25,300 @@ class MessageBubble extends StatelessWidget {
     this.avatarUrl,
     this.statusWidget,
     this.isTyping = false,
+    this.onImageTap,
+    this.onImageUrlReady,
   }) : super(key: key);
 
   @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble> {
+  bool _isVisible = true;
+  Timer? _disappearTimer;
+  int? _remainingTime;
+  String? _currentImageUrl;
+  bool _isLoadingImage = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.message?.isDisappearing == true && widget.message?.disappearingTime != null) {
+      _remainingTime = widget.message?.disappearingTime;
+      // If message has been viewed (has viewedAt in metadata), start the timer
+      if (widget.message?.metadata?.containsKey('viewedAt') == true) {
+        final viewedAt = DateTime.parse(widget.message!.metadata!['viewedAt']!);
+        final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+        _remainingTime = (_remainingTime! - elapsedSeconds).clamp(0, widget.message!.disappearingTime!);
+        if (_remainingTime! > 0) {
+          _startTimer();
+        } else {
+          _isVisible = false;
+        }
+      }
+    }
+
+    // Initialize image URL if it's an image message
+    if (widget.message?.type == MessageType.image) {
+      _loadImageUrl();
+    }
+  }
+
+  @override
+  void didUpdateWidget(MessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // Log message state changes
+    if (widget.message?.id != oldWidget.message?.id ||
+        widget.message?.metadata != oldWidget.message?.metadata) {
+      AppLogger.info('🔵 MessageBubble updated:');
+      AppLogger.info('  - Message ID: ${widget.message?.id}');
+      AppLogger.info('  - Is disappearing: ${widget.message?.isDisappearing}');
+      AppLogger.info('  - Disappearing time: ${widget.message?.disappearingTime}');
+      AppLogger.info('  - Metadata: ${widget.message?.metadata}');
+      AppLogger.info('  - Is expired: ${widget.message?.metadata?['isExpired']}');
+    }
+    
+    // Handle image URL changes
+    if (widget.message?.type == MessageType.image &&
+        widget.message?.content != oldWidget.message?.content) {
+      _loadImageUrl();
+    }
+
+    // Handle disappearing message updates
+    if (widget.message?.isDisappearing == true && 
+        widget.message?.disappearingTime != null &&
+        widget.message?.metadata?.containsKey('viewedAt') == true) {
+      
+      // Check if viewedAt was just added or updated
+      final oldViewedAt = oldWidget.message?.metadata?['viewedAt'];
+      final newViewedAt = widget.message?.metadata?['viewedAt'];
+      
+      if (newViewedAt != null && (oldViewedAt == null || oldViewedAt != newViewedAt)) {
+        AppLogger.info('🔵 Message was just viewed, starting timer');
+        AppLogger.info('🔵 Message ID: ${widget.message?.id}');
+        AppLogger.info('🔵 Viewed at: $newViewedAt');
+        AppLogger.info('🔵 Disappearing time: ${widget.message?.disappearingTime} seconds');
+        
+        final viewedAt = DateTime.parse(newViewedAt);
+        final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+        _remainingTime = (widget.message!.disappearingTime! - elapsedSeconds).clamp(0, widget.message!.disappearingTime!);
+        
+        AppLogger.info('🔵 Calculated remaining time: $_remainingTime seconds');
+        
+        if (_remainingTime! > 0) {
+          _startTimer();
+        } else {
+          AppLogger.info('🔵 No time remaining, hiding message');
+          setState(() => _isVisible = false);
+        }
+      }
+    }
+
+    // Handle expired state
+    if (widget.message?.metadata?['isExpired'] == 'true' && 
+        oldWidget.message?.metadata?['isExpired'] != 'true') {
+      AppLogger.info('🔵 Message marked as expired, updating UI');
+      setState(() {
+        _isVisible = false;
+        _disappearTimer?.cancel();
+      });
+    }
+  }
+
+  Future<void> _loadImageUrl() async {
+    if (widget.message?.type != MessageType.image) return;
+
+    setState(() {
+      _isLoadingImage = true;
+    });
+
+    try {
+      // First check if we have a valid URL expiration time
+      if (widget.message?.urlExpirationTime != null) {
+        final expirationTime = widget.message!.urlExpirationTime!;
+        if (expirationTime.isAfter(DateTime.now())) {
+          AppLogger.info('🔵 Using existing URL, valid until: $expirationTime');
+          setState(() {
+            _currentImageUrl = widget.message!.content;
+            _isLoadingImage = false;
+          });
+          widget.onImageUrlReady?.call(widget.message!.content);
+          return;
+        } else {
+          AppLogger.info('🔵 URL has expired at: $expirationTime, requesting new URL');
+        }
+      } else {
+        AppLogger.info('🔵 No expiration time available, using original URL');
+        setState(() {
+          _currentImageUrl = widget.message!.content;
+          _isLoadingImage = false;
+        });
+        widget.onImageUrlReady?.call(widget.message!.content);
+        return;
+      }
+      
+      // Only proceed with URL refresh if the current URL has expired
+      final uri = Uri.parse(widget.message!.content);
+      final pathSegments = uri.path.split('/');
+      final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/'); // Get last two segments: messages/filename
+      AppLogger.info('🔵 Loading image URL for key: $imageKey');
+      AppLogger.info('🔵 Original content URL: ${widget.message!.content}');
+      
+      final imageUrl = await ImageUrlService().getValidImageUrl(imageKey);
+      AppLogger.info('🔵 Got pre-signed URL: $imageUrl');
+      
+      if (mounted) {
+        setState(() {
+          _currentImageUrl = imageUrl;
+          _isLoadingImage = false;
+        });
+        // Notify parent about the new URL
+        widget.onImageUrlReady?.call(imageUrl);
+        AppLogger.info('🔵 Updated image URL in state and notified parent');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Failed to load image URL: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingImage = false;
+        });
+      }
+    }
+  }
+
+  void _startTimer() {
+    _disappearTimer?.cancel();
+    _disappearTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_remainingTime != null) {
+            _remainingTime = (_remainingTime! - 1).clamp(0, widget.message!.disappearingTime!);
+            AppLogger.info('🔵 Timer tick - remaining time: $_remainingTime seconds');
+            
+            if (_remainingTime == 0) {
+              AppLogger.info('🔵 Timer finished');
+              timer.cancel();
+              _isVisible = false;
+            }
+          }
+        });
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _disappearTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_isVisible) {
+      return const SizedBox.shrink();
+    }
+
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         child: Row(
-          mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+          mainAxisAlignment: widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (showAvatar && !isMe) ...[
-              CircleAvatar(
-                radius: 16,
-                backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl!) : null,
-                child: avatarUrl == null ? const Icon(Icons.person, size: 16) : null,
-              ),
-              const SizedBox(width: 8),
-            ],
+            if (!widget.isMe && widget.showAvatar) _buildAvatar(),
+            if (!widget.isMe && widget.showAvatar) const SizedBox(width: 8),
             Flexible(
               child: Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: isMe ? Theme.of(context).primaryColor : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width * 0.7,
+                  color: widget.isMe ? Theme.of(context).primaryColor : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isTyping)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                isMe ? Colors.white70 : Colors.black54,
+                    if (widget.message?.isDisappearing == true && _remainingTime != null)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.timer,
+                              size: 12,
+                              color: widget.isMe ? Colors.white70 : Colors.black54,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_remainingTime}s',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: widget.isMe ? Colors.white70 : Colors.black54,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'typing...',
-                            style: TextStyle(
-                              color: isMe ? Colors.white70 : Colors.black54,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
-                      )
-                    else
-                      _buildMessageContent(context),
-                    if (!isTyping && message != null) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            _formatTime(message!.timestamp),
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isMe ? Colors.white70 : Colors.black54,
-                            ),
-                          ),
-                          if (isMe) ...[
-                            const SizedBox(width: 4),
-                            statusWidget ?? _buildStatusIcon(message!.status),
                           ],
-                        ],
+                        ),
                       ),
-                    ],
+                    if (widget.message?.type == MessageType.image)
+                      GestureDetector(
+                        onTap: widget.onImageTap,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: _isLoadingImage
+                              ? const SizedBox(
+                                  width: 200,
+                                  height: 200,
+                                  child: Center(child: CircularProgressIndicator()),
+                                )
+                              : Image.network(
+                                  _currentImageUrl ?? widget.message!.content,
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return SizedBox(
+                                      width: 200,
+                                      height: 200,
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          value: loadingProgress.expectedTotalBytes != null
+                                              ? loadingProgress.cumulativeBytesLoaded /
+                                                  loadingProgress.expectedTotalBytes!
+                                              : null,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    AppLogger.error('❌ Failed to load image: $error');
+                                    return const SizedBox(
+                                      width: 200,
+                                      height: 200,
+                                      child: Center(
+                                        child: Icon(Icons.error_outline, size: 40),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+                      ),
+                    if (widget.message?.type == MessageType.text)
+                      Text(
+                        widget.message!.content,
+                        style: TextStyle(
+                          color: widget.isMe ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    if (widget.statusWidget != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: widget.statusWidget!,
+                      ),
                   ],
                 ),
               ),
@@ -108,70 +329,114 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
+  Widget _buildAvatar() {
+    return CircleAvatar(
+      radius: 16,
+      backgroundImage: widget.avatarUrl != null ? NetworkImage(widget.avatarUrl!) : null,
+      child: widget.avatarUrl == null ? const Icon(Icons.person) : null,
+    );
+  }
+
   Widget _buildMessageContent(BuildContext context) {
-    switch (message!.type) {
+    if (widget.message == null) {
+      return const SizedBox.shrink();
+    }
+
+    switch (widget.message!.type) {
       case MessageType.text:
         return Text(
-          message!.content,
+          widget.message!.content,
           style: TextStyle(
-            color: isMe ? Colors.white : Colors.black,
+            color: widget.isMe ? Colors.white : Colors.black,
             fontSize: 16,
           ),
         );
       case MessageType.image:
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: Image.network(
-            message!.content,
-            fit: BoxFit.cover,
-            loadingBuilder: (context, child, loadingProgress) {
-              if (loadingProgress == null) return child;
-              return Container(
-                width: 200,
-                height: 200,
-                color: Colors.grey[300],
-                child: const Center(
-                  child: CircularProgressIndicator(),
-                ),
-              );
-            },
-            errorBuilder: (context, error, stackTrace) {
-              return Container(
-                width: 200,
-                height: 200,
-                color: Colors.grey[300],
-                child: const Icon(Icons.error_outline),
-              );
-            },
+        if (_isLoadingImage) {
+          return Container(
+            width: 200,
+            height: 200,
+            color: Colors.grey[300],
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+
+        if (_currentImageUrl == null) {
+          AppLogger.warning('⚠️ No image URL available for message: ${widget.message!.id}');
+          return Container(
+            width: 200,
+            height: 200,
+            color: Colors.grey[300],
+            child: const Icon(Icons.error_outline),
+          );
+        }
+
+        return GestureDetector(
+          onTap: () {
+            AppLogger.info('🔵 Image tapped');
+            final urlToUse = _currentImageUrl ?? widget.message!.content;
+            AppLogger.info('🔵 Using image URL: $urlToUse');
+            if (widget.onImageTap != null) {
+              widget.onImageTap!();
+              AppLogger.info('🔵 Called onImageTap callback');
+            } else {
+              AppLogger.warning('⚠️ Cannot open image: onImageTap callback is null');
+            }
+          },
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              _currentImageUrl ?? widget.message!.content,
+              fit: BoxFit.cover,
+              headers: const {
+                'Accept': '*/*',
+              },
+              errorBuilder: (context, error, stackTrace) {
+                AppLogger.error('❌ Image load error: $error');
+                // If we get a 400 or 403 error, try to refresh the URL
+                if (error.toString().contains('400') || error.toString().contains('403')) {
+                  AppLogger.info('🔵 Got ${error.toString().contains('400') ? '400' : '403'} error, refreshing URL');
+                  _loadImageUrl();
+                }
+                return Container(
+                  width: 200,
+                  height: 200,
+                  color: Colors.grey[300],
+                  child: const Icon(Icons.error_outline),
+                );
+              },
+            ),
           ),
         );
       case MessageType.voice:
-        final duration = message!.metadata?['duration'] as int? ?? 0;
+        final duration = widget.message!.metadata?['duration'] as int? ?? 0;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.mic,
-              color: isMe ? Colors.white : Colors.black,
+              color: widget.isMe ? Colors.white : Colors.black,
             ),
             const SizedBox(width: 8),
             Text(
               _formatDuration(duration),
               style: TextStyle(
-                color: isMe ? Colors.white : Colors.black,
+                color: widget.isMe ? Colors.white : Colors.black,
               ),
             ),
           ],
         );
       case MessageType.file:
-        final fileName = message!.metadata?['fileName'] as String? ?? 'File';
-        final fileSize = message!.metadata?['fileSize'] as int? ?? 0;
+        final fileName = widget.message!.metadata?['fileName'] as String? ?? 'File';
+        final fileSize = widget.message!.metadata?['fileSize'] as int? ?? 0;
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               Icons.attach_file,
-              color: isMe ? Colors.white : Colors.black,
+              color: widget.isMe ? Colors.white : Colors.black,
             ),
             const SizedBox(width: 8),
             Column(
@@ -180,14 +445,14 @@ class MessageBubble extends StatelessWidget {
                 Text(
                   fileName,
                   style: TextStyle(
-                    color: isMe ? Colors.white : Colors.black,
+                    color: widget.isMe ? Colors.white : Colors.black,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 Text(
                   _formatFileSize(fileSize),
                   style: TextStyle(
-                    color: isMe ? Colors.white70 : Colors.black54,
+                    color: widget.isMe ? Colors.white70 : Colors.black54,
                     fontSize: 12,
                   ),
                 ),
@@ -195,17 +460,22 @@ class MessageBubble extends StatelessWidget {
             ),
           ],
         );
+      default:
+        return Text(
+          widget.message!.content,
+          style: TextStyle(
+            color: widget.isMe ? Colors.white : Colors.black,
+            fontSize: 16,
+          ),
+        );
     }
   }
 
-  String _formatTime(DateTime time) {
-    return DateFormat('HH:mm').format(time);
-  }
-
-  String _formatDuration(int seconds) {
-    final minutes = seconds ~/ 60;
-    final remainingSeconds = seconds % 60;
-    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
+  String _formatDuration(int milliseconds) {
+    final duration = Duration(milliseconds: milliseconds);
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds % 60;
+    return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
 
   String _formatFileSize(int bytes) {
@@ -215,17 +485,5 @@ class MessageBubble extends StatelessWidget {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
-  }
-
-  Widget _buildStatusIcon(String status) {
-    switch (status) {
-      case 'read':
-        return Icon(Icons.done_all, size: 18, color: Colors.blueAccent);
-      case 'delivered':
-        return Icon(Icons.done_all, size: 18, color: Colors.grey);
-      case 'sent':
-      default:
-        return Icon(Icons.check, size: 18, color: Colors.grey);
-    }
   }
 } 

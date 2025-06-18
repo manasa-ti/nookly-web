@@ -268,3 +268,13 @@ class BulkMessageRead extends ConversationEvent {
   @override
   List<Object?> get props => [messageIds, readAt];
 } 
+
+class MessageViewed extends ConversationEvent {
+  final String messageId;
+  final DateTime viewedAt;
+
+  const MessageViewed(this.messageId, this.viewedAt);
+
+  @override
+  List<Object> get props => [messageId, viewedAt];
+} 

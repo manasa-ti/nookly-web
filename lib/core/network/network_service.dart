@@ -9,21 +9,21 @@ class NetworkService {
   static String? _customBaseUrl;
 
   static String get baseUrl {
-    if (_customBaseUrl != null) {
-      return _customBaseUrl!;
-    }
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000/api'; // Android emulator
-    }
-    return 'http://localhost:3000/api'; // iOS simulator and others
+    final url = _customBaseUrl ?? (Platform.isAndroid ? 'http://10.0.2.2:3000/api/' : 'http://localhost:3000/api/');
+    print('debug disappearing: NetworkService baseUrl getter called, returning: $url');
+    return url;
   }
 
   static void setBaseUrl(String url) {
+    print('debug disappearing: Setting NetworkService baseUrl to: $url');
     _customBaseUrl = url;
     _dio = null; // Force recreation of Dio instance with new baseUrl
   }
 
   static Dio get dio {
+    print('debug disappearing: Getting Dio instance');
+    print('debug disappearing: Current baseUrl: $baseUrl');
+    
     _dio ??= Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 5),
@@ -45,6 +45,7 @@ class NetworkService {
       ..interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) async {
           try {
+            print('debug disappearing: Interceptor onRequest - URL: ${options.uri}');
             // Get token from SharedPreferences
             _prefs ??= await SharedPreferences.getInstance();
             final token = _prefs?.getString('token');
@@ -53,6 +54,7 @@ class NetworkService {
             }
             return handler.next(options);
           } catch (e) {
+            print('debug disappearing: Interceptor onRequest error: $e');
             return handler.reject(
               DioException(
                 requestOptions: options,
@@ -62,9 +64,11 @@ class NetworkService {
           }
         },
         onResponse: (response, handler) {
+          print('debug disappearing: Interceptor onResponse - Status: ${response.statusCode}');
           return handler.next(response);
         },
         onError: (DioException e, handler) {
+          print('debug disappearing: Interceptor onError - Error: ${e.message}');
           if (e.type == DioExceptionType.connectionTimeout ||
               e.type == DioExceptionType.receiveTimeout) {
             return handler.reject(

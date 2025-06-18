@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hushmate/core/di/injection_container.dart' as di;
+import 'package:hushmate/core/services/call_service.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
 import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
@@ -14,6 +15,9 @@ import 'package:hushmate/presentation/pages/home/home_page.dart';
 import 'package:hushmate/presentation/pages/auth/login_page.dart';
 import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
 import 'package:logger/logger.dart';
+import 'package:hushmate/core/utils/logger.dart';
+
+
 
 // Create a global logger instance
 final logger = Logger(
@@ -35,6 +39,9 @@ void main() async {
   
   await di.init();
   logger.i('Dependency injection initialized');
+  
+  // Initialize Agora
+  await CallService().initialize();
   
   runApp(const MyApp());
   logger.i('Application started');

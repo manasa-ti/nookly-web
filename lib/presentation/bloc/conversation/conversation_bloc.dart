@@ -58,6 +58,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<UpdateCurrentUserId>(_onUpdateCurrentUserId);
     on<BulkMessageDelivered>(_onBulkMessageDelivered);
     on<BulkMessageRead>(_onBulkMessageRead);
+    on<MessageExpired>(_onMessageExpired);
+    on<MessageViewed>(_onMessageViewed);
   }
 
   Future<void> _onLoadConversation(
@@ -99,6 +101,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         conversation: conversation,
         messages: messages,
         hasMoreMessages: _hasMoreMessages,
+        participantName: event.participantName,
+        participantAvatar: event.participantAvatar,
+        isOnline: event.isOnline,
       ));
 
     } catch (e) {
@@ -136,6 +141,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           conversation: currentState.conversation,
           messages: updatedMessages,
           hasMoreMessages: _hasMoreMessages,
+          participantName: currentState.participantName,
+          participantAvatar: currentState.participantAvatar,
+          isOnline: currentState.isOnline,
         ));
 
       } catch (e) {
@@ -301,55 +309,45 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     }
   }
 
-  Future<void> _onStartAudioCall(
+  void _onStartAudioCall(
     StartAudioCall event,
     Emitter<ConversationState> emit,
-  ) async {
-    try {
-      await _conversationRepository.startAudioCall(event.conversationId);
-      if (state is ConversationLoaded) {
-        final currentState = state as ConversationLoaded;
-        emit(currentState.copyWith(isCallActive: true, isAudioCall: true));
-      } else {
-        // This state transition might need re-evaluation if not already loaded.
-        // emit(AudioCallStarted()); // This state needs to be part of ConversationState
-      }
-    } catch (e) {
-      emit(ConversationError(e.toString()));
+  ) {
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      emit(currentState.copyWith(
+        isCallActive: true,
+        isAudioCall: true,
+      ));
+      AppLogger.info('🔵 Audio call started for conversation: ${event.conversationId}');
     }
   }
 
-  Future<void> _onStartVideoCall(
+  void _onStartVideoCall(
     StartVideoCall event,
     Emitter<ConversationState> emit,
-  ) async {
-    try {
-      await _conversationRepository.startVideoCall(event.conversationId);
-      if (state is ConversationLoaded) {
-        final currentState = state as ConversationLoaded;
-        emit(currentState.copyWith(isCallActive: true, isAudioCall: false));
-      } else {
-        // emit(VideoCallStarted()); // This state needs to be part of ConversationState
-      }
-    } catch (e) {
-      emit(ConversationError(e.toString()));
+  ) {
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      emit(currentState.copyWith(
+        isCallActive: true,
+        isAudioCall: false,
+      ));
+      AppLogger.info('🔵 Video call started for conversation: ${event.conversationId}');
     }
   }
 
-  Future<void> _onEndCall(
+  void _onEndCall(
     EndCall event,
     Emitter<ConversationState> emit,
-  ) async {
-    try {
-      await _conversationRepository.endCall(event.conversationId);
-      if (state is ConversationLoaded) {
-        final currentState = state as ConversationLoaded;
-        emit(currentState.copyWith(isCallActive: false, isAudioCall: false));
-      } else {
-        // emit(CallEnded()); // This state needs to be part of ConversationState
-      }
-    } catch (e) {
-      emit(ConversationError(e.toString()));
+  ) {
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      emit(currentState.copyWith(
+        isCallActive: false,
+        isAudioCall: false,
+      ));
+      AppLogger.info('🔵 Call ended for conversation: ${event.conversationId}');
     }
   }
 
@@ -369,6 +367,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         messages: updatedMessages,
         hasMoreMessages: currentState.hasMoreMessages,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
       ));
     }
   }
@@ -414,6 +415,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         hasMoreMessages: currentState.hasMoreMessages,
         isCallActive: currentState.isCallActive,
         isAudioCall: currentState.isAudioCall,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
       ));
       
       AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state with updated message status');
@@ -458,6 +462,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         hasMoreMessages: currentState.hasMoreMessages,
         isCallActive: currentState.isCallActive,
         isAudioCall: currentState.isAudioCall,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
       ));
       
       AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state with bulk updated message status');
@@ -505,6 +512,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         hasMoreMessages: currentState.hasMoreMessages,
         isCallActive: currentState.isCallActive,
         isAudioCall: currentState.isAudioCall,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
       ));
     }
   }
@@ -543,6 +553,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         hasMoreMessages: currentState.hasMoreMessages,
         isCallActive: currentState.isCallActive,
         isAudioCall: currentState.isAudioCall,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
       ));
     }
   }
@@ -593,6 +606,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         messages: updatedMessages,
         hasMoreMessages: currentState.hasMoreMessages,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
       ));
     }
   }
@@ -635,6 +651,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           hasMoreMessages: currentState.hasMoreMessages,
           isCallActive: currentState.isCallActive,
           isAudioCall: currentState.isAudioCall,
+          participantName: currentState.participantName,
+          participantAvatar: currentState.participantAvatar,
+          isOnline: currentState.isOnline,
         ));
         
         AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state from conversation update');
@@ -649,6 +668,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           hasMoreMessages: currentState.hasMoreMessages,
           isCallActive: currentState.isCallActive,
           isAudioCall: currentState.isAudioCall,
+          participantName: currentState.participantName,
+          participantAvatar: currentState.participantAvatar,
+          isOnline: currentState.isOnline,
         ));
         
         AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state without message update');
@@ -673,6 +695,60 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     _currentUserId = event.userId;
   }
 
+  void _onMessageExpired(MessageExpired event, Emitter<ConversationState> emit) {
+    AppLogger.info('🔵 Handling MessageExpired event for message: ${event.messageId}');
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 Current state has ${currentState.messages.length} messages');
+      
+      // Remove the expired message from the list
+      final updatedMessages = currentState.messages.where((message) => message.id != event.messageId).toList();
+      
+      AppLogger.info('🔵 Removed expired message, new message count: ${updatedMessages.length}');
+      emit(ConversationLoaded(
+        conversation: currentState.conversation,
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
+      ));
+    } else {
+      AppLogger.warning('⚠️ Cannot handle MessageExpired: state is not ConversationLoaded');
+    }
+  }
+
+  void _onMessageViewed(MessageViewed event, Emitter<ConversationState> emit) {
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      final updatedMessages = currentState.messages.map((message) {
+        if (message.id == event.messageId) {
+          // If this is a disappearing image message, start the timer
+          if (message.type == MessageType.image && message.isDisappearing) {
+            // Create a new message with the viewed timestamp and start the timer
+            return message.copyWith(
+              metadata: {
+                ...?message.metadata,
+                'viewedAt': event.viewedAt.toIso8601String(),
+              },
+            );
+          }
+          return message;
+        }
+        return message;
+      }).toList();
+
+      emit(ConversationLoaded(
+        conversation: currentState.conversation,
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
+      ));
+    }
+  }
+
   @override
   Future<void> close() {
     _messagesSubscription?.cancel();
@@ -687,4 +763,13 @@ class _MessagesUpdated extends ConversationEvent {
 
   @override
   List<Object?> get props => [messages];
+}
+
+class MessageExpired extends ConversationEvent {
+  final String messageId;
+
+  const MessageExpired(this.messageId);
+
+  @override
+  List<Object> get props => [messageId];
 } 

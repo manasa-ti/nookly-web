@@ -40,7 +40,19 @@ class ConversationRepositoryImpl implements ConversationRepository {
           DateTime lastMessageTime;
 
           if (lastMessageJson != null) {
-            lastMessage = Message.fromJson(lastMessageJson);
+            // Ensure required fields are present in the message data
+            final messageData = Map<String, dynamic>.from(lastMessageJson);
+            if (!messageData.containsKey('sender')) {
+              messageData['sender'] = userJson['_id'] as String; // Use conversation user as sender
+            }
+            if (!messageData.containsKey('receiver')) {
+              messageData['receiver'] = currentUserId; // Use current user as receiver
+            }
+            // Convert messageType to type enum
+            if (messageData.containsKey('messageType')) {
+              messageData['type'] = messageData['messageType'] == 'image' ? 'image' : 'text';
+            }
+            lastMessage = Message.fromJson(messageData);
             lastMessageTime = lastMessage.timestamp;
           } else {
             lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
@@ -62,9 +74,9 @@ class ConversationRepositoryImpl implements ConversationRepository {
           ));
         }
         return conversations;
-      } else {
-        throw Exception('Failed to load conversations: Status ${response.statusCode}');
       }
+      
+      throw Exception('Failed to load conversations: Status ${response.statusCode}');
     } on DioException catch (e) {
       print('DioError fetching conversations: ${e.response?.data ?? e.message}');
       throw Exception('Failed to load conversations: ${e.response?.data?['message'] ?? e.message}');
@@ -173,7 +185,78 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
   @override
   Future<void> sendImageMessage(String conversationId, String imagePath) async {
-    throw UnimplementedError('sendImageMessage not implemented with API yet.');
+    try {
+      print('debug disappearing: Starting image upload process');
+      print('debug disappearing: Base URL from NetworkService: ${NetworkService.baseUrl}');
+      
+      // Create form data for the image upload
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(imagePath),
+        'receiver': conversationId,
+        'messageType': 'image',
+        'isDisappearing': true,
+        'disappearingTime': 5, // Default to 5 seconds
+      });
+
+      // Log the full URL that will be used
+      final fullUrl = '${NetworkService.baseUrl}messages/upload-image';
+      print('debug disappearing: Full URL for upload: $fullUrl');
+      print('debug disappearing: Form data fields: ${formData.fields}');
+
+      // Upload the image - use the full URL
+      final response = await NetworkService.dio.post(
+        'messages/upload-image',
+        data: formData,
+        options: Options(
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          validateStatus: (status) => true, // Accept all status codes for debugging
+        ),
+      );
+
+      print('debug disappearing: Response status: ${response.statusCode}');
+      print('debug disappearing: Response data: ${response.data}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Failed to upload image: ${response.statusMessage}');
+      }
+
+      // The response should contain the image URL and message data
+      final imageUrl = response.data['imageUrl'];
+      if (imageUrl == null) {
+        throw Exception('No image URL in response');
+      }
+
+      print('debug disappearing: Image URL received: $imageUrl');
+
+      // Send the message with the image URL
+      final messageUrl = '${NetworkService.baseUrl}messages';
+      print('debug disappearing: Full URL for message: $messageUrl');
+      
+      await NetworkService.dio.post(
+        'messages',
+        data: {
+          'receiver': conversationId,
+          'content': imageUrl,
+          'messageType': 'image',
+          'isDisappearing': true,
+          'disappearingTime': 5, // Default to 5 seconds
+        },
+      );
+      
+      print('debug disappearing: Message sent successfully');
+    } on DioException catch (e) {
+      print('debug disappearing: DioException details:');
+      print('debug disappearing: - Type: ${e.type}');
+      print('debug disappearing: - Message: ${e.message}');
+      print('debug disappearing: - Response: ${e.response?.data}');
+      print('debug disappearing: - Request: ${e.requestOptions.uri}');
+      throw Exception('Failed to send image message: ${e.response?.data?['message'] ?? e.message}');
+    } catch (e) {
+      print('debug disappearing: General error: $e');
+      throw Exception('Failed to send image message: An unexpected error occurred.');
+    }
   }
 
   @override
@@ -249,6 +332,10 @@ class ConversationRepositoryImpl implements ConversationRepository {
       final data = response.data as Map<String, dynamic>;
       print('Messages data: ${data['messages']}');
       
+      // Get current user ID once
+      final currentUser = await _authRepository.getCurrentUser();
+      final currentUserId = currentUser?.id;
+      
       final messages = (data['messages'] as List)
           .map((msg) {
             print('Processing message: $msg');
@@ -256,7 +343,17 @@ class ConversationRepositoryImpl implements ConversationRepository {
               print('Warning: Message is not a Map: $msg');
               msg = {'id': DateTime.now().millisecondsSinceEpoch.toString(), 'content': msg.toString()};
             }
-            return Message.fromJson(msg);
+            
+            // Ensure required fields are present
+            final messageData = Map<String, dynamic>.from(msg);
+            if (!messageData.containsKey('sender')) {
+              messageData['sender'] = participantId; // Use participantId as sender if missing
+            }
+            if (!messageData.containsKey('receiver')) {
+              messageData['receiver'] = currentUserId; // Use current user as receiver if missing
+            }
+            
+            return Message.fromJson(messageData);
           })
           .toList();
 

@@ -126,6 +126,34 @@ class SocketService {
     _socket!.emit('private_message', messageData);
   }
 
+  void sendImageViewed(String messageId, String conversationId) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot send image viewed event: Socket not connected');
+      return;
+    }
+
+    AppLogger.info('Sending image viewed event for message: $messageId');
+    _socket!.emit('image_viewed', {
+      'messageId': messageId,
+      'conversationId': conversationId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  void sendImageExpired(String messageId, String conversationId) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot send image expired event: Socket not connected');
+      return;
+    }
+
+    AppLogger.info('Sending image expired event for message: $messageId');
+    _socket!.emit('image_expired', {
+      'messageId': messageId,
+      'conversationId': conversationId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
   void _setupSocketListeners() {
     if (_socket == null) {
       AppLogger.error('Cannot setup listeners: Socket is null');

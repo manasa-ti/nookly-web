@@ -11,7 +11,16 @@ import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:hushmate/core/utils/logger.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import 'package:hushmate/presentation/pages/call/call_screen.dart';
+import 'package:image_picker/image_picker.dart';
 import 'dart:async';
+import 'package:dio/dio.dart';
+import 'dart:io';
+import 'package:http_parser/http_parser.dart';
+import 'package:hushmate/core/services/image_url_service.dart';
+
+import 'package:hushmate/presentation/widgets/disappearing_time_selector.dart';
+
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -48,6 +57,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   String? _jwtToken;
   SocketService? _socketService;
   final Set<String> _processedMessageIds = {}; // Track processed message IDs
+  final Dio dio = Dio(); // Initialize Dio instance
+  final ImagePicker _picker = ImagePicker();
+  String? _currentImageUrl;  // Add this to store current image URL
 
   @override
   void initState() {
@@ -236,6 +248,56 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.error('❌ Socket error: $data');
     });
 
+    // Add listener for image_viewed event
+    _socketService!.on('image_viewed', (data) {
+      if (!mounted) return;
+      AppLogger.info('🔵 Received image_viewed event: $data');
+      try {
+        final messageId = data['messageId'];
+        final viewedAt = data['timestamp'] != null 
+            ? DateTime.parse(data['timestamp']) 
+            : DateTime.now();
+        final disappearingTime = data['disappearingTime'];
+        final isDisappearing = data['isDisappearing'] ?? false;
+        
+        AppLogger.info('🔵 Image viewed details:');
+        AppLogger.info('  - Message ID: $messageId');
+        AppLogger.info('  - Viewed at: $viewedAt');
+        AppLogger.info('  - Disappearing time: $disappearingTime');
+        AppLogger.info('  - Is disappearing: $isDisappearing');
+        
+        // Update the message state with viewed timestamp
+        context.read<ConversationBloc>().add(MessageViewed(
+          messageId,
+          viewedAt,
+        ));
+
+        // Start the disappearing timer
+        if (isDisappearing && disappearingTime != null) {
+          AppLogger.info('🔵 Starting disappearing timer for message: $messageId');
+          AppLogger.info('🔵 Disappearing time: $disappearingTime seconds');
+          
+          // Create a timer that will trigger the message expiration
+          Timer(Duration(seconds: disappearingTime), () {
+            if (mounted) {
+              AppLogger.info('🔵 Message expired: $messageId');
+              AppLogger.info('🔵 Emitting MessageExpired event');
+              context.read<ConversationBloc>().add(MessageExpired(messageId));
+              
+              // Close full screen view if it's open
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            }
+          });
+        }
+        
+        AppLogger.info('✅ Successfully processed image_viewed event');
+      } catch (e) {
+        AppLogger.error('❌ Error processing image_viewed event: $e');
+      }
+    });
+
     // Add listener for room joining confirmation
     _socketService!.on('joined_room', (data) {
       AppLogger.info('✅ Joined room: $data');
@@ -299,17 +361,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     _socketService!.on('private_message', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 Socket Event: private_message received');
-      AppLogger.info('🔵 Message data on private_message event: ${data.toString()}');
+      AppLogger.info('debug disappearing: Received private_message event');
+      AppLogger.info('debug disappearing: Message data: ${data.toString()}');
       try {
         // Store the server's message ID
         final serverMessageId = data['_id']?.toString() ?? data['id']?.toString();
-        AppLogger.info('🔵 Server message ID: $serverMessageId');
-        
+        AppLogger.info('debug disappearing: Server message ID: $serverMessageId');
         // Parse the server's timestamp
         final serverTimestamp = data['createdAt']?.toString() ?? data['timestamp']?.toString();
-        AppLogger.info('🔵 Server timestamp: $serverTimestamp');
-        
+        AppLogger.info('debug disappearing: Server timestamp: $serverTimestamp');
         // Convert dynamic map to Map<String, dynamic>
         final Map<String, dynamic> messageData = {
           '_id': serverMessageId,
@@ -319,27 +379,28 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'createdAt': serverTimestamp, // Use server's timestamp
           'messageType': data['messageType']?.toString() ?? 'text',
           'status': data['status']?.toString() ?? 'sent',
+          'isDisappearing': data['isDisappearing'],
+          'disappearingTime': data['disappearingTime'],
         };
-        
+        AppLogger.info('debug disappearing: Constructed messageData: $messageData');
         final msg = Message.fromJson(messageData);
-        AppLogger.info('🔵 Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}');
-        
+        AppLogger.info('debug disappearing: Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}, isDisappearing=${msg.isDisappearing}, disappearingTime=${msg.disappearingTime}');
         // Only process messages from the other participant
         if (msg.sender == widget.conversationId) {
-          AppLogger.info('✅ Processing received message from other user: ${msg.content}');
-          
-          // Batch state updates
+          if (msg.isDisappearing) {
+            AppLogger.info('debug disappearing: This is a disappearing message with time: ${msg.disappearingTime}');
+          }
+          AppLogger.info('debug disappearing: Adding MessageReceived and ConversationUpdated events to bloc');
           context.read<ConversationBloc>().add(MessageReceived(msg));
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
             lastMessage: msg,
             updatedAt: DateTime.now(),
           ));
-          
           // Mark message as delivered immediately after receiving
-          AppLogger.info('on_private_message processedIds contains? ${_processedMessageIds.contains(msg.id)}');
+          AppLogger.info('debug disappearing: on_private_message processedIds contains? ${_processedMessageIds.contains(msg.id)}');
           if (_socketService != null && !_processedMessageIds.contains(msg.id)) {
-            AppLogger.info('🔵 Marking message as delivered: $serverMessageId');
+            AppLogger.info('debug disappearing: Marking message as delivered: $serverMessageId');
             _socketService!.emit('message_delivered', {
               'messageId': serverMessageId,
               'conversationId': widget.conversationId,
@@ -347,7 +408,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             });
             _processedMessageIds.add(msg.id);
           }
-          
           // Scroll to bottom when receiving a new message
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (_scrollController.hasClients) {
@@ -356,12 +416,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,
               );
+              AppLogger.info('debug disappearing: Scrolled to bottom after receiving message');
             }
           });
         }
       } catch (e) {
-        AppLogger.error('❌ Error processing message: $e');
-        AppLogger.error('❌ Message data: $data');
+        AppLogger.error('debug disappearing: Error processing received message: $e');
+        AppLogger.error('debug disappearing: Message data: $data');
       }
     });
 
@@ -535,14 +596,237 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _socketService?.emit('stop_typing', {'to': widget.conversationId});
   }
 
-  Future<void> _pickImage() async {
-    // In a real app, this would use image_picker
-    // For now, we'll just send a mock image URL
-    context.read<ConversationBloc>().add(
-      SendImageMessage(conversationId: widget.conversationId, imagePath: 'https://example.com/mock_image.jpg'),
+  void _showImagePicker() {
+    AppLogger.info('debug disappearing: Opening image picker modal');
+    showModalBottomSheet(
+        context: context,
+      builder: (context) {
+        int selectedTime = 5; // Default disappearing time
+        AppLogger.info('debug disappearing: Default disappearing time set to 5 seconds');
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                  DisappearingTimeSelector(
+                    selectedTime: selectedTime,
+                    onTimeSelected: (time) {
+                      AppLogger.info('debug disappearing: Disappearing time selected: $time seconds');
+                      setState(() {
+                        selectedTime = time;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            AppLogger.info('debug disappearing: Gallery button pressed');
+                            final picker = ImagePicker();
+                            final image = await picker.pickImage(
+                              source: ImageSource.gallery,
+                              imageQuality: 80, // Compress image to reduce size
+                              maxWidth: 1920, // Limit max width
+                              maxHeight: 1920, // Limit max height
+                            );
+                            
+                            if (image != null) {
+                              AppLogger.info('debug disappearing: Image selected from gallery: ${image.path}');
+                              AppLogger.info('debug disappearing: Image name: ${image.name}');
+                              AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
+                              
+                              // Verify file exists and check format
+                              final file = File(image.path);
+                              if (await file.exists()) {
+                                AppLogger.info('debug disappearing: File exists and is readable');
+                                final fileSize = await file.length();
+                                AppLogger.info('debug disappearing: File size: $fileSize bytes');
+                                
+                                // Check file extension
+                                final extension = image.path.split('.').last.toLowerCase();
+                                if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+                                  throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                }
+                                
+                                Navigator.pop(context);
+                                await _sendImageMessage(
+                                  image.path,
+                                  isDisappearing: true,
+                                  disappearingTime: selectedTime,
+                                );
+                              } else {
+                                AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
+                                throw Exception('Selected image file does not exist');
+                              }
+                            } else {
+                              AppLogger.info('debug disappearing: No image selected from gallery');
+                            }
+                          } catch (e) {
+                            AppLogger.error('debug disappearing: Error picking image: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error selecting image: $e')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.photo_library),
+                        label: const Text('Gallery'),
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () async {
+                          try {
+                            AppLogger.info('debug disappearing: Camera button pressed');
+                            final picker = ImagePicker();
+                            final image = await picker.pickImage(
+                              source: ImageSource.camera,
+                              imageQuality: 80, // Compress image to reduce size
+                              maxWidth: 1920, // Limit max width
+                              maxHeight: 1920, // Limit max height
+                            );
+                            
+                            if (image != null) {
+                              AppLogger.info('debug disappearing: Image captured from camera: ${image.path}');
+                              AppLogger.info('debug disappearing: Image name: ${image.name}');
+                              AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
+                              
+                              // Verify file exists and check format
+                              final file = File(image.path);
+                              if (await file.exists()) {
+                                AppLogger.info('debug disappearing: File exists and is readable');
+                                final fileSize = await file.length();
+                                AppLogger.info('debug disappearing: File size: $fileSize bytes');
+                                
+                                // Check file extension
+                                final extension = image.path.split('.').last.toLowerCase();
+                                if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+                                  throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                }
+                                
+                                Navigator.pop(context);
+                                await _sendImageMessage(
+                                  image.path,
+                                  isDisappearing: true,
+                                  disappearingTime: selectedTime,
+                                );
+                              } else {
+                                AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
+                                throw Exception('Captured image file does not exist');
+                              }
+                            } else {
+                              AppLogger.info('debug disappearing: No image captured from camera');
+                            }
+                          } catch (e) {
+                            AppLogger.error('debug disappearing: Error capturing image: $e');
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error capturing image: $e')),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.camera_alt),
+                        label: const Text('Camera'),
+                      ),
+                    ],
+                ),
+              ],
+            ),
+          );
+        },
+      );
+      },
     );
-    
-    _scrollToBottom();
+  }
+
+  Future<void> _sendImageMessage(String imagePath, {bool isDisappearing = true, int disappearingTime = 5}) async {
+    AppLogger.info('debug disappearing: Starting _sendImageMessage with imagePath: $imagePath, isDisappearing: $isDisappearing, disappearingTime: $disappearingTime');
+    if (_socketService != null && _currentUserId != null) {
+      try {
+        AppLogger.info('debug disappearing: Preparing to upload image');
+        final extension = imagePath.split('.').last.toLowerCase();
+        final contentType = switch (extension) {
+          'jpg' || 'jpeg' => 'image/jpeg',
+          'png' => 'image/png',
+          'gif' => 'image/gif',
+          _ => throw Exception('Unsupported image format: $extension')
+        };
+        
+        final formData = FormData.fromMap({
+          'image': await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split('/').last,
+            contentType: MediaType.parse(contentType),
+          ),
+          'isDisappearing': isDisappearing,
+          'disappearingTime': disappearingTime,
+        });
+        AppLogger.info('debug disappearing: Sending POST request to /messages/upload-image');
+        final response = await NetworkService.dio.post(
+          '/messages/upload-image',
+          data: formData,
+          options: Options(
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            validateStatus: (status) => true, // Accept all status codes for debugging
+          ),
+        );
+        AppLogger.info('debug disappearing: Received response from upload-image: statusCode=${response.statusCode}, data=${response.data}');
+        if (response.statusCode == 200) {
+          final imageUrl = response.data['imageUrl'];
+          AppLogger.info('debug disappearing: Image uploaded successfully, imageUrl: $imageUrl');
+          final messageData = {
+            'id': DateTime.now().millisecondsSinceEpoch.toString(),
+            'from': _currentUserId,
+            'to': widget.conversationId,
+            'content': imageUrl,
+            'messageType': 'image',
+            'status': 'sent',
+            'createdAt': DateTime.now().toIso8601String(),
+            'isDisappearing': isDisappearing,
+            'disappearingTime': disappearingTime,
+          };
+          AppLogger.info('debug disappearing: Constructed messageData: $messageData');
+          _socketService!.emit('private_message', messageData);
+          AppLogger.info('debug disappearing: Emitted private_message event via socket');
+          final msg = Message.fromJson({
+            '_id': messageData['id'],
+            'sender': messageData['from'],
+            'receiver': messageData['to'],
+            'content': messageData['content'],
+            'createdAt': messageData['createdAt'],
+            'messageType': messageData['messageType'],
+            'status': 'sent',
+            'isDisappearing': isDisappearing,
+            'disappearingTime': disappearingTime,
+          });
+          AppLogger.info('debug disappearing: Created Message object for local state: id=${msg.id}, content=${msg.content}');
+          context.read<ConversationBloc>().add(MessageSent(msg));
+          AppLogger.info('debug disappearing: Added message to local state via ConversationBloc');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+            AppLogger.info('debug disappearing: Scrolled to bottom after sending image message');
+          });
+      } else {
+          AppLogger.error('debug disappearing: Failed to upload image, statusCode: ${response.statusCode}, data: ${response.data}');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to send image. Please try again.')),
+          );
+        }
+      } catch (e) {
+        AppLogger.error('debug disappearing: Exception occurred while sending image message: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to send image. Please try again.')),
+        );
+      }
+    } else {
+      AppLogger.error('debug disappearing: Cannot send image message: SocketService or currentUserId is null');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Connection error. Please try again.')),
+      );
+    }
   }
 
   Future<void> _pickFile() async {
@@ -586,6 +870,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   void _showOptionsMenu() {
+    AppLogger.info('🔵 Opening options menu');
     showModalBottomSheet(
       context: context,
       builder: (context) {
@@ -597,8 +882,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 leading: const Icon(Icons.photo),
                 title: const Text('Send Image'),
                 onTap: () {
+                  AppLogger.info('🔵 Send Image option tapped');
                   Navigator.pop(context);
-                  _pickImage();
+                  _showImagePicker();
                 },
               ),
               ListTile(
@@ -634,34 +920,235 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
+  void _showFullScreenImage(String imageUrl) async {
+    try {
+      AppLogger.info('🔵 Opening full screen image');
+      AppLogger.info('🔵 Original image URL: $imageUrl');
+      
+      // Find the message that contains this image URL
+      final state = context.read<ConversationBloc>().state;
+      if (state is ConversationLoaded) {
+        final message = state.messages.firstWhere(
+          (msg) => msg.content == imageUrl && msg.type == MessageType.image,
+          orElse: () => throw Exception('Message not found'),
+        );
+
+        // Emit image_viewed event
+        if (_socketService != null) {
+          AppLogger.info('🔵 Emitting image_viewed event for message: ${message.id}');
+          _socketService!.sendImageViewed(message.id, widget.conversationId);
+        }
+      }
+      
+      // Use the current image URL if available and not expired
+      if (_currentImageUrl != null) {
+        AppLogger.info('🔵 Using current image URL: $_currentImageUrl');
+        _showFullScreenImageWithUrl(_currentImageUrl!);
+        return;
+      }
+      
+      // If no current URL or it's expired, get a new one
+      final uri = Uri.parse(imageUrl);
+      final pathSegments = uri.path.split('/');
+      final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/'); // Get last two segments: messages/filename
+      final url = await ImageUrlService().getValidImageUrl(imageKey);
+      
+      AppLogger.info('🔵 Got new image URL: $url');
+      _showFullScreenImageWithUrl(url);
+    } catch (e) {
+      AppLogger.error('❌ Failed to show full screen image: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to load image. Please try again.')),
+      );
+    }
+  }
+
+  void _showFullScreenImageWithUrl(String imageUrl) {
+    if (!mounted) return;
+    
+    // Find the message that contains this image URL
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      final message = state.messages.firstWhere(
+        (msg) => msg.content == imageUrl && msg.type == MessageType.image,
+        orElse: () => throw Exception('Message not found'),
+      );
+
+      // Calculate remaining time if message is disappearing
+      String? remainingTimeText;
+      if (message.isDisappearing && 
+          message.disappearingTime != null &&
+          message.metadata?.containsKey('viewedAt') == true) {
+        final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
+        final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+        final remainingSeconds = message.disappearingTime! - elapsedSeconds;
+        if (remainingSeconds > 0) {
+          remainingTimeText = '$remainingSeconds';
+        }
+      }
+
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) => StatefulBuilder(
+          builder: (context, setState) {
+            // Start a timer to update the countdown
+            Timer? countdownTimer;
+            if (remainingTimeText != null) {
+              countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                if (message.metadata?.containsKey('viewedAt') == true) {
+                  final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
+                  final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+                  final remainingSeconds = message.disappearingTime! - elapsedSeconds;
+                  
+                  if (remainingSeconds <= 0) {
+                    timer.cancel();
+                    Navigator.of(context).pop(); // Close full screen view
+                    return;
+                  }
+                  
+                  setState(() {
+                    remainingTimeText = '$remainingSeconds';
+                  });
+                }
+              });
+            }
+
+            return WillPopScope(
+              onWillPop: () async {
+                countdownTimer?.cancel();
+                return true;
+              },
+              child: Scaffold(
+                backgroundColor: Colors.black,
+                body: Stack(
+                  children: [
+                    Center(
+                      child: InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            AppLogger.error('❌ Failed to load image: $error');
+                            return const Center(
+                              child: Icon(Icons.error_outline, size: 40, color: Colors.white),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    if (remainingTimeText != null)
+                      Positioned(
+                        top: MediaQuery.of(context).padding.top + 16,
+                        right: 16,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.timer,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${remainingTimeText}s',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    Positioned(
+                      top: MediaQuery.of(context).padding.top + 16,
+                      left: 16,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () {
+                          countdownTimer?.cancel();
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    AppLogger.info('🔵 Building ChatPage');
+    AppLogger.info('🔵 Current state: ${context.read<ConversationBloc>().state}');
+    
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Row(
           children: [
             _buildAvatar(),
-            const SizedBox(width: 8),
-            Column(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(widget.participantName),
-                if (_otherUserTyping)
+                  Text(
+                    widget.participantName,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (widget.isOnline)
                   const Text(
-                    'typing...',
+                      'Online',
                     style: TextStyle(
+                        color: Colors.green,
                       fontSize: 12,
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
                     ),
                   ),
               ],
+              ),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert, color: Colors.black),
             onPressed: _toggleMenu,
           ),
         ],
@@ -805,13 +1292,59 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               
                               return Padding(
                                 padding: const EdgeInsets.symmetric(vertical: 4),
-                                child: MessageBubble(
+                                child: BlocBuilder<ConversationBloc, ConversationState>(
+                                  builder: (context, state) {
+                                    if (state is ConversationLoaded) {
+                                      // Find the message in the current state
+                                      final updatedMessage = state.messages.firstWhere(
+                                        (m) => m.id == message.id,
+                                        orElse: () => message,
+                                      );
+                                      
+                                      return MessageBubble(
+                                        key: ValueKey(updatedMessage.id),
+                                        message: updatedMessage,
+                                        isMe: isMe,
+                                        showAvatar: false,
+                                        avatarUrl: widget.participantAvatar,
+                                        statusWidget: isMe ? _buildMessageStatus(updatedMessage) : null,
+                                        onImageTap: () {
+                                          if (updatedMessage.type == MessageType.image) {
+                                            AppLogger.info('🔵 MessageBubble requested full screen image');
+                                            AppLogger.info('🔵 Message content: ${updatedMessage.content}');
+                                            _showFullScreenImage(updatedMessage.content);
+                                          }
+                                        },
+                                        onImageUrlReady: (url) {
+                                          AppLogger.info('🔵 Received new image URL from MessageBubble: $url');
+                                          setState(() {
+                                            _currentImageUrl = url;
+                                          });
+                                        },
+                                      );
+                                    }
+                                    return MessageBubble(
                                   key: ValueKey(message.id),
                                   message: message,
                                   isMe: isMe,
                                   showAvatar: false,
                                   avatarUrl: widget.participantAvatar,
                                   statusWidget: isMe ? _buildMessageStatus(message) : null,
+                                      onImageTap: () {
+                                        if (message.type == MessageType.image) {
+                                          AppLogger.info('🔵 MessageBubble requested full screen image');
+                                          AppLogger.info('🔵 Message content: ${message.content}');
+                                          _showFullScreenImage(message.content);
+                                        }
+                                      },
+                                      onImageUrlReady: (url) {
+                                        AppLogger.info('🔵 Received new image URL from MessageBubble: $url');
+                                        setState(() {
+                                          _currentImageUrl = url;
+                                        });
+                                      },
+                                    );
+                                  },
                                 ),
                               );
                             },
@@ -873,6 +1406,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             IconButton(
               icon: const Icon(Icons.add),
               onPressed: _showOptionsMenu,
+            ),
+            IconButton(
+              icon: const Icon(Icons.image),
+              onPressed: _showImagePicker,
             ),
             Expanded(
               child: TextField(
@@ -1114,6 +1651,32 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ),
           ),
       ],
+    );
+  }
+
+  void _startCall(bool isAudioCall) {
+    final channelName = '${widget.conversationId}_${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Show call screen
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CallScreen(
+          channelName: channelName,
+          isAudioCall: isAudioCall,
+          participantName: widget.participantName,
+          participantAvatar: widget.participantAvatar,
+          onCallEnded: () {
+            context.read<ConversationBloc>().add(EndCall(conversationId: widget.conversationId));
+          },
+        ),
+      ),
+    );
+
+    // Notify bloc
+    context.read<ConversationBloc>().add(
+      isAudioCall
+          ? StartAudioCall(conversationId: widget.conversationId)
+          : StartVideoCall(conversationId: widget.conversationId),
     );
   }
 } 
