@@ -267,7 +267,7 @@ class BulkMessageRead extends ConversationEvent {
 
   @override
   List<Object?> get props => [messageIds, readAt];
-} 
+}
 
 class MessageViewed extends ConversationEvent {
   final String messageId;
@@ -277,4 +277,17 @@ class MessageViewed extends ConversationEvent {
 
   @override
   List<Object> get props => [messageId, viewedAt];
+}
+
+class UpdateMessageId extends ConversationEvent {
+  final String oldMessageId;
+  final String newMessageId;
+
+  const UpdateMessageId({
+    required this.oldMessageId,
+    required this.newMessageId,
+  });
+
+  @override
+  List<Object> get props => [oldMessageId, newMessageId];
 } 

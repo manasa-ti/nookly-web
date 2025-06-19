@@ -21,6 +21,17 @@ import 'package:hushmate/core/services/image_url_service.dart';
 
 import 'package:hushmate/presentation/widgets/disappearing_time_selector.dart';
 
+class DisappearingImageState {
+  final String messageId;
+  int remainingTime;
+  final Timer timer;
+
+  DisappearingImageState({
+    required this.messageId,
+    required this.remainingTime,
+    required this.timer,
+  });
+}
 
 class ChatPage extends StatefulWidget {
   final String conversationId;
@@ -60,6 +71,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   final Dio dio = Dio(); // Initialize Dio instance
   final ImagePicker _picker = ImagePicker();
   String? _currentImageUrl;  // Add this to store current image URL
+
+  // Add state management for disappearing images
+  final Map<String, DisappearingImageState> _disappearingImages = {};
+  bool _isFullScreenImageOpen = false; // Add this flag
 
   @override
   void initState() {
@@ -105,6 +120,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+    // Cancel all timers
+    for (final state in _disappearingImages.values) {
+      state.timer.cancel();
+    }
+    _disappearingImages.clear();
+    
     // Don't clear _processedMessageIds here anymore
     // _processedMessageIds.clear();
     
@@ -248,7 +269,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.error('❌ Socket error: $data');
     });
 
-    // Add listener for image_viewed event
+    // Modify image_viewed event handler
     _socketService!.on('image_viewed', (data) {
       if (!mounted) return;
       AppLogger.info('🔵 Received image_viewed event: $data');
@@ -266,30 +287,47 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('  - Disappearing time: $disappearingTime');
         AppLogger.info('  - Is disappearing: $isDisappearing');
         
+        // Debug: Check if message exists in state when image_viewed is received
+        final state = context.read<ConversationBloc>().state;
+        if (state is ConversationLoaded) {
+          final messageExists = state.messages.any((msg) => msg.id == messageId);
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Message exists in state when image_viewed received: $messageExists');
+          if (!messageExists) {
+            AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Message not found in state when image_viewed received!');
+            AppLogger.info('🔵 DEBUGGING Disappearing Image: Available message IDs: ${state.messages.map((m) => m.id).join(', ')}');
+            
+            // Try to find the message by content (image URL) instead of ID
+            final messageByContent = state.messages.where((msg) => 
+                msg.type == MessageType.image && 
+                msg.isDisappearing && 
+                msg.disappearingTime == disappearingTime
+            ).toList();
+            
+            if (messageByContent.isNotEmpty) {
+              final localMessage = messageByContent.first;
+              AppLogger.info('🔵 DEBUGGING Disappearing Image: Found message by content with local ID: ${localMessage.id}');
+              AppLogger.info('🔵 DEBUGGING Disappearing Image: Updating message ID from ${localMessage.id} to $messageId');
+              
+              // Update the message ID in the state
+              context.read<ConversationBloc>().add(UpdateMessageId(
+                oldMessageId: localMessage.id,
+                newMessageId: messageId,
+              ));
+            }
+          }
+        }
+        
         // Update the message state with viewed timestamp
         context.read<ConversationBloc>().add(MessageViewed(
           messageId,
           viewedAt,
         ));
 
-        // Start the disappearing timer
+        // Start the disappearing timer (for sender only)
         if (isDisappearing && disappearingTime != null) {
-          AppLogger.info('🔵 Starting disappearing timer for message: $messageId');
-          AppLogger.info('🔵 Disappearing time: $disappearingTime seconds');
-          
-          // Create a timer that will trigger the message expiration
-          Timer(Duration(seconds: disappearingTime), () {
-            if (mounted) {
-              AppLogger.info('🔵 Message expired: $messageId');
-              AppLogger.info('🔵 Emitting MessageExpired event');
-              context.read<ConversationBloc>().add(MessageExpired(messageId));
-              
-              // Close full screen view if it's open
-              if (Navigator.of(context).canPop()) {
-                Navigator.of(context).pop();
-              }
-            }
-          });
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Starting sender timer for message: $messageId');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender disappearing time: $disappearingTime seconds');
+          _startDisappearingImageTimer(messageId, disappearingTime);
         }
         
         AppLogger.info('✅ Successfully processed image_viewed event');
@@ -385,6 +423,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('debug disappearing: Constructed messageData: $messageData');
         final msg = Message.fromJson(messageData);
         AppLogger.info('debug disappearing: Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}, isDisappearing=${msg.isDisappearing}, disappearingTime=${msg.disappearingTime}');
+        
+        // Debug: Log if this is a disappearing image message
+        if (msg.type == MessageType.image && msg.isDisappearing) {
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Received disappearing image message from server');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Server message ID: ${msg.id}');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Message sender: ${msg.sender}');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Current user ID: $_currentUserId');
+        }
+        
         // Only process messages from the other participant
         if (msg.sender == widget.conversationId) {
           if (msg.isDisappearing) {
@@ -528,6 +575,92 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         context.read<ConversationBloc>().add(MessageReceived(message));
       }
     });
+  }
+
+  void _startDisappearingImageTimer(String messageId, int disappearingTime) {
+    AppLogger.info('🔵 DEBUGGING Disappearing Image: Starting timer for message: $messageId');
+    AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: $disappearingTime seconds');
+    
+    // Debug: Check if message exists in state when timer starts
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      final messageExists = state.messages.any((msg) => msg.id == messageId);
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Message exists in state when timer starts: $messageExists');
+      if (!messageExists) {
+        AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Message not found in state when starting timer!');
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Available message IDs: ${state.messages.map((m) => m.id).join(', ')}');
+      }
+    }
+    
+    // Cancel existing timer if any
+    _disappearingImages[messageId]?.timer?.cancel();
+    
+    // Create new state
+    final state2 = DisappearingImageState(
+      messageId: messageId,
+      remainingTime: disappearingTime,
+      timer: Timer.periodic(const Duration(seconds: 1), (timer) {
+        AppLogger.info('Timer has started');
+        if (!mounted) {
+          timer.cancel();
+          return;
+        }
+        
+        setState(() {
+          final currentState = _disappearingImages[messageId];
+          AppLogger.info('timer has started with currentState: $currentState.remainingTime');
+          if (currentState != null) {
+            currentState.remainingTime--;
+            
+            if (currentState.remainingTime <= 0) {
+              // Timer completed
+              AppLogger.info('🔵 DEBUGGING Disappearing Image: Timer completed for message: $messageId');
+              timer.cancel();
+              _handleDisappearingImageExpired(messageId);
+            }
+          }
+        });
+      }),
+    );
+    
+    _disappearingImages[messageId] = state2;
+  }
+
+  void _handleDisappearingImageExpired(String messageId) {
+    if (!mounted) return;
+    AppLogger.info('🔵 DEBUGGING Disappearing Image: Handling disappearing image expired for message: $messageId');
+    
+    // Remove the image state
+    _disappearingImages.remove(messageId);
+    
+    // Update message state
+    AppLogger.info('🔵 DEBUGGING Disappearing Image: Sending MessageExpired event to bloc for message: $messageId');
+    
+    // Debug: Find the message in current state to verify the ID
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      final messageExists = state.messages.any((msg) => msg.id == messageId);
+      if (messageExists) {
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Found message in state with ID: $messageId');
+      } else {
+        AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Message with ID $messageId not found in state');
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Available message IDs: ${state.messages.map((m) => m.id).join(', ')}');
+      }
+    }
+    
+    context.read<ConversationBloc>().add(MessageExpired(messageId));
+    
+    // Close full screen if open
+    if (_isFullScreenImageOpen) {
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Closing full screen image dialog');
+      Navigator.of(context).pop();
+      _isFullScreenImageOpen = false;
+    }
+  }
+
+  void _cancelDisappearingImageTimer(String messageId) {
+    _disappearingImages[messageId]?.timer?.cancel();
+    _disappearingImages.remove(messageId);
   }
 
   Future<void> _sendTextMessage() async {
@@ -789,6 +922,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'disappearingTime': disappearingTime,
           };
           AppLogger.info('debug disappearing: Constructed messageData: $messageData');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with local ID: ${messageData['id']}');
           _socketService!.emit('private_message', messageData);
           AppLogger.info('debug disappearing: Emitted private_message event via socket');
           final msg = Message.fromJson({
@@ -803,6 +937,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'disappearingTime': disappearingTime,
           });
           AppLogger.info('debug disappearing: Created Message object for local state: id=${msg.id}, content=${msg.content}');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender adding message to local state with ID: ${msg.id}');
           context.read<ConversationBloc>().add(MessageSent(msg));
           AppLogger.info('debug disappearing: Added message to local state via ConversationBloc');
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -920,7 +1055,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
-  void _showFullScreenImage(String imageUrl) async {
+  void _showFullScreenImage(String imageUrl, bool isSender) async {
     try {
       AppLogger.info('🔵 Opening full screen image');
       AppLogger.info('🔵 Original image URL: $imageUrl');
@@ -934,7 +1069,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         );
 
         // Emit image_viewed event
-        if (_socketService != null) {
+        if (_socketService != null && !isSender) {
           AppLogger.info('🔵 Emitting image_viewed event for message: ${message.id}');
           _socketService!.sendImageViewed(message.id, widget.conversationId);
         }
@@ -943,18 +1078,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       // Use the current image URL if available and not expired
       if (_currentImageUrl != null) {
         AppLogger.info('🔵 Using current image URL: $_currentImageUrl');
-        _showFullScreenImageWithUrl(_currentImageUrl!);
+        _showFullScreenImageWithUrl(_currentImageUrl!, isSender);
         return;
       }
       
       // If no current URL or it's expired, get a new one
       final uri = Uri.parse(imageUrl);
       final pathSegments = uri.path.split('/');
-      final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/'); // Get last two segments: messages/filename
+      final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/');
       final url = await ImageUrlService().getValidImageUrl(imageKey);
       
       AppLogger.info('🔵 Got new image URL: $url');
-      _showFullScreenImageWithUrl(url);
+      _showFullScreenImageWithUrl(url, isSender);
     } catch (e) {
       AppLogger.error('❌ Failed to show full screen image: $e');
       if (!mounted) return;
@@ -964,7 +1099,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
   }
 
-  void _showFullScreenImageWithUrl(String imageUrl) {
+  void _showFullScreenImageWithUrl(String imageUrl, bool isSender) {
     if (!mounted) return;
     
     // Find the message that contains this image URL
@@ -975,49 +1110,22 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         orElse: () => throw Exception('Message not found'),
       );
 
-      // Calculate remaining time if message is disappearing
-      String? remainingTimeText;
-      if (message.isDisappearing && 
-          message.disappearingTime != null &&
-          message.metadata?.containsKey('viewedAt') == true) {
-        final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
-        final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
-        final remainingSeconds = message.disappearingTime! - elapsedSeconds;
-        if (remainingSeconds > 0) {
-          remainingTimeText = '$remainingSeconds';
-        }
+      // Emit image_viewed event for receiver when opening full screen
+      if (!isSender && message.isDisappearing && message.disappearingTime != null) {
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Receiver opening image, emitting image_viewed event');
+        _socketService?.sendImageViewed(message.id, widget.conversationId);
       }
+
+      _isFullScreenImageOpen = true; // Set flag when opening dialog
 
       showDialog(
         context: context,
         barrierDismissible: true,
         builder: (context) => StatefulBuilder(
           builder: (context, setState) {
-            // Start a timer to update the countdown
-            Timer? countdownTimer;
-            if (remainingTimeText != null) {
-              countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-                if (message.metadata?.containsKey('viewedAt') == true) {
-                  final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
-                  final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
-                  final remainingSeconds = message.disappearingTime! - elapsedSeconds;
-                  
-                  if (remainingSeconds <= 0) {
-                    timer.cancel();
-                    Navigator.of(context).pop(); // Close full screen view
-                    return;
-                  }
-                  
-                  setState(() {
-                    remainingTimeText = '$remainingSeconds';
-                  });
-                }
-              });
-            }
-
             return WillPopScope(
               onWillPop: () async {
-                countdownTimer?.cancel();
+                _isFullScreenImageOpen = false; // Reset flag when closing
                 return true;
               },
               child: Scaffold(
@@ -1051,14 +1159,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         ),
                       ),
                     ),
-                    if (remainingTimeText != null)
+                    if (_disappearingImages[message.id] != null)
                       Positioned(
                         top: MediaQuery.of(context).padding.top + 16,
                         right: 16,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
+                            color: Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Row(
@@ -1071,7 +1179,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                '${remainingTimeText}s',
+                                '${_disappearingImages[message.id]!.remainingTime}s',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -1088,7 +1196,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       child: IconButton(
                         icon: const Icon(Icons.close, color: Colors.white),
                         onPressed: () {
-                          countdownTimer?.cancel();
+                          _isFullScreenImageOpen = false; // Reset flag when closing
                           Navigator.of(context).pop();
                         },
                       ),
@@ -1163,6 +1271,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _scrollToBottom();
                   });
+
+                  // Debug: Log message count changes
+                  AppLogger.info('🔵 DEBUGGING Disappearing Image: State updated, message count: ${state.messages.length}');
 
                   // Collect messages that need to be marked as delivered
                   final messagesToDeliver = state.messages
@@ -1312,7 +1423,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                           if (updatedMessage.type == MessageType.image) {
                                             AppLogger.info('🔵 MessageBubble requested full screen image');
                                             AppLogger.info('🔵 Message content: ${updatedMessage.content}');
-                                            _showFullScreenImage(updatedMessage.content);
+                                            _showFullScreenImage(updatedMessage.content, isMe);
                                           }
                                         },
                                         onImageUrlReady: (url) {
@@ -1321,6 +1432,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                             _currentImageUrl = url;
                                           });
                                         },
+                                        disappearingTime: _disappearingImages[updatedMessage.id]?.remainingTime,
                                       );
                                     }
                                     return MessageBubble(
@@ -1334,7 +1446,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                         if (message.type == MessageType.image) {
                                           AppLogger.info('🔵 MessageBubble requested full screen image');
                                           AppLogger.info('🔵 Message content: ${message.content}');
-                                          _showFullScreenImage(message.content);
+                                          _showFullScreenImage(message.content, isMe);
                                         }
                                       },
                                       onImageUrlReady: (url) {

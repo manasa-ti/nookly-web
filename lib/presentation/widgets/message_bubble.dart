@@ -15,6 +15,7 @@ class MessageBubble extends StatefulWidget {
   final bool isTyping;
   final VoidCallback? onImageTap;
   final Function(String)? onImageUrlReady;
+  final int? disappearingTime;
 
   const MessageBubble({
     Key? key,
@@ -27,6 +28,7 @@ class MessageBubble extends StatefulWidget {
     this.isTyping = false,
     this.onImageTap,
     this.onImageUrlReady,
+    this.disappearingTime,
   }) : super(key: key);
 
   @override
@@ -241,7 +243,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.message?.isDisappearing == true && _remainingTime != null)
+                    if (widget.message?.isDisappearing == true && (widget.disappearingTime != null || _remainingTime != null))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Row(
@@ -254,7 +256,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              '${_remainingTime}s',
+                              '${widget.disappearingTime ?? _remainingTime}s',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: widget.isMe ? Colors.white70 : Colors.black54,

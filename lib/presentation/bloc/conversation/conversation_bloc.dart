@@ -60,6 +60,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<BulkMessageRead>(_onBulkMessageRead);
     on<MessageExpired>(_onMessageExpired);
     on<MessageViewed>(_onMessageViewed);
+    on<UpdateMessageId>(_onUpdateMessageId);
   }
 
   Future<void> _onLoadConversation(
@@ -359,6 +360,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final currentState = state as ConversationLoaded;
       final updatedMessages = [event.message, ...currentState.messages];
       
+      // Debug: Log disappearing image messages
+      if (event.message.type == MessageType.image && event.message.isDisappearing) {
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Adding disappearing image message to state');
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Message ID: ${event.message.id}');
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: ${event.message.disappearingTime} seconds');
+      }
+      
       emit(ConversationLoaded(
         conversation: currentState.conversation.copyWith(
           lastMessage: event.message,
@@ -598,6 +606,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final currentState = state as ConversationLoaded;
       final updatedMessages = [event.message, ...currentState.messages];
       
+      // Debug: Log disappearing image messages
+      if (event.message.type == MessageType.image && event.message.isDisappearing) {
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Adding sent disappearing image message to state');
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Message ID: ${event.message.id}');
+        AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: ${event.message.disappearingTime} seconds');
+      }
+      
       emit(ConversationLoaded(
         conversation: currentState.conversation.copyWith(
           lastMessage: event.message,
@@ -701,10 +716,25 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final currentState = state as ConversationLoaded;
       AppLogger.info('🔵 Current state has ${currentState.messages.length} messages');
       
+      // Debug: Log all message IDs to see what we're working with
+      AppLogger.info('🔵 All message IDs in current state:');
+      for (final message in currentState.messages) {
+        AppLogger.info('  - Message ID: ${message.id}');
+      }
+      
+      // Check if the message exists
+      final messageExists = currentState.messages.any((message) => message.id == event.messageId);
+      AppLogger.info('🔵 Message with ID ${event.messageId} exists: $messageExists');
+      
       // Remove the expired message from the list
       final updatedMessages = currentState.messages.where((message) => message.id != event.messageId).toList();
       
       AppLogger.info('🔵 Removed expired message, new message count: ${updatedMessages.length}');
+      AppLogger.info('🔵 Messages after removal:');
+      for (final message in updatedMessages) {
+        AppLogger.info('  - Message ID: ${message.id}');
+      }
+      
       emit(ConversationLoaded(
         conversation: currentState.conversation,
         messages: updatedMessages,
@@ -746,6 +776,36 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
       ));
+    }
+  }
+
+  void _onUpdateMessageId(UpdateMessageId event, Emitter<ConversationState> emit) {
+    AppLogger.info('🔵 DEBUGGING Disappearing Image: Updating message ID from ${event.oldMessageId} to ${event.newMessageId}');
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Current state has ${currentState.messages.length} messages');
+      
+      // Find and update the message with the new ID
+      final updatedMessages = currentState.messages.map((message) {
+        if (message.id == event.oldMessageId) {
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Found message to update ID: ${message.id}');
+          return message.copyWith(id: event.newMessageId);
+        }
+        return message;
+      }).toList();
+      
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Updated message ID, new message count: ${updatedMessages.length}');
+      
+      emit(ConversationLoaded(
+        conversation: currentState.conversation,
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
+      ));
+    } else {
+      AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Cannot update message ID: state is not ConversationLoaded');
     }
   }
 
