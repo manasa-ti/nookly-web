@@ -166,6 +166,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/'); // Get last two segments: messages/filename
       AppLogger.info('🔵 Loading image URL for key: $imageKey');
       AppLogger.info('🔵 Original content URL: ${widget.message!.content}');
+      AppLogger.info('🔵 Full path segments: $pathSegments');
       
       final imageUrl = await ImageUrlService().getValidImageUrl(imageKey);
       AppLogger.info('🔵 Got pre-signed URL: $imageUrl');
