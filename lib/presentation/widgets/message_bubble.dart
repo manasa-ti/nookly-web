@@ -249,6 +249,7 @@ class _MessageBubbleState extends State<MessageBubble> {
           if (_remainingTime != null) {
             _remainingTime = (_remainingTime! - 1).clamp(0, widget.message!.disappearingTime!);
             AppLogger.info('🔵 Timer tick - remaining time: $_remainingTime seconds');
+            AppLogger.info('🔵 DEBUGGING COUNTDOWN: Message ID: ${widget.message?.id}, Remaining time: $_remainingTime seconds');
             
             if (_remainingTime == 0) {
               AppLogger.info('🔵 Timer finished');
