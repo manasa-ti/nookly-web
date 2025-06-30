@@ -272,6 +272,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _socketService!.on('image_viewed', (data) {
       if (!mounted) return;
       AppLogger.info('🔵 Received image_viewed event: $data');
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Processing image_viewed event');
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Raw event data: $data');
+      
       try {
         final messageId = data['messageId'];
         final viewedAt = data['timestamp'] != null 
@@ -280,20 +283,30 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final disappearingTime = data['disappearingTime'];
         final isDisappearing = data['isDisappearing'] ?? false;
         
-        AppLogger.info('🔵 Image viewed details:');
-        AppLogger.info('  - Message ID: $messageId');
-        AppLogger.info('  - Viewed at: $viewedAt');
-        AppLogger.info('  - Disappearing time: $disappearingTime');
-        AppLogger.info('  - Is disappearing: $isDisappearing');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Parsed event data:');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Received messageId: $messageId');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Viewed at: $viewedAt');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: $disappearingTime');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Is disappearing: $isDisappearing');
         
         // Debug: Check if message exists in state when image_viewed is received
         final state = context.read<ConversationBloc>().state;
         if (state is ConversationLoaded) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current state has ${state.messages.length} messages');
+          
+          // Log all messages in state for debugging
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: All messages in state:');
+          for (final msg in state.messages) {
+            AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${msg.id}, Type: ${msg.type}, Content: ${msg.content.substring(0, msg.content.length > 50 ? 50 : msg.content.length)}...');
+          }
+          
           final messageExists = state.messages.any((msg) => msg.id == messageId);
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Message exists in state when image_viewed received: $messageExists');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message exists in state when image_viewed received: $messageExists');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Looking for message with ID: $messageId');
+          
           if (!messageExists) {
-            AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Message not found in state when image_viewed received!');
-            AppLogger.info('🔵 DEBUGGING Disappearing Image: Available message IDs: ${state.messages.map((m) => m.id).join(', ')}');
+            AppLogger.warning('⚠️ DEBUGGING MESSAGE ID: Message not found in state when image_viewed received!');
+            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Available message IDs: ${state.messages.map((m) => m.id).join(', ')}');
             
             // Try to find the message by content (image URL) instead of ID
             final messageByContent = state.messages.where((msg) => 
@@ -302,21 +315,33 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 msg.disappearingTime == disappearingTime
             ).toList();
             
+            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found ${messageByContent.length} messages by content matching criteria');
+            for (final msg in messageByContent) {
+              AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Potential match: ID=${msg.id}, Content=${msg.content}');
+            }
+            
             if (messageByContent.isNotEmpty) {
               final localMessage = messageByContent.first;
-              AppLogger.info('🔵 DEBUGGING Disappearing Image: Found message by content with local ID: ${localMessage.id}');
-              AppLogger.info('🔵 DEBUGGING Disappearing Image: Updating message ID from ${localMessage.id} to $messageId');
+              AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message by content with local ID: ${localMessage.id}');
+              AppLogger.info('🔵 DEBUGGING MESSAGE ID: Updating message ID from ${localMessage.id} to $messageId');
               
               // Update the message ID in the state
               context.read<ConversationBloc>().add(UpdateMessageId(
                 oldMessageId: localMessage.id,
                 newMessageId: messageId,
               ));
+            } else {
+              AppLogger.error('🔵 DEBUGGING MESSAGE ID: No matching message found by content either!');
             }
+          } else {
+            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message found successfully in state');
           }
+        } else {
+          AppLogger.error('🔵 DEBUGGING MESSAGE ID: State is not ConversationLoaded: ${state.runtimeType}');
         }
         
         // Update the message state with viewed timestamp
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Dispatching MessageViewed event with ID: $messageId');
         context.read<ConversationBloc>().add(MessageViewed(
           messageId,
           viewedAt,
@@ -324,8 +349,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
         // Start the disappearing timer (for sender only)
         if (isDisappearing && disappearingTime != null) {
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Starting sender timer for message: $messageId');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender disappearing time: $disappearingTime seconds');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Starting sender timer for message: $messageId');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Sender disappearing time: $disappearingTime seconds');
           _startDisappearingImageTimer(messageId, disappearingTime);
         }
         
@@ -333,6 +358,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('🔵 MessageBubble widgets will handle their own timers based on viewedAt metadata');
       } catch (e) {
         AppLogger.error('❌ Error processing image_viewed event: $e');
+        AppLogger.error('🔵 DEBUGGING MESSAGE ID: Exception details: $e');
       }
     });
 
@@ -756,10 +782,79 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         );
         AppLogger.info('debug disappearing: Received response from upload-image: statusCode=${response.statusCode}, data=${response.data}');
         if (response.statusCode == 200) {
+          // Log the complete response structure to understand what fields are available
+          AppLogger.info('debug disappearing: Upload response data structure:');
+          AppLogger.info('debug disappearing: - Response data type: ${response.data.runtimeType}');
+          AppLogger.info('debug disappearing: - Response data keys: ${response.data.keys.toList()}');
+          AppLogger.info('debug disappearing: - Full response data: ${response.data}');
+          
           final imageUrl = response.data['imageUrl'];
-          AppLogger.info('debug disappearing: Image uploaded successfully, imageUrl: $imageUrl');
+          final imageKey = response.data['imageKey'] ?? response.data['key'] ?? response.data['s3Key'];
+          final imageSize = response.data['imageSize'] ?? response.data['size'] ?? response.data['fileSize'];
+          final imageType = response.data['imageType'] ?? response.data['type'] ?? response.data['mimeType'] ?? response.data['contentType'];
+          
+          AppLogger.info('debug disappearing: Extracted values:');
+          AppLogger.info('debug disappearing: - imageUrl: $imageUrl');
+          AppLogger.info('debug disappearing: - imageKey: $imageKey');
+          AppLogger.info('debug disappearing: - imageSize: $imageSize');
+          AppLogger.info('debug disappearing: - imageType: $imageType');
+          
+          // Validate that we have the required values
+          if (imageUrl == null) {
+            throw Exception('No imageUrl in upload response');
+          }
+          
+          // Provide fallback values if not provided by upload response
+          final finalImageKey = imageKey ?? _extractImageKeyFromUrl(imageUrl);
+          final finalImageSize = imageSize ?? await _getFileSize(imagePath);
+          final finalImageType = imageType ?? _getMimeTypeFromExtension(imagePath);
+          
+          AppLogger.info('debug disappearing: Final values for POST /messages:');
+          AppLogger.info('debug disappearing: - imageUrl: $imageUrl');
+          AppLogger.info('debug disappearing: - imageKey: $finalImageKey');
+          AppLogger.info('debug disappearing: - imageSize: $finalImageSize');
+          AppLogger.info('debug disappearing: - imageType: $finalImageType');
+          
+          // Make POST /api/messages call with complete payload
+          AppLogger.info('debug disappearing: Making POST /api/messages call');
+          final messageResponse = await NetworkService.dio.post(
+            '/messages',
+            data: {
+              'receiver': widget.conversationId, // API expects 'receiver' field
+              'content': '', // Can be empty for image messages
+              'messageType': 'image',
+              'imageUrl': imageUrl,
+              'imageKey': finalImageKey,
+              'imageSize': finalImageSize,
+              'imageType': finalImageType,
+              'isDisappearing': isDisappearing,
+              'disappearingTime': disappearingTime,
+            },
+            options: Options(
+              validateStatus: (status) => true, // Accept all status codes for debugging
+            ),
+          );
+          
+          AppLogger.info('debug disappearing: POST /api/messages response: statusCode=${messageResponse.statusCode}, data=${messageResponse.data}');
+          
+          if (messageResponse.statusCode != 200 && messageResponse.statusCode != 201) {
+            AppLogger.error('debug disappearing: Failed to create message record: ${messageResponse.statusCode}');
+            AppLogger.error('debug disappearing: Error response data: ${messageResponse.data}');
+            AppLogger.error('debug disappearing: Request payload was: ${messageResponse.requestOptions.data}');
+            
+            // Continue with socket event even if API call fails
+            AppLogger.info('debug disappearing: Continuing with socket event despite API failure');
+          } else {
+            AppLogger.info('debug disappearing: Message record created successfully');
+          }
+          
+          // Get the message ID from the response if available, otherwise use local ID
+          final messageId = messageResponse.statusCode == 200 || messageResponse.statusCode == 201
+              ? (messageResponse.data['_id'] ?? messageResponse.data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString())
+              : DateTime.now().millisecondsSinceEpoch.toString();
+          
           final messageData = {
-            'id': DateTime.now().millisecondsSinceEpoch.toString(),
+            '_id': messageId,  // Use '_id' to match API response format
             'from': _currentUserId,
             'to': widget.conversationId,
             'content': imageUrl,
@@ -770,7 +865,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'disappearingTime': disappearingTime,
           };
           AppLogger.info('debug disappearing: Constructed messageData: $messageData');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with local ID: ${messageData['id']}');
+          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with server ID: ${messageData['id']}');
           _socketService!.emit('private_message', messageData);
           AppLogger.info('debug disappearing: Emitted private_message event via socket');
           final msg = Message.fromJson({
@@ -809,6 +904,54 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connection error. Please try again.')),
       );
+    }
+  }
+
+  // Helper method to extract image key from URL
+  String _extractImageKeyFromUrl(String imageUrl) {
+    try {
+      final uri = Uri.parse(imageUrl);
+      final pathSegments = uri.path.split('/');
+      // Extract the last two segments (messages/filename) as the image key
+      if (pathSegments.length >= 2) {
+        return pathSegments.sublist(pathSegments.length - 2).join('/');
+      }
+      return pathSegments.last;
+    } catch (e) {
+      AppLogger.warning('debug disappearing: Failed to extract image key from URL: $e');
+      return 'unknown';
+    }
+  }
+
+  // Helper method to get file size
+  Future<int> _getFileSize(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        return await file.length();
+      }
+      return 0;
+    } catch (e) {
+      AppLogger.warning('debug disappearing: Failed to get file size: $e');
+      return 0;
+    }
+  }
+
+  // Helper method to get MIME type from file extension
+  String _getMimeTypeFromExtension(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Default fallback
     }
   }
 
@@ -907,21 +1050,45 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     try {
       AppLogger.info('🔵 Opening full screen image');
       AppLogger.info('🔵 Original image URL: $imageUrl');
+      AppLogger.info('🔵 Is sender: $isSender');
       
       // Find the message that contains this image URL
       final state = context.read<ConversationBloc>().state;
       Message? message;
       if (state is ConversationLoaded) {
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current state has ${state.messages.length} messages');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Looking for message with content: $imageUrl');
+        
+        // Log all image messages in state for debugging
+        final imageMessages = state.messages.where((msg) => msg.type == MessageType.image).toList();
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found ${imageMessages.length} image messages in state:');
+        for (final imgMsg in imageMessages) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${imgMsg.id}, Content: ${imgMsg.content}, IsDisappearing: ${imgMsg.isDisappearing}');
+        }
+        
         message = state.messages.firstWhere(
           (msg) => msg.content == imageUrl && msg.type == MessageType.image,
           orElse: () => throw Exception('Message not found'),
         );
 
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message to open:');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Message ID: ${message.id}');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Content: ${message.content}');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Is disappearing: ${message.isDisappearing}');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: ${message.disappearingTime}');
+
         // Emit image_viewed event
         if (_socketService != null && !isSender) {
-          AppLogger.info('🔵 Emitting image_viewed event for message: ${message.id}');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Emitting image_viewed event');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Message ID to emit: ${message.id}');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Conversation ID: ${widget.conversationId}');
           _socketService!.sendImageViewed(message.id, widget.conversationId);
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: image_viewed event emitted successfully');
+        } else {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Not emitting image_viewed event (isSender: $isSender, socketService: ${_socketService != null})');
         }
+      } else {
+        AppLogger.error('🔵 DEBUGGING MESSAGE ID: State is not ConversationLoaded: ${state.runtimeType}');
       }
       
       // Use the original URL directly - refresh will be called only if we get 403 error
@@ -1777,7 +1944,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         
         // Create message data with initial 'sent' status
         final messageData = {
-          'id': DateTime.now().millisecondsSinceEpoch.toString(),
+          '_id': DateTime.now().millisecondsSinceEpoch.toString(),  // Use '_id' to match API response format
           'from': _currentUserId,
           'to': widget.conversationId,
           'content': content,

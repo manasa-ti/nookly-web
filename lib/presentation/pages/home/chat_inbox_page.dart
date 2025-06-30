@@ -142,15 +142,31 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           AppLogger.info('🔵 Current unread count: ${conversation.unreadCount}');
           AppLogger.info('🔵 Message data: $data');
           
-          // Create message from socket data
+          // Determine message type from socket data
+          MessageType messageType = MessageType.text;
+          if (data['messageType'] == 'image') {
+            messageType = MessageType.image;
+          } else if (data['messageType'] == 'voice') {
+            messageType = MessageType.voice;
+          } else if (data['messageType'] == 'file') {
+            messageType = MessageType.file;
+          }
+          
+          // Create message from socket data with proper type
           final message = Message(
             id: data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
             sender: data['sender'] ?? '',
             receiver: data['receiver'] ?? '',
             content: data['content'] ?? '',
             timestamp: DateTime.parse(data['createdAt'] ?? DateTime.now().toIso8601String()),
-            type: MessageType.text,
+            type: messageType, // ✅ Use proper message type
             status: data['status'] ?? 'sent',
+            isDisappearing: data['isDisappearing'] ?? false,
+            disappearingTime: data['disappearingTime'],
+            metadata: {
+              if (data['isDisappearing'] != null) 'isDisappearing': data['isDisappearing'].toString(),
+              if (data['viewedAt'] != null) 'viewedAt': data['viewedAt'].toString(),
+            },
           );
           
           // Create updated conversation with incremented unread count and new last message
@@ -175,6 +191,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
           AppLogger.info('🔵 Updated last message: ${updatedConversation.lastMessage?.content}');
+          AppLogger.info('🔵 Message type: ${updatedConversation.lastMessage?.type}');
         }
       }
     });
@@ -370,6 +387,27 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     );
   }
 
+  String _getMessageDisplayText(Message message, bool isMe) {
+    String displayText;
+    
+    if (message.type == MessageType.image) {
+      displayText = '📷 Photo';
+    } else if (message.type == MessageType.voice) {
+      displayText = '🎤 Voice message';
+    } else if (message.type == MessageType.file) {
+      displayText = '📎 File';
+    } else {
+      displayText = message.content;
+    }
+    
+    // Add "You:" prefix for messages sent by current user
+    if (isMe) {
+      displayText = 'You: $displayText';
+    }
+    
+    return displayText;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoadingCurrentUser) {
@@ -449,7 +487,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                         )
                       : lastMessage != null
                           ? Text(
-                              isMe ? 'You: ${lastMessage.content}' : lastMessage.content,
+                              _getMessageDisplayText(lastMessage!, isMe),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             )

@@ -45,19 +45,37 @@ class _MessageBubbleState extends State<MessageBubble> {
   @override
   void initState() {
     super.initState();
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: MessageBubble initState for message: ${widget.message?.id}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Is disappearing: ${widget.message?.isDisappearing}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: ${widget.message?.disappearingTime}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Metadata: ${widget.message?.metadata}');
+    
     if (widget.message?.isDisappearing == true && widget.message?.disappearingTime != null) {
       _remainingTime = widget.message?.disappearingTime;
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message is disappearing, initial remaining time: $_remainingTime');
+      
       // If message has been viewed (has viewedAt in metadata), start the timer
       if (widget.message?.metadata?.containsKey('viewedAt') == true) {
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message has viewedAt metadata, starting timer');
         final viewedAt = DateTime.parse(widget.message!.metadata!['viewedAt']!);
         final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
         _remainingTime = (_remainingTime! - elapsedSeconds).clamp(0, widget.message!.disappearingTime!);
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Viewed at: $viewedAt');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Elapsed seconds: $elapsedSeconds');
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Calculated remaining time: $_remainingTime');
+        
         if (_remainingTime! > 0) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Starting timer with remaining time: $_remainingTime');
           _startTimer();
         } else {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: No time remaining, hiding message');
           _isVisible = false;
         }
+      } else {
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message does not have viewedAt metadata, timer will start when viewed');
       }
+    } else {
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message is not disappearing or has no disappearing time');
     }
 
     // Initialize image URL if it's an image message
@@ -69,6 +87,12 @@ class _MessageBubbleState extends State<MessageBubble> {
   @override
   void didUpdateWidget(MessageBubble oldWidget) {
     super.didUpdateWidget(oldWidget);
+    
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: MessageBubble didUpdateWidget');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Old message ID: ${oldWidget.message?.id}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - New message ID: ${widget.message?.id}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Old metadata: ${oldWidget.message?.metadata}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - New metadata: ${widget.message?.metadata}');
     
     // Log message state changes
     if (widget.message?.id != oldWidget.message?.id ||
@@ -92,9 +116,14 @@ class _MessageBubbleState extends State<MessageBubble> {
         widget.message?.disappearingTime != null &&
         widget.message?.metadata?.containsKey('viewedAt') == true) {
       
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Processing disappearing message update');
+      
       // Check if viewedAt was just added or updated
       final oldViewedAt = oldWidget.message?.metadata?['viewedAt'];
       final newViewedAt = widget.message?.metadata?['viewedAt'];
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Old viewedAt: $oldViewedAt');
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: - New viewedAt: $newViewedAt');
       
       if (newViewedAt != null && (oldViewedAt == null || oldViewedAt != newViewedAt)) {
         AppLogger.info('🔵 Message was just viewed, starting timer');
@@ -109,12 +138,17 @@ class _MessageBubbleState extends State<MessageBubble> {
         AppLogger.info('🔵 Calculated remaining time: $_remainingTime seconds');
         
         if (_remainingTime! > 0) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Starting timer with remaining time: $_remainingTime');
           _startTimer();
         } else {
-          AppLogger.info('🔵 No time remaining, hiding message');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: No time remaining, hiding message');
           setState(() => _isVisible = false);
         }
+      } else {
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: viewedAt not changed, no timer action needed');
       }
+    } else {
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message is not disappearing or has no viewedAt metadata');
     }
 
     // Handle expired state
@@ -130,6 +164,10 @@ class _MessageBubbleState extends State<MessageBubble> {
 
   Future<void> _loadImageUrl() async {
     if (widget.message?.type != MessageType.image) return;
+
+    AppLogger.info('🔵 Loading image URL for message: ${widget.message!.id}');
+    AppLogger.info('🔵 Message content (URL): ${widget.message!.content}');
+    AppLogger.info('🔵 URL expiration time: ${widget.message!.urlExpirationTime}');
 
     setState(() {
       _isLoadingImage = true;
@@ -161,12 +199,24 @@ class _MessageBubbleState extends State<MessageBubble> {
       }
       
       // Only proceed with URL refresh if the current URL has expired
+      AppLogger.info('🔵 Attempting to parse URL: ${widget.message!.content}');
       final uri = Uri.parse(widget.message!.content);
       final pathSegments = uri.path.split('/');
+      AppLogger.info('🔵 Path segments: $pathSegments');
+      
+      if (pathSegments.length < 2) {
+        AppLogger.error('❌ URL does not have expected path structure: ${widget.message!.content}');
+        // Fallback to using original URL
+        setState(() {
+          _currentImageUrl = widget.message!.content;
+          _isLoadingImage = false;
+        });
+        return;
+      }
+      
       final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/'); // Get last two segments: messages/filename
-      AppLogger.info('🔵 Loading image URL for key: $imageKey');
+      AppLogger.info('🔵 Extracted image key: $imageKey');
       AppLogger.info('🔵 Original content URL: ${widget.message!.content}');
-      AppLogger.info('🔵 Full path segments: $pathSegments');
       
       final imageUrl = await ImageUrlService().getValidImageUrl(imageKey);
       AppLogger.info('🔵 Got pre-signed URL: $imageUrl');
@@ -182,6 +232,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       }
     } catch (e) {
       AppLogger.error('❌ Failed to load image URL: $e');
+      AppLogger.error('❌ Error details: ${e.toString()}');
       if (mounted) {
         setState(() {
           _isLoadingImage = false;
@@ -298,7 +349,11 @@ class _MessageBubbleState extends State<MessageBubble> {
                                     );
                                   },
                                   errorBuilder: (context, error, stackTrace) {
+                                    final url = _currentImageUrl ?? widget.message!.content;
                                     AppLogger.error('❌ Failed to load image: $error');
+                                    AppLogger.error('❌ Image URL: $url');
+                                    AppLogger.error('❌ Current image URL: $_currentImageUrl');
+                                    AppLogger.error('❌ Message content: ${widget.message!.content}');
                                     return const SizedBox(
                                       width: 200,
                                       height: 200,

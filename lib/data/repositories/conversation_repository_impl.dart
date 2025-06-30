@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:hushmate/core/network/network_service.dart'; // Use NetworkService
+import 'package:hushmate/core/utils/logger.dart'; // Add logger import
 import 'package:hushmate/domain/entities/conversation.dart';
 import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/domain/repositories/conversation_repository.dart';
@@ -53,7 +55,31 @@ class ConversationRepositoryImpl implements ConversationRepository {
               messageData['type'] = messageData['messageType'] == 'image' ? 'image' : 'text';
             }
             lastMessage = Message.fromJson(messageData);
-            lastMessageTime = lastMessage.timestamp;
+            
+            // Handle disappearing images logic
+            if (lastMessage.isDisappearing && lastMessage.type == MessageType.image) {
+              final isViewed = lastMessage.metadata?.containsKey('viewedAt') == true;
+              final disappearingTime = lastMessage.disappearingTime ?? 5;
+              
+              if (isViewed) {
+                // Check if the image has expired since being viewed
+                final viewedAt = DateTime.parse(lastMessage.metadata!['viewedAt']!);
+                final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+                
+                if (elapsedSeconds >= disappearingTime) {
+                  AppLogger.info('Disappearing image has expired, not showing in conversation list');
+                  lastMessage = null; // Don't show expired disappearing images
+                } else {
+                  AppLogger.info('Disappearing image is still valid, showing in conversation list');
+                }
+              } else {
+                // Unviewed disappearing image - show placeholder
+                AppLogger.info('Unviewed disappearing image, showing placeholder');
+                // Keep the message but it will show as "Photo" in the UI
+              }
+            }
+            
+            lastMessageTime = lastMessage?.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
           } else {
             lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
           }
@@ -78,10 +104,10 @@ class ConversationRepositoryImpl implements ConversationRepository {
       
       throw Exception('Failed to load conversations: Status ${response.statusCode}');
     } on DioException catch (e) {
-      print('DioError fetching conversations: ${e.response?.data ?? e.message}');
+      AppLogger.info('DioError fetching conversations: ${e.response?.data ?? e.message}');
       throw Exception('Failed to load conversations: ${e.response?.data?['message'] ?? e.message}');
     } catch (e) {
-      print('Error fetching conversations: $e');
+      AppLogger.info('Error fetching conversations: $e');
       throw Exception('Failed to load conversations: An unexpected error occurred: $e');
     }
   }
@@ -106,25 +132,54 @@ class ConversationRepositoryImpl implements ConversationRepository {
       if (response.statusCode == 200 && response.data != null) {
         final List<dynamic> messagesJson = response.data as List<dynamic>;
         final List<Message> messages = messagesJson
-            .map((json) => Message.fromJson({
-                  '_id': json['_id'],
-                  'sender': json['sender'],
-                  'receiver': json['receiver'],
-                  'content': json['content'],
-                  'createdAt': json['createdAt'],
-                  'messageType': json['messageType'],
-                  'isRead': json['isRead'],
-                  'status': json['status'],
-                  'isDisappearing': json['isDisappearing'],
-                  'updatedAt': json['updatedAt'],
-                }))
+            .map((json) {
+              AppLogger.info('🔵 Processing message from API:');
+              AppLogger.info('🔵 - Message ID: ${json['_id']}');
+              AppLogger.info('🔵 - Content: ${json['content']}');
+              AppLogger.info('🔵 - Type: ${json['type']}');
+              AppLogger.info('🔵 - IsDisappearing: ${json['isDisappearing']}');
+              
+              return Message.fromJson({
+                '_id': json['_id'],
+                'sender': json['sender'],
+                'receiver': json['receiver'],
+                'content': json['content'],
+                'createdAt': json['createdAt'],
+                'type': json['type'],
+                'isRead': json['isRead'],
+                'status': json['status'],
+                'isDisappearing': json['isDisappearing'],
+                'updatedAt': json['updatedAt'],
+              });
+            })
             .toList();
 
-        messages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        // Filter out expired disappearing images
+        final filteredMessages = messages.where((message) {
+          if (message.isDisappearing && message.type == MessageType.image) {
+            final isViewed = message.metadata?.containsKey('viewedAt') == true;
+            final disappearingTime = message.disappearingTime ?? 5;
+            
+            if (isViewed) {
+              // Check if the image has expired since being viewed
+              final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
+              final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+              
+              if (elapsedSeconds >= disappearingTime) {
+                AppLogger.info('Filtering out expired disappearing image: ${message.id}');
+                return false; // Filter out expired disappearing images
+              }
+            }
+            // Keep unviewed disappearing images and valid viewed ones
+          }
+          return true; // Keep all other messages
+        }).toList();
+
+        filteredMessages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
         DateTime lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
-        if (messages.isNotEmpty) {
-          lastMessageTime = messages.last.timestamp;
+        if (filteredMessages.isNotEmpty) {
+          lastMessageTime = filteredMessages.last.timestamp;
         }
 
         return Conversation(
@@ -133,7 +188,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
           // Use passed-in details
           participantName: participantName, 
           participantAvatar: participantAvatar,
-          messages: messages,
+          messages: filteredMessages,
           lastMessageTime: lastMessageTime,
           isOnline: isOnline, 
           unreadCount: 0, // API doesn't provide this for chat history endpoint
@@ -144,10 +199,10 @@ class ConversationRepositoryImpl implements ConversationRepository {
         throw Exception('Failed to load chat history: Status ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('DioError fetching chat history for $participantId: ${e.response?.data ?? e.message}');
+      AppLogger.info('DioError fetching chat history for $participantId: ${e.response?.data ?? e.message}');
       throw Exception('Failed to load chat history: ${e.response?.data?['message'] ?? e.message}');
     } catch (e) {
-      print('Error fetching chat history for $participantId: $e');
+      AppLogger.info('Error fetching chat history for $participantId: $e');
       throw Exception('Failed to load chat history: An unexpected error occurred: $e');
     }
   }
@@ -165,10 +220,10 @@ class ConversationRepositoryImpl implements ConversationRepository {
         },
       );
     } on DioException catch (e) {
-      print('DioError sending message: ${e.response?.data ?? e.message}');
+      AppLogger.info('DioError sending message: ${e.response?.data ?? e.message}');
       throw Exception('Failed to send message: ${e.response?.data?['message'] ?? e.message}');
     } catch (e) {
-      print('Error sending message: $e');
+      AppLogger.info('Error sending message: $e');
       throw Exception('Failed to send message: An unexpected error occurred.');
     }
   }
@@ -186,8 +241,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
   @override
   Future<void> sendImageMessage(String conversationId, String imagePath) async {
     try {
-      print('debug disappearing: Starting image upload process');
-      print('debug disappearing: Base URL from NetworkService: ${NetworkService.baseUrl}');
+      AppLogger.info('debug disappearing: Starting image upload process');
+      AppLogger.info('debug disappearing: Base URL from NetworkService: ${NetworkService.baseUrl}');
       
       // Create form data for the image upload
       final formData = FormData.fromMap({
@@ -200,8 +255,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
       // Log the full URL that will be used
       final fullUrl = '${NetworkService.baseUrl}messages/upload-image';
-      print('debug disappearing: Full URL for upload: $fullUrl');
-      print('debug disappearing: Form data fields: ${formData.fields}');
+      AppLogger.info('debug disappearing: Full URL for upload: $fullUrl');
+      AppLogger.info('debug disappearing: Form data fields: ${formData.fields}');
 
       // Upload the image - use the full URL
       final response = await NetworkService.dio.post(
@@ -215,47 +270,137 @@ class ConversationRepositoryImpl implements ConversationRepository {
         ),
       );
 
-      print('debug disappearing: Response status: ${response.statusCode}');
-      print('debug disappearing: Response data: ${response.data}');
+      AppLogger.info('debug disappearing: Response status: ${response.statusCode}');
+      AppLogger.info('debug disappearing: Response data: ${response.data}');
 
       if (response.statusCode != 200) {
         throw Exception('Failed to upload image: ${response.statusMessage}');
       }
 
+      // Log the complete response structure to understand what fields are available
+      AppLogger.info('debug disappearing: Upload response data structure:');
+      AppLogger.info('debug disappearing: - Response data type: ${response.data.runtimeType}');
+      AppLogger.info('debug disappearing: - Response data keys: ${response.data.keys.toList()}');
+      AppLogger.info('debug disappearing: - Full response data: ${response.data}');
+
       // The response should contain the image URL and message data
       final imageUrl = response.data['imageUrl'];
+      final imageKey = response.data['imageKey'] ?? response.data['key'] ?? response.data['s3Key'];
+      final imageSize = response.data['imageSize'] ?? response.data['size'] ?? response.data['fileSize'];
+      final imageType = response.data['imageType'] ?? response.data['type'] ?? response.data['mimeType'] ?? response.data['contentType'];
+      
       if (imageUrl == null) {
         throw Exception('No image URL in response');
       }
 
-      print('debug disappearing: Image URL received: $imageUrl');
+      AppLogger.info('debug disappearing: Extracted values:');
+      AppLogger.info('debug disappearing: - imageUrl: $imageUrl');
+      AppLogger.info('debug disappearing: - imageKey: $imageKey');
+      AppLogger.info('debug disappearing: - imageSize: $imageSize');
+      AppLogger.info('debug disappearing: - imageType: $imageType');
 
-      // Send the message with the image URL
+      // Provide fallback values if not provided by upload response
+      final finalImageKey = imageKey ?? _extractImageKeyFromUrl(imageUrl);
+      final finalImageSize = imageSize ?? await _getFileSize(imagePath);
+      final finalImageType = imageType ?? _getMimeTypeFromExtension(imagePath);
+
+      AppLogger.info('debug disappearing: Final values for POST /messages:');
+      AppLogger.info('debug disappearing: - imageUrl: $imageUrl');
+      AppLogger.info('debug disappearing: - imageKey: $finalImageKey');
+      AppLogger.info('debug disappearing: - imageSize: $finalImageSize');
+      AppLogger.info('debug disappearing: - imageType: $finalImageType');
+
+      // Send the message with the image URL and metadata
       final messageUrl = '${NetworkService.baseUrl}messages';
-      print('debug disappearing: Full URL for message: $messageUrl');
+      AppLogger.info('debug disappearing: Full URL for message: $messageUrl');
       
-      await NetworkService.dio.post(
+      final messageResponse = await NetworkService.dio.post(
         'messages',
         data: {
-          'receiver': conversationId,
-          'content': imageUrl,
+          'receiver': conversationId, // API expects 'receiver' field
+          'content': '', // Can be empty for image messages
           'messageType': 'image',
+          'imageUrl': imageUrl,
+          'imageKey': finalImageKey,
+          'imageSize': finalImageSize,
+          'imageType': finalImageType,
           'isDisappearing': true,
           'disappearingTime': 5, // Default to 5 seconds
         },
+        options: Options(
+          validateStatus: (status) => true, // Accept all status codes for debugging
+        ),
       );
       
-      print('debug disappearing: Message sent successfully');
+      AppLogger.info('debug disappearing: Message creation response status: ${messageResponse.statusCode}');
+      AppLogger.info('debug disappearing: Message creation response data: ${messageResponse.data}');
+      
+      if (messageResponse.statusCode != 200 && messageResponse.statusCode != 201) {
+        AppLogger.info('debug disappearing: Failed to create message record: ${messageResponse.statusCode}');
+        AppLogger.info('debug disappearing: Error response data: ${messageResponse.data}');
+        AppLogger.info('debug disappearing: Request payload was: ${messageResponse.requestOptions.data}');
+        throw Exception('Failed to create message record: ${messageResponse.statusMessage}');
+      }
+      
+      AppLogger.info('debug disappearing: Message sent successfully');
     } on DioException catch (e) {
-      print('debug disappearing: DioException details:');
-      print('debug disappearing: - Type: ${e.type}');
-      print('debug disappearing: - Message: ${e.message}');
-      print('debug disappearing: - Response: ${e.response?.data}');
-      print('debug disappearing: - Request: ${e.requestOptions.uri}');
+      AppLogger.info('debug disappearing: DioException details:');
+      AppLogger.info('debug disappearing: - Type: ${e.type}');
+      AppLogger.info('debug disappearing: - Message: ${e.message}');
+      AppLogger.info('debug disappearing: - Response: ${e.response?.data}');
+      AppLogger.info('debug disappearing: - Request: ${e.requestOptions.uri}');
       throw Exception('Failed to send image message: ${e.response?.data?['message'] ?? e.message}');
     } catch (e) {
-      print('debug disappearing: General error: $e');
+      AppLogger.info('debug disappearing: General error: $e');
       throw Exception('Failed to send image message: An unexpected error occurred.');
+    }
+  }
+
+  // Helper method to extract image key from URL
+  String _extractImageKeyFromUrl(String imageUrl) {
+    try {
+      final uri = Uri.parse(imageUrl);
+      final pathSegments = uri.path.split('/');
+      // Extract the last two segments (messages/filename) as the image key
+      if (pathSegments.length >= 2) {
+        return pathSegments.sublist(pathSegments.length - 2).join('/');
+      }
+      return pathSegments.last;
+    } catch (e) {
+      AppLogger.info('debug disappearing: Failed to extract image key from URL: $e');
+      return 'unknown';
+    }
+  }
+
+  // Helper method to get file size
+  Future<int> _getFileSize(String filePath) async {
+    try {
+      final file = File(filePath);
+      if (await file.exists()) {
+        return await file.length();
+      }
+      return 0;
+    } catch (e) {
+      AppLogger.info('debug disappearing: Failed to get file size: $e');
+      return 0;
+    }
+  }
+
+  // Helper method to get MIME type from file extension
+  String _getMimeTypeFromExtension(String filePath) {
+    final extension = filePath.split('.').last.toLowerCase();
+    switch (extension) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'gif':
+        return 'image/gif';
+      case 'webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Default fallback
     }
   }
 
@@ -308,7 +453,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
   Stream<List<Message>> listenToMessages(String conversationId) {
     if (!_messageControllers.containsKey(conversationId)) {
       _messageControllers[conversationId] = StreamController<List<Message>>.broadcast();
-      print('listenToMessages for $conversationId is using a mock stream controller.');
+      AppLogger.info('listenToMessages for $conversationId is using a mock stream controller.');
     }
     return _messageControllers[conversationId]!.stream;
   }
@@ -328,9 +473,9 @@ class ConversationRepositoryImpl implements ConversationRepository {
         },
       );
 
-      print('API Response data: ${response.data}');
+      AppLogger.info('API Response data: ${response.data}');
       final data = response.data as Map<String, dynamic>;
-      print('Messages data: ${data['messages']}');
+      AppLogger.info('Messages data: ${data['messages']}');
       
       // Get current user ID once
       final currentUser = await _authRepository.getCurrentUser();
@@ -338,9 +483,9 @@ class ConversationRepositoryImpl implements ConversationRepository {
       
       final messages = (data['messages'] as List)
           .map((msg) {
-            print('Processing message: $msg');
+            AppLogger.info('Processing message: $msg');
             if (msg is! Map<String, dynamic>) {
-              print('Warning: Message is not a Map: $msg');
+              AppLogger.info('Warning: Message is not a Map: $msg');
               msg = {'id': DateTime.now().millisecondsSinceEpoch.toString(), 'content': msg.toString()};
             }
             
@@ -362,7 +507,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
         'pagination': data['pagination'],
       };
     } catch (e) {
-      print('Error getting messages: $e');
+      AppLogger.info('Error getting messages: $e');
       rethrow;
     }
   }

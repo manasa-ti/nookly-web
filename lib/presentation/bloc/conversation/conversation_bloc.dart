@@ -83,15 +83,42 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final messages = response['messages'] as List<Message>;
       _hasMoreMessages = response['pagination']['hasMore'] as bool;
 
+      // Debug: Log message types
+      AppLogger.info('🔵 Loaded ${messages.length} messages from API');
+      for (final message in messages) {
+        AppLogger.info('🔵 - Message ID: ${message.id}, Type: ${message.type}, Content: ${message.content.substring(0, message.content.length > 50 ? 50 : message.content.length)}...');
+      }
+
+      // Filter out expired disappearing images
+      final filteredMessages = messages.where((message) {
+        if (message.isDisappearing && message.type == MessageType.image) {
+          final isViewed = message.metadata?.containsKey('viewedAt') == true;
+          final disappearingTime = message.disappearingTime ?? 5;
+          
+          if (isViewed) {
+            // Check if the image has expired since being viewed
+            final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
+            final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+            
+            if (elapsedSeconds >= disappearingTime) {
+              AppLogger.info('Conversation bloc: Filtering out expired disappearing image: ${message.id}');
+              return false; // Filter out expired disappearing images
+            }
+          }
+          // Keep unviewed disappearing images and valid viewed ones
+        }
+        return true; // Keep all other messages
+      }).toList();
+
       // Create conversation with initial messages
       final conversation = Conversation(
         id: event.participantId,
         participantId: event.participantId,
         participantName: event.participantName,
         participantAvatar: event.participantAvatar,
-        messages: messages,
-        lastMessage: messages.isNotEmpty ? messages.first : null, // First message is newest
-        lastMessageTime: messages.isNotEmpty ? messages.first.timestamp : DateTime.now(),
+        messages: filteredMessages,
+        lastMessage: filteredMessages.isNotEmpty ? filteredMessages.first : null, // First message is newest
+        lastMessageTime: filteredMessages.isNotEmpty ? filteredMessages.first.timestamp : DateTime.now(),
         isOnline: event.isOnline,
         unreadCount: 0,
         userId: _currentUserId,
@@ -100,7 +127,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
       emit(ConversationLoaded(
         conversation: conversation,
-        messages: messages,
+        messages: filteredMessages,
         hasMoreMessages: _hasMoreMessages,
         participantName: event.participantName,
         participantAvatar: event.participantAvatar,
@@ -749,24 +776,47 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   }
 
   void _onMessageViewed(MessageViewed event, Emitter<ConversationState> emit) {
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: Processing MessageViewed event');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Message ID: ${event.messageId}');
+    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Viewed at: ${event.viewedAt}');
+    
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current state has ${currentState.messages.length} messages');
+      
+      // Log all messages before update
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Messages before update:');
+      for (final msg in currentState.messages) {
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${msg.id}, Type: ${msg.type}, IsDisappearing: ${msg.isDisappearing}');
+      }
+      
       final updatedMessages = currentState.messages.map((message) {
         if (message.id == event.messageId) {
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message to update: ${message.id}');
+          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current metadata: ${message.metadata}');
+          
           // If this is a disappearing image message, start the timer
           if (message.type == MessageType.image && message.isDisappearing) {
+            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Adding viewedAt metadata to disappearing image message');
             // Create a new message with the viewed timestamp and start the timer
-            return message.copyWith(
+            final updatedMessage = message.copyWith(
               metadata: {
                 ...?message.metadata,
                 'viewedAt': event.viewedAt.toIso8601String(),
               },
             );
+            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Updated metadata: ${updatedMessage.metadata}');
+            return updatedMessage;
           }
           return message;
         }
         return message;
       }).toList();
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Messages after update:');
+      for (final msg in updatedMessages) {
+        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${msg.id}, Type: ${msg.type}, Metadata: ${msg.metadata}');
+      }
 
       emit(ConversationLoaded(
         conversation: currentState.conversation,
@@ -776,6 +826,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
       ));
+      
+      AppLogger.info('🔵 DEBUGGING MESSAGE ID: MessageViewed event processed successfully');
+    } else {
+      AppLogger.error('🔵 DEBUGGING MESSAGE ID: Cannot process MessageViewed: state is not ConversationLoaded');
     }
   }
 

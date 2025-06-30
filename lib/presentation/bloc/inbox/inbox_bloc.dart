@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:hushmate/domain/entities/conversation.dart';
+import 'package:hushmate/domain/entities/message.dart';
 import 'package:hushmate/domain/repositories/conversation_repository.dart';
 import 'package:hushmate/domain/entities/matched_profile.dart'; 
 import 'package:hushmate/domain/repositories/matches_repository.dart';
@@ -80,10 +81,32 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
         final conversation = mergedConversations[i];
         final currentConversation = currentConversations[conversation.id];
         if (currentConversation != null) {
+          // Handle disappearing images logic when preserving state
+          Message? lastMessage = currentConversation.lastMessage;
+          if (lastMessage != null && lastMessage.isDisappearing && lastMessage.type == MessageType.image) {
+            final isViewed = lastMessage.metadata?.containsKey('viewedAt') == true;
+            final disappearingTime = lastMessage.disappearingTime ?? 5;
+            
+            if (isViewed) {
+              // Check if the image has expired since being viewed
+              final viewedAt = DateTime.parse(lastMessage.metadata!['viewedAt']!);
+              final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+              
+              if (elapsedSeconds >= disappearingTime) {
+                AppLogger.info('Preserving state: Disappearing image has expired, not showing');
+                lastMessage = null; // Don't show expired disappearing images
+              } else {
+                AppLogger.info('Preserving state: Disappearing image is still valid');
+              }
+            } else {
+              AppLogger.info('Preserving state: Unviewed disappearing image, showing placeholder');
+            }
+          }
+          
           mergedConversations[i] = conversation.copyWith(
             unreadCount: currentConversation.unreadCount,
-            lastMessage: currentConversation.lastMessage,
-            lastMessageTime: currentConversation.lastMessageTime,
+            lastMessage: lastMessage,
+            lastMessageTime: lastMessage?.timestamp ?? currentConversation.lastMessageTime,
             messages: currentConversation.messages,
             updatedAt: currentConversation.updatedAt,
           );

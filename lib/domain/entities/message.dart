@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:hushmate/core/utils/logger.dart';
 
 enum MessageType {
   text,
@@ -112,12 +113,33 @@ class Message extends Equatable {
 
     MessageType messageType;
     try {
-      final typeStr = json['messageType'] as String? ?? 'text';
-      messageType = MessageType.values.firstWhere(
-        (type) => type.toString().split('.').last == typeStr,
-        orElse: () => MessageType.text,
-      );
+      // Check for both 'messageType' (socket events) and 'type' (API responses)
+      final typeStr = json['messageType'] as String? ?? json['type'] as String? ?? 'text';
+      AppLogger.info('🔵 Parsing message type from JSON: "$typeStr"');
+      AppLogger.info('🔵 Raw JSON fields: messageType=${json['messageType']}, type=${json['type']}');
+      
+      // More robust message type parsing
+      MessageType parsedType;
+      switch (typeStr.toLowerCase()) {
+        case 'image':
+          parsedType = MessageType.image;
+          break;
+        case 'voice':
+          parsedType = MessageType.voice;
+          break;
+        case 'file':
+          parsedType = MessageType.file;
+          break;
+        case 'text':
+        default:
+          parsedType = MessageType.text;
+          break;
+      }
+      
+      messageType = parsedType;
+      AppLogger.info('🔵 Parsed message type: ${messageType.toString().split('.').last}');
     } catch (e) {
+      AppLogger.error('❌ Error parsing message type: $e');
       messageType = MessageType.text;
     }
 
