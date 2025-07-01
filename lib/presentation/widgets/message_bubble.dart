@@ -16,6 +16,7 @@ class MessageBubble extends StatefulWidget {
   final VoidCallback? onImageTap;
   final Function(String)? onImageUrlReady;
   final int? disappearingTime;
+  final ValueNotifier<int>? timerNotifier;
 
   const MessageBubble({
     Key? key,
@@ -29,6 +30,7 @@ class MessageBubble extends StatefulWidget {
     this.onImageTap,
     this.onImageUrlReady,
     this.disappearingTime,
+    this.timerNotifier,
   }) : super(key: key);
 
   @override
@@ -299,24 +301,48 @@ class _MessageBubbleState extends State<MessageBubble> {
                     if (widget.message?.isDisappearing == true && (widget.disappearingTime != null || _remainingTime != null))
                       Padding(
                         padding: const EdgeInsets.only(bottom: 4),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.timer,
-                              size: 12,
-                              color: widget.isMe ? Colors.white70 : Colors.black54,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${widget.disappearingTime ?? _remainingTime}s',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: widget.isMe ? Colors.white70 : Colors.black54,
+                        child: widget.timerNotifier != null
+                            ? ValueListenableBuilder<int>(
+                                valueListenable: widget.timerNotifier!,
+                                builder: (context, time, child) {
+                                  return Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.timer,
+                                        size: 12,
+                                        color: widget.isMe ? Colors.white70 : Colors.black54,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '${time}s',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: widget.isMe ? Colors.white70 : Colors.black54,
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              )
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.timer,
+                                    size: 12,
+                                    color: widget.isMe ? Colors.white70 : Colors.black54,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${widget.disappearingTime ?? _remainingTime}s',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: widget.isMe ? Colors.white70 : Colors.black54,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        ),
                       ),
                     if (widget.message?.type == MessageType.image)
                       GestureDetector(
