@@ -463,6 +463,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'disappearingTime': data['disappearingTime'],
         };
         AppLogger.info('debug disappearing: Constructed messageData: $messageData');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: Raw socket data structure');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw isDisappearing: ${data['isDisappearing']}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw disappearingTime: ${data['disappearingTime']}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw metadata: ${data['metadata']}');
+        
         final msg = Message.fromJson(messageData);
         AppLogger.info('debug disappearing: Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}, isDisappearing=${msg.isDisappearing}, disappearingTime=${msg.disappearingTime}');
         
@@ -1183,6 +1188,31 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       return;
     }
 
+    // Initialize timer state for display purposes if it doesn't exist
+    if (message.isDisappearing && 
+        message.disappearingTime != null && 
+        _disappearingImages[message.id] == null) {
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Initializing display timer state for message: ${message.id}');
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: ${message.disappearingTime} seconds');
+      
+      // Create a display-only timer state (no actual timer running)
+      final displayNotifier = ValueNotifier<int>(message.disappearingTime!);
+      _disappearingImages[message.id] = DisappearingImageState(
+        messageId: message.id,
+        remainingTime: message.disappearingTime!,
+        timer: Timer.periodic(const Duration(seconds: 1), (timer) {
+          // This timer won't actually run since we don't start it
+          // It's just a placeholder for the state structure
+        }),
+        timerNotifier: displayNotifier,
+      );
+      
+      // Immediately cancel the placeholder timer since we don't want it to run
+      _disappearingImages[message.id]!.timer.cancel();
+      
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Display timer state initialized. Active timers: ${_disappearingImages.keys.join(', ')}');
+    }
+
     // Emit image_viewed event for receiver when opening full screen
     if (!isSender && message.isDisappearing && message.disappearingTime != null) {
       AppLogger.info('🔵 DEBUGGING Disappearing Image: Receiver opening image, emitting image_viewed event');
@@ -1350,11 +1380,45 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       return;
     }
     
-    // Cancel existing timer if any
-    _disappearingImages[messageId]?.timer.cancel();
-    _disappearingImages[messageId]?.timerNotifier.dispose();
+    // Check if there's already a display-only timer state
+    final existingState = _disappearingImages[messageId];
+    if (existingState != null) {
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Found existing timer state for message: $messageId');
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Converting display-only timer to active timer');
+      
+      // Cancel the existing timer (if it was running) but KEEP the existing ValueNotifier
+      existingState.timer.cancel();
+      
+      // Update the existing ValueNotifier to the new disappearing time
+      existingState.timerNotifier.value = disappearingTime;
+      
+      // Create new state with the same ValueNotifier reference but new timer
+      _disappearingImages[messageId] = DisappearingImageState(
+        messageId: messageId,
+        remainingTime: disappearingTime,
+        timer: Timer.periodic(const Duration(seconds: 1), (timer) {
+          final currentState = _disappearingImages[messageId];
+          if (currentState != null && mounted) {
+            currentState.remainingTime--;
+            currentState.timerNotifier.value = currentState.remainingTime;
+            
+            if (currentState.remainingTime <= 0) {
+              timer.cancel();
+              // Call the expired handler to clean up the image
+              _handleDisappearingImageExpired(messageId);
+            }
+          } else if (!mounted) {
+            timer.cancel();
+          }
+        }),
+        timerNotifier: existingState.timerNotifier, // Keep the same ValueNotifier reference
+      );
+      
+      AppLogger.info('🔵 DEBUGGING Disappearing Image: Converted display-only timer to active timer. Active timers: ${_disappearingImages.keys.join(', ')}');
+      return;
+    }
     
-    // Create ValueNotifier for this message
+    // Create new ValueNotifier for this message (only for new timers)
     final timerNotifier = ValueNotifier<int>(disappearingTime);
     
     // Create new state
@@ -1631,6 +1695,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                         (m) => m.id == message.id,
                                         orElse: () => message,
                                       );
+                                      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: message type: ${updatedMessage.type} isDisappearing: ${updatedMessage.isDisappearing}');
+                                      // Log disappearing time values for image messages
+                                      if (updatedMessage.type == MessageType.image && updatedMessage.isDisappearing) {
+                                        AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Creating MessageBubble for disappearing image');
+                                        AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message ID: ${updatedMessage.id}');
+                                        AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${updatedMessage.disappearingTime}');
+                                        AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - _disappearingImages[messageId]?.remainingTime: ${_disappearingImages[updatedMessage.id]?.remainingTime}');
+                                        AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - _disappearingImages[messageId]?.timerNotifier: ${_disappearingImages[updatedMessage.id]?.timerNotifier != null ? 'Available' : 'Not available'}');
+                                      }
                                       
                                       return MessageBubble(
                                         key: ValueKey(updatedMessage.id),

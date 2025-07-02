@@ -87,6 +87,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       AppLogger.info('🔵 Loaded ${messages.length} messages from API');
       for (final message in messages) {
         AppLogger.info('🔵 - Message ID: ${message.id}, Type: ${message.type}, Content: ${message.content.substring(0, message.content.length > 50 ? 50 : message.content.length)}...');
+        
+        // Add specific logging for disappearing image messages
+        if (message.type == MessageType.image && message.isDisappearing) {
+          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Found disappearing image in API response');
+          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message ID: ${message.id}');
+          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Disappearing time: ${message.disappearingTime} seconds');
+          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Has viewedAt metadata: ${message.metadata?.containsKey('viewedAt')}');
+          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - ViewedAt value: ${message.metadata?['viewedAt']}');
+        }
       }
 
       // Filter out expired disappearing images

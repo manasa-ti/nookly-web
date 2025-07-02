@@ -138,6 +138,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
               AppLogger.info('🔵 - Content: ${json['content']}');
               AppLogger.info('🔵 - Type: ${json['type']}');
               AppLogger.info('🔵 - IsDisappearing: ${json['isDisappearing']}');
+              AppLogger.info('🔵 - DisappearingTime: ${json['disappearingTime']}');
+              AppLogger.info('🔵 - Full JSON: $json');
               
               return Message.fromJson({
                 '_id': json['_id'],
@@ -149,6 +151,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
                 'isRead': json['isRead'],
                 'status': json['status'],
                 'isDisappearing': json['isDisappearing'],
+                'disappearingTime': json['disappearingTime'],
                 'updatedAt': json['updatedAt'],
               });
             })
@@ -474,8 +477,27 @@ class ConversationRepositoryImpl implements ConversationRepository {
       );
 
       AppLogger.info('API Response data: ${response.data}');
+      AppLogger.info('🔵 DEBUGGING API RESPONSE: Full API response structure');
+      AppLogger.info('🔵 DEBUGGING API RESPONSE: - Response type: ${response.data.runtimeType}');
+      AppLogger.info('🔵 DEBUGGING API RESPONSE: - Response keys: ${response.data.keys.toList()}');
+      
       final data = response.data as Map<String, dynamic>;
       AppLogger.info('Messages data: ${data['messages']}');
+      
+      // Debug individual messages in the response
+      if (data['messages'] is List) {
+        final messagesList = data['messages'] as List;
+        AppLogger.info('🔵 DEBUGGING API RESPONSE: Found ${messagesList.length} messages in response');
+        for (int i = 0; i < messagesList.length; i++) {
+          final msg = messagesList[i];
+          AppLogger.info('🔵 DEBUGGING API RESPONSE: Message $i: $msg');
+          if (msg is Map<String, dynamic>) {
+            AppLogger.info('🔵 DEBUGGING API RESPONSE: - Message $i keys: ${msg.keys.toList()}');
+            AppLogger.info('🔵 DEBUGGING API RESPONSE: - Message $i isDisappearing: ${msg['isDisappearing']}');
+            AppLogger.info('🔵 DEBUGGING API RESPONSE: - Message $i disappearingTime: ${msg['disappearingTime']}');
+          }
+        }
+      }
       
       // Get current user ID once
       final currentUser = await _authRepository.getCurrentUser();
@@ -497,6 +519,13 @@ class ConversationRepositoryImpl implements ConversationRepository {
             if (!messageData.containsKey('receiver')) {
               messageData['receiver'] = currentUserId; // Use current user as receiver if missing
             }
+            
+            // Add debugging for disappearing fields
+            AppLogger.info('🔵 DEBUGGING GETMESSAGES: Processing message from getMessages method');
+            AppLogger.info('🔵 DEBUGGING GETMESSAGES: - Message ID: ${messageData['_id']}');
+            AppLogger.info('🔵 DEBUGGING GETMESSAGES: - Raw isDisappearing: ${messageData['isDisappearing']}');
+            AppLogger.info('🔵 DEBUGGING GETMESSAGES: - Raw disappearingTime: ${messageData['disappearingTime']}');
+            AppLogger.info('🔵 DEBUGGING GETMESSAGES: - Full messageData: $messageData');
             
             return Message.fromJson(messageData);
           })

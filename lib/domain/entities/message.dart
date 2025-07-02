@@ -170,7 +170,10 @@ class Message extends Equatable {
 
     int? disappearingTime;
     try {
-      if (json['disappearingTime'] != null) {
+      // Check for disappearingTime in metadata first, then at root level
+      if (json['metadata'] != null && json['metadata']['disappearingTime'] != null) {
+        disappearingTime = json['metadata']['disappearingTime'] as int;
+      } else if (json['disappearingTime'] != null) {
         disappearingTime = json['disappearingTime'] as int;
       }
     } catch (e) {
@@ -187,6 +190,42 @@ class Message extends Equatable {
       print('Error parsing urlExpirationTime: $e');
     }
 
+    // Parse isDisappearing from metadata first, then root level
+    bool isDisappearing = false;
+    try {
+      if (json['metadata'] != null && json['metadata']['isDisappearing'] != null) {
+        isDisappearing = json['metadata']['isDisappearing'] as bool;
+      } else if (json['isDisappearing'] != null) {
+        isDisappearing = json['isDisappearing'] as bool;
+      }
+    } catch (e) {
+      print('Error parsing isDisappearing: $e');
+    }
+
+    // Add debugging for disappearing fields
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: Parsing disappearing fields from JSON');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw isDisappearing (root): ${json['isDisappearing']}');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw disappearingTime (root): ${json['disappearingTime']}');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw metadata: ${json['metadata']}');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw isDisappearing (metadata): ${json['metadata']?['isDisappearing']}');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw disappearingTime (metadata): ${json['metadata']?['disappearingTime']}');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed isDisappearing: $isDisappearing');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed disappearingTime: $disappearingTime');
+
+    // Parse other metadata fields
+    Map<String, String> metadata = {};
+    if (json['metadata'] != null) {
+      final metadataMap = json['metadata'] as Map<String, dynamic>;
+      metadataMap.forEach((key, value) {
+        if (value != null) {
+          metadata[key] = value.toString();
+        }
+      });
+    }
+    // Add root level fields to metadata if they exist
+    if (json['isDisappearing'] != null) metadata['isDisappearing'] = json['isDisappearing'].toString();
+    if (json['updatedAt'] != null) metadata['updatedAt'] = json['updatedAt'].toString();
+
     return Message(
       id: id,
       sender: sender,
@@ -195,14 +234,11 @@ class Message extends Equatable {
       timestamp: timestamp,
       type: messageType,
       isRead: json['isRead'] as bool? ?? false,
-      metadata: {
-        if (json['isDisappearing'] != null) 'isDisappearing': json['isDisappearing'].toString(),
-        if (json['updatedAt'] != null) 'updatedAt': json['updatedAt'].toString(),
-      },
+      metadata: metadata,
       status: status,
       deliveredAt: deliveredAt,
       readAt: readAt,
-      isDisappearing: json['isDisappearing'] as bool? ?? false,
+      isDisappearing: isDisappearing,
       disappearingTime: disappearingTime,
       isExpired: false,
       urlExpirationTime: urlExpirationTime,

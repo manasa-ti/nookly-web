@@ -52,6 +52,17 @@ class _MessageBubbleState extends State<MessageBubble> {
     AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: ${widget.message?.disappearingTime}');
     AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Metadata: ${widget.message?.metadata}');
     
+    // Add specific logging for disappearing image messages
+    if (widget.message?.type == MessageType.image && widget.message?.isDisappearing == true) {
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Image message with disappearing time detected');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message ID: ${widget.message?.id}');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Disappearing time: ${widget.message?.disappearingTime} seconds');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Has viewedAt metadata: ${widget.message?.metadata?.containsKey('viewedAt')}');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - ViewedAt value: ${widget.message?.metadata?['viewedAt']}');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget timerNotifier: ${widget.timerNotifier != null ? 'Available' : 'Not available'}');
+    }
+    
     if (widget.message?.isDisappearing == true && widget.message?.disappearingTime != null) {
       _remainingTime = widget.message?.disappearingTime;
       AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message is disappearing, initial remaining time: $_remainingTime');
@@ -298,14 +309,44 @@ class _MessageBubbleState extends State<MessageBubble> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (widget.message?.isDisappearing == true && (widget.disappearingTime != null || _remainingTime != null))
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: widget.timerNotifier != null
-                            ? ValueListenableBuilder<int>(
-                                valueListenable: widget.timerNotifier!,
-                                builder: (context, time, child) {
-                                  return Row(
+                    if (widget.message?.isDisappearing == true && widget.message?.disappearingTime != null)
+                      Builder(
+                        builder: (context) {
+                          // Log when timer is being displayed
+                          if (widget.message?.type == MessageType.image) {
+                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Displaying timer for image message: ${widget.message?.id}');
+                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Using timerNotifier: ${widget.timerNotifier != null}');
+                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
+                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.disappearingTime}');
+                          }
+                          
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: widget.timerNotifier != null
+                                ? ValueListenableBuilder<int>(
+                                    valueListenable: widget.timerNotifier!,
+                                    builder: (context, time, child) {
+                                      return Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.timer,
+                                            size: 12,
+                                            color: widget.isMe ? Colors.white70 : Colors.black54,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${time}s',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: widget.isMe ? Colors.white70 : Colors.black54,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  )
+                                : Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Icon(
@@ -315,34 +356,16 @@ class _MessageBubbleState extends State<MessageBubble> {
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        '${time}s',
+                                        '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: widget.isMe ? Colors.white70 : Colors.black54,
                                         ),
                                       ),
                                     ],
-                                  );
-                                },
-                              )
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.timer,
-                                    size: 12,
-                                    color: widget.isMe ? Colors.white70 : Colors.black54,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${widget.disappearingTime ?? _remainingTime}s',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: widget.isMe ? Colors.white70 : Colors.black54,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                          );
+                        },
                       ),
                     if (widget.message?.type == MessageType.image)
                       GestureDetector(
