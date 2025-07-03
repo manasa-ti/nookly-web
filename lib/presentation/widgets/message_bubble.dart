@@ -16,6 +16,7 @@ class MessageBubble extends StatefulWidget {
   final int? disappearingTime;
   final ValueNotifier<int>? timerNotifier;
   final Function(String messageId, String newImageUrl, DateTime newExpirationTime, Map<String, dynamic> additionalData)? onImageUrlRefreshed;
+  final String? timestamp;
 
   const MessageBubble({
     Key? key,
@@ -31,6 +32,7 @@ class MessageBubble extends StatefulWidget {
     this.disappearingTime,
     this.timerNotifier,
     this.onImageUrlRefreshed,
+    this.timestamp,
   }) : super(key: key);
 
   @override
@@ -58,6 +60,8 @@ class _MessageBubbleState extends State<MessageBubble> {
       AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - ViewedAt value: ${widget.message?.metadata?['viewedAt']}');
       AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
       AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget timerNotifier: ${widget.timerNotifier != null ? 'Available' : 'Not available'}');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message url expiry: ${widget.message?.urlExpirationTime}');
+      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message type: ${widget.message?.type}');
     }
 
     // Initialize image URL if it's an image message
@@ -90,6 +94,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     // Handle image URL changes
     if (widget.message?.type == MessageType.image &&
         widget.message?.content != oldWidget.message?.content) {
+          AppLogger.info('🔵 DEBUGGING image url: loading image url  ${widget.message?.content}');
       _loadImageUrl();
     }
   }
@@ -209,42 +214,65 @@ class _MessageBubbleState extends State<MessageBubble> {
       onTap: widget.onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Row(
-          mainAxisAlignment: widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Column(
+          crossAxisAlignment: widget.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            if (!widget.isMe && widget.showAvatar) _buildAvatar(),
-            if (!widget.isMe && widget.showAvatar) const SizedBox(width: 8),
-            Flexible(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: widget.isMe ? Theme.of(context).primaryColor : Colors.grey[300],
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (widget.message?.isDisappearing == true && 
-                        widget.message?.disappearingTime != null &&
-                        widget.message?.type == MessageType.image)
-                      Builder(
-                        builder: (context) {
-                          // Log when timer is being displayed
-                          if (widget.message?.type == MessageType.image) {
-                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Displaying timer for image message: ${widget.message?.id}');
-                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Using timerNotifier: ${widget.timerNotifier != null}');
-                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
-                            AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.disappearingTime}');
-                          }
-                          
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 4),
-                            child: widget.timerNotifier != null
-                                ? ValueListenableBuilder<int>(
-                                    valueListenable: widget.timerNotifier!,
-                                    builder: (context, time, child) {
-                                      return Row(
+            Row(
+              mainAxisAlignment: widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (!widget.isMe && widget.showAvatar) _buildAvatar(),
+                if (!widget.isMe && widget.showAvatar) const SizedBox(width: 8),
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: widget.isMe ? Theme.of(context).primaryColor : Colors.grey[300],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.message?.isDisappearing == true && 
+                            widget.message?.disappearingTime != null &&
+                            widget.message?.type == MessageType.image)
+                          Builder(
+                            builder: (context) {
+                              // Log when timer is being displayed
+                              if (widget.message?.type == MessageType.image) {
+                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Displaying timer for image message: ${widget.message?.id}');
+                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Using timerNotifier: ${widget.timerNotifier != null}');
+                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
+                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.disappearingTime}');
+                              }
+                              
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 4),
+                                child: widget.timerNotifier != null
+                                    ? ValueListenableBuilder<int>(
+                                        valueListenable: widget.timerNotifier!,
+                                        builder: (context, time, child) {
+                                          return Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.timer,
+                                                size: 12,
+                                                color: widget.isMe ? Colors.white70 : Colors.black54,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                '${time}s',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: widget.isMe ? Colors.white70 : Colors.black54,
+                                                ),
+                                              ),
+                                            ],
+                                          );
+                                        },
+                                      )
+                                    : Row(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
@@ -254,101 +282,95 @@ class _MessageBubbleState extends State<MessageBubble> {
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
-                                            '${time}s',
+                                            '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
                                             style: TextStyle(
                                               fontSize: 12,
                                               color: widget.isMe ? Colors.white70 : Colors.black54,
                                             ),
                                           ),
                                         ],
-                                      );
-                                    },
-                                  )
-                                : Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.timer,
-                                        size: 12,
-                                        color: widget.isMe ? Colors.white70 : Colors.black54,
                                       ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: widget.isMe ? Colors.white70 : Colors.black54,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          );
-                        },
-                      ),
-                    if (widget.message?.type == MessageType.image)
-                      GestureDetector(
-                        onTap: widget.onImageTap,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: _isLoadingImage
-                              ? const SizedBox(
-                                  width: 200,
-                                  height: 200,
-                                  child: Center(child: CircularProgressIndicator()),
-                                )
-                              : Image.network(
-                                  _currentImageUrl ?? widget.message!.content,
-                                  width: 200,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                  loadingBuilder: (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return SizedBox(
+                              );
+                            },
+                          ),
+                        if (widget.message?.type == MessageType.image)
+                          GestureDetector(
+                            onTap: widget.onImageTap,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: _isLoadingImage
+                                  ? const SizedBox(
                                       width: 200,
                                       height: 200,
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          value: loadingProgress.expectedTotalBytes != null
-                                              ? loadingProgress.cumulativeBytesLoaded /
-                                                  loadingProgress.expectedTotalBytes!
-                                              : null,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    final url = _currentImageUrl ?? widget.message!.content;
-                                    AppLogger.error('❌ Failed to load image: $error');
-                                    AppLogger.error('❌ Image URL: $url');
-                                    AppLogger.error('❌ Current image URL: $_currentImageUrl');
-                                    AppLogger.error('❌ Message content: ${widget.message!.content}');
-                                    return const SizedBox(
+                                      child: Center(child: CircularProgressIndicator()),
+                                    )
+                                  : Image.network(
+                                      _currentImageUrl ?? widget.message!.content,
                                       width: 200,
                                       height: 200,
-                                      child: Center(
-                                        child: Icon(Icons.error_outline, size: 40),
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
-                      ),
-                    if (widget.message?.type == MessageType.text)
-                      Text(
-                        widget.message!.content,
-                        style: TextStyle(
-                          color: widget.isMe ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    if (widget.statusWidget != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: widget.statusWidget!,
-                      ),
-                  ],
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return SizedBox(
+                                          width: 200,
+                                          height: 200,
+                                          child: Center(
+                                            child: CircularProgressIndicator(
+                                              value: loadingProgress.expectedTotalBytes != null
+                                                  ? loadingProgress.cumulativeBytesLoaded /
+                                                      loadingProgress.expectedTotalBytes!
+                                                  : null,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        final url = _currentImageUrl ?? widget.message!.content;
+                                        AppLogger.error('❌ Failed to load image: $error');
+                                        AppLogger.error('❌ Image URL: $url');
+                                        AppLogger.error('❌ Current image URL: $_currentImageUrl');
+                                        AppLogger.error('❌ Message content: ${widget.message!.content}');
+                                        return const SizedBox(
+                                          width: 200,
+                                          height: 200,
+                                          child: Center(
+                                            child: Icon(Icons.error_outline, size: 40),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                            ),
+                          ),
+                        if (widget.message?.type == MessageType.text)
+                          Text(
+                            widget.message!.content,
+                            style: TextStyle(
+                              color: widget.isMe ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        if (widget.statusWidget != null)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: widget.statusWidget!,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            // Display timestamp outside the bubble
+            if (widget.timestamp != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 12, right: 12),
+                child: Text(
+                  widget.timestamp!,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

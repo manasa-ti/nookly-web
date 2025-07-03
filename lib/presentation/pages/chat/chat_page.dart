@@ -872,9 +872,41 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           String? expiresAt;
           if (messageResponse.statusCode == 200 || messageResponse.statusCode == 201) {
             final responseData = messageResponse.data;
-            if (responseData['metadata'] != null && responseData['metadata']['expiresAt'] != null) {
-              expiresAt = responseData['metadata']['expiresAt'] as String;
-              AppLogger.info('🔵 Extracted expiresAt from API response: $expiresAt');
+            AppLogger.info('🔵 DEBUGGING EXPIRATION: Full API response data: $responseData');
+            AppLogger.info('🔵 DEBUGGING EXPIRATION: Response data type: ${responseData.runtimeType}');
+            AppLogger.info('🔵 DEBUGGING EXPIRATION: Response data keys: ${responseData.keys.toList()}');
+            
+            if (responseData['metadata'] != null) {
+              AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata exists: ${responseData['metadata']}');
+              AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata type: ${responseData['metadata'].runtimeType}');
+              AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata keys: ${responseData['metadata'].keys.toList()}');
+              
+              if (responseData['metadata']['expiresAt'] != null) {
+                expiresAt = responseData['metadata']['expiresAt'] as String;
+                AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully extracted expiresAt: $expiresAt');
+              } else {
+                AppLogger.warning('🔵 DEBUGGING EXPIRATION: expiresAt is null in metadata');
+              }
+            } else {
+              AppLogger.warning('🔵 DEBUGGING EXPIRATION: No metadata in API response');
+            }
+          } else {
+            AppLogger.warning('🔵 DEBUGGING EXPIRATION: API call failed, status code: ${messageResponse.statusCode}');
+          }
+          
+          // Fallback: Extract expiration time from S3 URL if not provided by API
+          if (expiresAt == null && imageUrl.contains('X-Amz-Expires=')) {
+            try {
+              final uri = Uri.parse(imageUrl);
+              final expiresParam = uri.queryParameters['X-Amz-Expires'];
+              if (expiresParam != null) {
+                final expiresSeconds = int.parse(expiresParam);
+                final expirationTime = DateTime.now().add(Duration(seconds: expiresSeconds));
+                expiresAt = expirationTime.toIso8601String();
+                AppLogger.info('🔵 DEBUGGING EXPIRATION: Extracted expiration from S3 URL: $expiresAt (${expiresSeconds}s from now)');
+              }
+            } catch (e) {
+              AppLogger.error('🔵 DEBUGGING EXPIRATION: Failed to extract expiration from S3 URL: $e');
             }
           }
           
@@ -907,10 +939,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'metadata': expiresAt != null ? {'expiresAt': expiresAt} : null,
           };
           AppLogger.info('debug disappearing: Constructed messageData: $messageData');
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: MessageData metadata: ${messageData['metadata']}');
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: expiresAt value: $expiresAt');
           AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with server ID: ${messageData['_id']}');
           _socketService!.emit('private_message', messageData);
           AppLogger.info('debug disappearing: Emitted private_message event via socket');
-          final msg = Message.fromJson({
+          
+          // Create message for local state with metadata
+          final messageJson = {
             '_id': messageData['_id'],
             'sender': messageData['from'],
             'receiver': messageData['to'],
@@ -920,7 +956,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'status': 'sent',
             'isDisappearing': isDisappearing,
             'disappearingTime': disappearingTime,
-          });
+            'metadata': messageData['metadata'], // Include metadata in Message.fromJson
+          };
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message JSON for fromJson: $messageJson');
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message JSON metadata: ${messageJson['metadata']}');
+          
+          final msg = Message.fromJson(messageJson);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Created Message object');
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message urlExpirationTime: ${msg.urlExpirationTime}');
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message metadata: ${msg.metadata}');
           AppLogger.info('debug disappearing: Created Message object for local state: id=${msg.id}, content=${msg.content}');
           AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender adding message to local state with ID: ${msg.id}');
           AppLogger.info('🔵 DEBUGGING Disappearing Image: Message ID consistency check - Socket ID: ${messageData['_id']}, Local ID: ${msg.id}');
@@ -1432,15 +1476,25 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.call, color: Colors.black),
+            onPressed: () => _startCall(true), // Audio call
+          ),
+          IconButton(
+            icon: const Icon(Icons.videocam, color: Colors.black),
+            onPressed: () => _startCall(false), // Video call
+          ),
+          IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.black),
             onPressed: _toggleMenu,
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: BlocListener<ConversationBloc, ConversationState>(
+          Column(
+            children: [
+              Expanded(
+                child: BlocListener<ConversationBloc, ConversationState>(
               listener: (context, state) {
                 if (state is ConversationLoaded) {
                   // Scroll to bottom when new messages arrive
@@ -1604,6 +1658,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   showAvatar: false,
                                   avatarUrl: widget.participantAvatar,
                                   statusWidget: isMe ? _buildMessageStatus(message) : null,
+                                  timestamp: _formatMessageTimestamp(message),
                                   onImageTap: () {
                                     if (message.type == MessageType.image) {
                                       AppLogger.info('🔵 MessageBubble requested full screen image');
@@ -1661,7 +1716,23 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _buildMessageInput(),
         ],
       ),
-    );
+      // Add side menu overlay
+      if (_isMenuOpen) _buildSideMenu(Conversation(
+        id: widget.conversationId,
+        participantId: widget.conversationId,
+        participantName: widget.participantName,
+        participantAvatar: widget.participantAvatar,
+        messages: [],
+        lastMessageTime: DateTime.now(),
+        unreadCount: 0,
+        userId: _currentUserId ?? '',
+        lastMessage: null,
+        updatedAt: DateTime.now(),
+        isOnline: widget.isOnline,
+      )),
+    ],
+    )
+  );
   }
 
   Widget _buildMessageInput() {
@@ -1819,6 +1890,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
+  String _formatMessageTimestamp(Message message) {
+    // Use the most appropriate timestamp based on message status
+    if (message.status == 'read' && message.readAt != null) {
+      return DateFormat('HH:mm').format(message.readAt!);
+    } else if (message.status == 'delivered' && message.deliveredAt != null) {
+      return DateFormat('HH:mm').format(message.deliveredAt!);
+    } else {
+      // Default to message timestamp
+      return DateFormat('HH:mm').format(message.timestamp);
+    }
+  }
+
   // Add message status indicator
   Widget _buildMessageStatus(Message message) {
     if (message.sender != _currentUserId) return const SizedBox.shrink();
@@ -1829,50 +1912,31 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message readAt: ${message.readAt}');
     
     Widget statusIcon;
-    String? timestamp;
     
-    // Properly handle status progression
+    // Properly handle status progression - only show status icons, not timestamps
     if (message.status == 'read' && message.readAt != null) {
       statusIcon = Opacity(
         opacity: 0, // Hide the icon
         child: const Icon(Icons.done_all, size: 16, color: Colors.blue),
       );
-      timestamp = DateFormat('HH:mm').format(message.readAt!);
     } else if (message.status == 'delivered' && message.deliveredAt != null) {
       statusIcon = Opacity(
         opacity: 0, // Hide the icon
         child: const Icon(Icons.done_all, size: 16, color: Colors.grey),
       );
-      timestamp = DateFormat('HH:mm').format(message.deliveredAt!);
     } else {
       // Default to sent status
       statusIcon = Opacity(
         opacity: 0, // Hide the icon
         child: const Icon(Icons.check, size: 16, color: Colors.grey),
       );
-      timestamp = DateFormat('HH:mm').format(message.timestamp);
     }
     
     AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Selected status icon: ${message.status}');
     
     return Padding(
       padding: const EdgeInsets.only(left: 4),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          statusIcon,
-          Padding(
-            padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              timestamp,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
-        ],
-      ),
+      child: statusIcon,
     );
   }
 

@@ -183,14 +183,33 @@ class Message extends Equatable {
     // Parse URL expiration time from metadata.expiresAt or root level urlExpirationTime
     DateTime? urlExpirationTime;
     try {
-      if (json['metadata'] != null && json['metadata']['expiresAt'] != null) {
-        urlExpirationTime = DateTime.parse(json['metadata']['expiresAt'] as String);
-        AppLogger.info('🔵 Parsed expiresAt from metadata: $urlExpirationTime');
-      } else if (json['urlExpirationTime'] != null) {
-        urlExpirationTime = DateTime.parse(json['urlExpirationTime'] as String);
-        AppLogger.info('🔵 Parsed urlExpirationTime from root: $urlExpirationTime');
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsing URL expiration time from JSON');
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: JSON metadata: ${json['metadata']}');
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: JSON metadata type: ${json['metadata']?.runtimeType}');
+      
+      if (json['metadata'] != null) {
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata exists, checking for expiresAt');
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata keys: ${(json['metadata'] as Map<String, dynamic>).keys.toList()}');
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: expiresAt value in metadata: ${json['metadata']['expiresAt']}');
+        
+        if (json['metadata']['expiresAt'] != null) {
+          urlExpirationTime = DateTime.parse(json['metadata']['expiresAt'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed expiresAt from metadata: $urlExpirationTime');
+        } else {
+          AppLogger.warning('🔵 DEBUGGING EXPIRATION: expiresAt is null in metadata');
+        }
+      } else {
+        AppLogger.warning('🔵 DEBUGGING EXPIRATION: No metadata in JSON');
       }
+      
+      if (urlExpirationTime == null && json['urlExpirationTime'] != null) {
+        urlExpirationTime = DateTime.parse(json['urlExpirationTime'] as String);
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed urlExpirationTime from root: $urlExpirationTime');
+      }
+      
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: Final urlExpirationTime: $urlExpirationTime');
     } catch (e) {
+      AppLogger.error('❌ DEBUGGING EXPIRATION: Error parsing urlExpirationTime: $e');
       print('Error parsing urlExpirationTime: $e');
     }
 
