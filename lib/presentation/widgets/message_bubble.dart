@@ -15,6 +15,7 @@ class MessageBubble extends StatefulWidget {
   final Function(String)? onImageUrlReady;
   final int? disappearingTime;
   final ValueNotifier<int>? timerNotifier;
+  final Function(String messageId, String newImageUrl, DateTime newExpirationTime, Map<String, dynamic> additionalData)? onImageUrlRefreshed;
 
   const MessageBubble({
     Key? key,
@@ -29,6 +30,7 @@ class MessageBubble extends StatefulWidget {
     this.onImageUrlReady,
     this.disappearingTime,
     this.timerNotifier,
+    this.onImageUrlRefreshed,
   }) : super(key: key);
 
   @override
@@ -148,16 +150,40 @@ class _MessageBubbleState extends State<MessageBubble> {
       AppLogger.info('🔵 Extracted image key: $imageKey');
       AppLogger.info('🔵 Original content URL: ${widget.message!.content}');
       
-      final imageUrl = await ImageUrlService().getValidImageUrl(imageKey);
+      final imageData = await ImageUrlService().getValidImageUrlWithExpiration(imageKey);
+      final imageUrl = imageData['imageUrl'] as String;
+      final expiresAt = imageData['expiresAt'] as String;
       AppLogger.info('🔵 Got pre-signed URL: $imageUrl');
+      AppLogger.info('🔵 Expires at: $expiresAt');
       
       if (mounted) {
         setState(() {
           _currentImageUrl = imageUrl;
           _isLoadingImage = false;
         });
+        
         // Notify parent about the new URL
         widget.onImageUrlReady?.call(imageUrl);
+        
+        // Update message in bloc state with new image data
+        if (widget.onImageUrlRefreshed != null && widget.message != null) {
+          try {
+            final expirationTime = DateTime.parse(expiresAt);
+            AppLogger.info('🔵 Updating message with refreshed image data');
+            AppLogger.info('🔵 New image URL: $imageUrl');
+            AppLogger.info('🔵 New expiration time: $expirationTime');
+            
+            widget.onImageUrlRefreshed!(
+              widget.message!.id,
+              imageUrl,
+              expirationTime,
+              {'imageKey': imageKey}, // Additional data
+            );
+          } catch (e) {
+            AppLogger.error('❌ Failed to update message with refreshed image data: $e');
+          }
+        }
+        
         AppLogger.info('🔵 Updated image URL in state and notified parent');
       }
     } catch (e) {

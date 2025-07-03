@@ -868,6 +868,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           
           AppLogger.info('debug disappearing: POST /api/messages response: statusCode=${messageResponse.statusCode}, data=${messageResponse.data}');
           
+          // Extract expiresAt from API response metadata
+          String? expiresAt;
+          if (messageResponse.statusCode == 200 || messageResponse.statusCode == 201) {
+            final responseData = messageResponse.data;
+            if (responseData['metadata'] != null && responseData['metadata']['expiresAt'] != null) {
+              expiresAt = responseData['metadata']['expiresAt'] as String;
+              AppLogger.info('🔵 Extracted expiresAt from API response: $expiresAt');
+            }
+          }
+          
           if (messageResponse.statusCode != 200 && messageResponse.statusCode != 201) {
             AppLogger.error('debug disappearing: Failed to create message record: ${messageResponse.statusCode}');
             AppLogger.error('debug disappearing: Error response data: ${messageResponse.data}');
@@ -894,6 +904,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'createdAt': DateTime.now().toIso8601String(),
             'isDisappearing': isDisappearing,
             'disappearingTime': disappearingTime,
+            'metadata': expiresAt != null ? {'expiresAt': expiresAt} : null,
           };
           AppLogger.info('debug disappearing: Constructed messageData: $messageData');
           AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with server ID: ${messageData['_id']}');
@@ -1602,6 +1613,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   },
                                   disappearingTime: shouldShowTimer ? timerState?.remainingTime : null,
                                   timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,
+                                  onImageUrlRefreshed: (messageId, newImageUrl, newExpirationTime, additionalData) {
+                                    AppLogger.info('🔵 MessageBubble requested image URL refresh for message: $messageId');
+                                    context.read<ConversationBloc>().add(UpdateMessageImageData(
+                                      messageId: messageId,
+                                      newImageUrl: newImageUrl,
+                                      newExpirationTime: newExpirationTime,
+                                      additionalData: additionalData,
+                                    ));
+                                  },
                                 ),
                               );
                             },

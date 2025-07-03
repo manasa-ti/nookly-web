@@ -290,4 +290,21 @@ class UpdateMessageId extends ConversationEvent {
 
   @override
   List<Object> get props => [oldMessageId, newMessageId];
+}
+
+class UpdateMessageImageData extends ConversationEvent {
+  final String messageId;
+  final String newImageUrl;
+  final DateTime newExpirationTime;
+  final Map<String, dynamic> additionalData;
+
+  const UpdateMessageImageData({
+    required this.messageId,
+    required this.newImageUrl,
+    required this.newExpirationTime,
+    this.additionalData = const {},
+  });
+
+  @override
+  List<Object> get props => [messageId, newImageUrl, newExpirationTime, additionalData];
 } 

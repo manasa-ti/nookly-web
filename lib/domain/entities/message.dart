@@ -180,11 +180,15 @@ class Message extends Equatable {
       print('Error parsing disappearingTime: $e');
     }
 
-    // Parse URL expiration time
+    // Parse URL expiration time from metadata.expiresAt or root level urlExpirationTime
     DateTime? urlExpirationTime;
     try {
-      if (json['urlExpirationTime'] != null) {
-        urlExpirationTime = DateTime.parse(json['urlExpirationTime']);
+      if (json['metadata'] != null && json['metadata']['expiresAt'] != null) {
+        urlExpirationTime = DateTime.parse(json['metadata']['expiresAt'] as String);
+        AppLogger.info('🔵 Parsed expiresAt from metadata: $urlExpirationTime');
+      } else if (json['urlExpirationTime'] != null) {
+        urlExpirationTime = DateTime.parse(json['urlExpirationTime'] as String);
+        AppLogger.info('🔵 Parsed urlExpirationTime from root: $urlExpirationTime');
       }
     } catch (e) {
       print('Error parsing urlExpirationTime: $e');

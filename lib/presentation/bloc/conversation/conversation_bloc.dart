@@ -61,6 +61,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<MessageExpired>(_onMessageExpired);
     on<MessageViewed>(_onMessageViewed);
     on<UpdateMessageId>(_onUpdateMessageId);
+    on<UpdateMessageImageData>(_onUpdateMessageImageData);
   }
 
   Future<void> _onLoadConversation(
@@ -869,6 +870,52 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       ));
     } else {
       AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Cannot update message ID: state is not ConversationLoaded');
+    }
+  }
+
+  void _onUpdateMessageImageData(UpdateMessageImageData event, Emitter<ConversationState> emit) {
+    AppLogger.info('🔵 Updating message image data for message: ${event.messageId}');
+    AppLogger.info('🔵 New image URL: ${event.newImageUrl}');
+    AppLogger.info('🔵 New expiration time: ${event.newExpirationTime}');
+    AppLogger.info('🔵 Additional data: ${event.additionalData}');
+    
+    if (state is ConversationLoaded) {
+      final currentState = state as ConversationLoaded;
+      
+      // Find and update the message with new image data
+      final updatedMessages = currentState.messages.map((message) {
+        if (message.id == event.messageId) {
+          AppLogger.info('🔵 Found message to update image data: ${message.id}');
+          
+          // Create updated metadata with any additional fields from refresh response
+          final updatedMetadata = Map<String, String>.from(message.metadata ?? {});
+          event.additionalData.forEach((key, value) {
+            if (value != null) {
+              updatedMetadata[key] = value.toString();
+            }
+          });
+          
+          return message.copyWith(
+            content: event.newImageUrl, // Update the image URL
+            urlExpirationTime: event.newExpirationTime, // Update expiration time
+            metadata: updatedMetadata, // Update metadata with any additional fields
+          );
+        }
+        return message;
+      }).toList();
+      
+      AppLogger.info('🔵 Updated message image data successfully');
+      
+      emit(ConversationLoaded(
+        conversation: currentState.conversation,
+        messages: updatedMessages,
+        hasMoreMessages: currentState.hasMoreMessages,
+        participantName: currentState.participantName,
+        participantAvatar: currentState.participantAvatar,
+        isOnline: currentState.isOnline,
+      ));
+    } else {
+      AppLogger.warning('⚠️ Cannot update message image data: state is not ConversationLoaded');
     }
   }
 

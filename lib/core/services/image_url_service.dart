@@ -13,13 +13,16 @@ class ImageUrlService {
   final Map<String, String> _urlCache = {};
   final Map<String, DateTime> _expirationCache = {};
 
-  Future<String> getValidImageUrl(String imageKey) async {
+  Future<Map<String, dynamic>> getValidImageUrlWithExpiration(String imageKey) async {
     // Check if we have a cached URL that's still valid
     if (_urlCache.containsKey(imageKey)) {
       final expirationTime = _expirationCache[imageKey];
       if (expirationTime != null && expirationTime.isAfter(DateTime.now())) {
         AppLogger.info('🔵 Using cached URL for image key: $imageKey');
-        return _urlCache[imageKey]!;
+        return {
+          'imageUrl': _urlCache[imageKey]!,
+          'expiresAt': expirationTime.toIso8601String(),
+        };
       }
     }
 
@@ -71,7 +74,10 @@ class ImageUrlService {
         _urlCache[imageKey] = imageUrl;
         _expirationCache[imageKey] = expirationTime;
 
-        return imageUrl;
+        return {
+          'imageUrl': imageUrl,
+          'expiresAt': expiresAt,
+        };
       } else {
         AppLogger.error('❌ Failed to get image URL: ${response.statusMessage}');
         throw Exception('Failed to get image URL: ${response.statusMessage}');
@@ -87,6 +93,12 @@ class ImageUrlService {
       AppLogger.error('❌ Failed to get image URL: $e');
       throw Exception('Failed to get image URL: $e');
     }
+  }
+
+  // Backward-compatible method that returns just the URL
+  Future<String> getValidImageUrl(String imageKey) async {
+    final result = await getValidImageUrlWithExpiration(imageKey);
+    return result['imageUrl'] as String;
   }
 
   void clearCache() {
