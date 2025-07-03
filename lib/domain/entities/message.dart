@@ -191,12 +191,20 @@ class Message extends Equatable {
     }
 
     // Parse isDisappearing from metadata first, then root level
+    // If disappearingTime is present, infer isDisappearing as true regardless of explicit value
     bool isDisappearing = false;
     try {
-      if (json['metadata'] != null && json['metadata']['isDisappearing'] != null) {
-        isDisappearing = json['metadata']['isDisappearing'] as bool;
-      } else if (json['isDisappearing'] != null) {
-        isDisappearing = json['isDisappearing'] as bool;
+      // First check if disappearingTime is present (this should make the message disappearing)
+      if (disappearingTime != null) {
+        isDisappearing = true;
+        AppLogger.info('🔵 DEBUGGING API MESSAGE: Inferring isDisappearing=true because disappearingTime=$disappearingTime is present');
+      } else {
+        // Only check explicit isDisappearing field if no disappearingTime is present
+        if (json['metadata'] != null && json['metadata']['isDisappearing'] != null) {
+          isDisappearing = json['metadata']['isDisappearing'] as bool;
+        } else if (json['isDisappearing'] != null) {
+          isDisappearing = json['isDisappearing'] as bool;
+        }
       }
     } catch (e) {
       print('Error parsing isDisappearing: $e');
@@ -209,7 +217,7 @@ class Message extends Equatable {
     AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw metadata: ${json['metadata']}');
     AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw isDisappearing (metadata): ${json['metadata']?['isDisappearing']}');
     AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw disappearingTime (metadata): ${json['metadata']?['disappearingTime']}');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed isDisappearing: $isDisappearing');
+    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed isDisappearing: $isDisappearing (inferred from disappearingTime: $disappearingTime)');
     AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed disappearingTime: $disappearingTime');
 
     // Parse other metadata fields
