@@ -304,41 +304,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                       height: 200,
                                       child: Center(child: CircularProgressIndicator()),
                                     )
-                                  : Image.network(
-                                      _currentImageUrl ?? widget.message!.content,
-                                      width: 200,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return SizedBox(
-                                          width: 200,
-                                          height: 200,
-                                          child: Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                      loadingProgress.expectedTotalBytes!
-                                                  : null,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder: (context, error, stackTrace) {
-                                        final url = _currentImageUrl ?? widget.message!.content;
-                                        AppLogger.error('❌ Failed to load image: $error');
-                                        AppLogger.error('❌ Image URL: $url');
-                                        AppLogger.error('❌ Current image URL: $_currentImageUrl');
-                                        AppLogger.error('❌ Message content: ${widget.message!.content}');
-                                        return const SizedBox(
-                                          width: 200,
-                                          height: 200,
-                                          child: Center(
-                                            child: Icon(Icons.error_outline, size: 40),
-                                          ),
-                                        );
-                                      },
-                                    ),
+                                  : _buildImageContent(),
                             ),
                           ),
                         if (widget.message?.type == MessageType.text)
@@ -374,6 +340,103 @@ class _MessageBubbleState extends State<MessageBubble> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImageContent() {
+    // Check if this is a disappearing image that hasn't been viewed yet
+    final isDisappearingUnviewed = widget.message?.isDisappearing == true && 
+                                   widget.message?.disappearingTime != null &&
+                                   widget.message?.metadata?['viewedAt'] == null;
+    
+    if (isDisappearingUnviewed) {
+      // Show animated frame preview for disappearing images
+      return _buildAnimatedPreview();
+    } else {
+      // Show normal image for viewed disappearing images or regular images
+      return Image.network(
+        _currentImageUrl ?? widget.message!.content,
+        width: 200,
+        height: 200,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return SizedBox(
+            width: 200,
+            height: 200,
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          final url = _currentImageUrl ?? widget.message!.content;
+          AppLogger.error('❌ Failed to load image: $error');
+          AppLogger.error('❌ Image URL: $url');
+          AppLogger.error('❌ Current image URL: $_currentImageUrl');
+          AppLogger.error('❌ Message content: ${widget.message!.content}');
+          return const SizedBox(
+            width: 200,
+            height: 200,
+            child: Center(
+              child: Icon(Icons.error_outline, size: 40),
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Widget _buildAnimatedPreview() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.0, end: 1.0),
+      duration: const Duration(seconds: 2),
+      builder: (context, value, child) {
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 500),
+          width: 200,
+          height: 200,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.purple.withOpacity(0.3 + (0.2 * value)),
+                Colors.blue.withOpacity(0.3 + (0.2 * value)),
+                Colors.pink.withOpacity(0.3 + (0.2 * value)),
+              ],
+            ),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.5 + (0.3 * value)),
+              width: 2 + (2 * value),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.purple.withOpacity(0.3 * value),
+                blurRadius: 10 + (10 * value),
+                spreadRadius: 2 * value,
+              ),
+            ],
+          ),
+          child: Center(
+            child: Icon(
+              Icons.visibility,
+              size: 40 + (20 * value),
+              color: Colors.white.withOpacity(0.8 + (0.2 * value)),
+            ),
+          ),
+        );
+      },
+      onEnd: () {
+        // Restart the animation for continuous effect
+        setState(() {});
+      },
     );
   }
 

@@ -1891,15 +1891,20 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   String _formatMessageTimestamp(Message message) {
+    // Convert UTC timestamps to local time before formatting
+    DateTime localTime;
+    
     // Use the most appropriate timestamp based on message status
     if (message.status == 'read' && message.readAt != null) {
-      return DateFormat('HH:mm').format(message.readAt!);
+      localTime = message.readAt!.toLocal();
     } else if (message.status == 'delivered' && message.deliveredAt != null) {
-      return DateFormat('HH:mm').format(message.deliveredAt!);
+      localTime = message.deliveredAt!.toLocal();
     } else {
       // Default to message timestamp
-      return DateFormat('HH:mm').format(message.timestamp);
+      localTime = message.timestamp.toLocal();
     }
+    
+    return DateFormat('HH:mm').format(localTime);
   }
 
   // Add message status indicator
