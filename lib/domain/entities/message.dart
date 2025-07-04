@@ -191,23 +191,68 @@ class Message extends Equatable {
         AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata exists, checking for expiresAt');
         AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata keys: ${(json['metadata'] as Map<String, dynamic>).keys.toList()}');
         AppLogger.info('🔵 DEBUGGING EXPIRATION: expiresAt value in metadata: ${json['metadata']['expiresAt']}');
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: urlExpirationTime value in metadata: ${json['metadata']['urlExpirationTime']}');
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: imageExpiresAt value in metadata: ${json['metadata']['imageExpiresAt']}');
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: imageExpirationTime value in metadata: ${json['metadata']['imageExpirationTime']}');
         
+        // Try multiple possible field names in metadata
         if (json['metadata']['expiresAt'] != null) {
           urlExpirationTime = DateTime.parse(json['metadata']['expiresAt'] as String);
           AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed expiresAt from metadata: $urlExpirationTime');
+        } else if (json['metadata']['urlExpirationTime'] != null) {
+          urlExpirationTime = DateTime.parse(json['metadata']['urlExpirationTime'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed urlExpirationTime from metadata: $urlExpirationTime');
+        } else if (json['metadata']['imageExpiresAt'] != null) {
+          urlExpirationTime = DateTime.parse(json['metadata']['imageExpiresAt'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed imageExpiresAt from metadata: $urlExpirationTime');
+        } else if (json['metadata']['imageExpirationTime'] != null) {
+          urlExpirationTime = DateTime.parse(json['metadata']['imageExpirationTime'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed imageExpirationTime from metadata: $urlExpirationTime');
         } else {
-          AppLogger.warning('🔵 DEBUGGING EXPIRATION: expiresAt is null in metadata');
+          AppLogger.warning('🔵 DEBUGGING EXPIRATION: No expiration time found in metadata');
         }
       } else {
         AppLogger.warning('🔵 DEBUGGING EXPIRATION: No metadata in JSON');
       }
       
-      if (urlExpirationTime == null && json['urlExpirationTime'] != null) {
-        urlExpirationTime = DateTime.parse(json['urlExpirationTime'] as String);
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed urlExpirationTime from root: $urlExpirationTime');
+      // Check root level fields if not found in metadata
+      if (urlExpirationTime == null) {
+        if (json['expiresAt'] != null) {
+          urlExpirationTime = DateTime.parse(json['expiresAt'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed expiresAt from root: $urlExpirationTime');
+        } else if (json['urlExpirationTime'] != null) {
+          urlExpirationTime = DateTime.parse(json['urlExpirationTime'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed urlExpirationTime from root: $urlExpirationTime');
+        } else if (json['imageExpiresAt'] != null) {
+          urlExpirationTime = DateTime.parse(json['imageExpiresAt'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed imageExpiresAt from root: $urlExpirationTime');
+        } else if (json['imageExpirationTime'] != null) {
+          urlExpirationTime = DateTime.parse(json['imageExpirationTime'] as String);
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed imageExpirationTime from root: $urlExpirationTime');
+        }
       }
       
       AppLogger.info('🔵 DEBUGGING EXPIRATION: Final urlExpirationTime: $urlExpirationTime');
+      
+      // Fallback: Extract expiration time from S3 URL if metadata is not available
+      if (urlExpirationTime == null && json['content'] != null) {
+        AppLogger.info('🔵 DEBUGGING EXPIRATION: Attempting fallback extraction from S3 URL');
+        final content = json['content'] as String;
+        if (content.contains('X-Amz-Expires=')) {
+          try {
+            final uri = Uri.parse(content);
+            final expiresParam = uri.queryParameters['X-Amz-Expires'];
+            if (expiresParam != null) {
+              final expiresSeconds = int.parse(expiresParam);
+              final createdAt = DateTime.parse(json['createdAt'] as String);
+              urlExpirationTime = createdAt.add(Duration(seconds: expiresSeconds));
+              AppLogger.info('🔵 DEBUGGING EXPIRATION: Extracted expiration from S3 URL: $urlExpirationTime');
+            }
+          } catch (e) {
+            AppLogger.error('❌ DEBUGGING EXPIRATION: Error extracting expiration from S3 URL: $e');
+          }
+        }
+      }
     } catch (e) {
       AppLogger.error('❌ DEBUGGING EXPIRATION: Error parsing urlExpirationTime: $e');
       print('Error parsing urlExpirationTime: $e');

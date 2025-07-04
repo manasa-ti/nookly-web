@@ -155,6 +155,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       AppLogger.info('🔵 Extracted image key: $imageKey');
       AppLogger.info('🔵 Original content URL: ${widget.message!.content}');
       
+      // Call the actual refresh API
       final imageData = await ImageUrlService().getValidImageUrlWithExpiration(imageKey);
       final imageUrl = imageData['imageUrl'] as String;
       final expiresAt = imageData['expiresAt'] as String;
@@ -197,6 +198,8 @@ class _MessageBubbleState extends State<MessageBubble> {
       if (mounted) {
         setState(() {
           _isLoadingImage = false;
+          // Use fallback URL to prevent infinite retries
+          _currentImageUrl = 'https://via.placeholder.com/200x200?text=Image+Unavailable';
         });
       }
     }

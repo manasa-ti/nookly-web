@@ -16,6 +16,7 @@ import 'package:hushmate/presentation/pages/auth/login_page.dart';
 import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
 import 'package:logger/logger.dart';
 import 'package:hushmate/core/utils/logger.dart';
+import 'test_image_refresh.dart';
 
 
 
@@ -90,6 +91,7 @@ class MyApp extends StatelessWidget {
           '/home': (context) => const HomePage(),
           '/login': (context) => const LoginPage(),
           '/signup': (context) => const SignUpPage(),
+          '/test-image-refresh': (context) => const ImageRefreshTest(),
         },
       ),
     );

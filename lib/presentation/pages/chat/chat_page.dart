@@ -453,6 +453,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       if (!mounted) return;
       AppLogger.info('debug disappearing: Received private_message event');
       AppLogger.info('debug disappearing: Message data: ${data.toString()}');
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: Full socket data received: $data');
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: Socket data type: ${data.runtimeType}');
+      AppLogger.info('🔵 DEBUGGING EXPIRATION: Socket data keys: ${(data as Map<String, dynamic>).keys.toList()}');
       try {
         // Store the server's message ID
         final serverMessageId = data['_id']?.toString() ?? data['id']?.toString();
@@ -472,11 +475,27 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'isDisappearing': data['isDisappearing'],
           'disappearingTime': data['disappearingTime'],
         };
+        
+        // Handle metadata conversion properly
+        if (data['metadata'] != null) {
+          if (data['metadata'] is Map) {
+            messageData['metadata'] = Map<String, dynamic>.from(data['metadata']);
+          } else {
+            // If metadata is not a Map, try to convert it
+            AppLogger.warning('🔵 DEBUGGING SOCKET MESSAGE: Metadata is not a Map, type: ${data['metadata'].runtimeType}');
+            messageData['metadata'] = {'raw': data['metadata'].toString()};
+          }
+        }
         AppLogger.info('debug disappearing: Constructed messageData: $messageData');
         AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: Raw socket data structure');
         AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw isDisappearing: ${data['isDisappearing']}');
         AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw disappearingTime: ${data['disappearingTime']}');
         AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw metadata: ${data['metadata']}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Metadata type: ${data['metadata']?.runtimeType}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Metadata keys: ${(data['metadata'] as Map<String, dynamic>?)?.keys.toList()}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - expiresAt in metadata: ${data['metadata']?['expiresAt']}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Final messageData metadata: ${messageData['metadata']}');
+        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Final messageData metadata type: ${messageData['metadata']?.runtimeType}');
         
         final msg = Message.fromJson(messageData);
         AppLogger.info('debug disappearing: Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}, isDisappearing=${msg.isDisappearing}, disappearingTime=${msg.disappearingTime}');
@@ -941,6 +960,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           AppLogger.info('debug disappearing: Constructed messageData: $messageData');
           AppLogger.info('🔵 DEBUGGING EXPIRATION: MessageData metadata: ${messageData['metadata']}');
           AppLogger.info('🔵 DEBUGGING EXPIRATION: expiresAt value: $expiresAt');
+          AppLogger.info('🔵 DEBUGGING EXPIRATION: Full socket payload being sent: $messageData');
           AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with server ID: ${messageData['_id']}');
           _socketService!.emit('private_message', messageData);
           AppLogger.info('debug disappearing: Emitted private_message event via socket');

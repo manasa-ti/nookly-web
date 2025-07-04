@@ -41,6 +41,18 @@ class NetworkService {
         error: true,
         compact: true,
         maxWidth: 90,
+        logPrint: (obj) {
+          // Add custom logging with emojis for better filtering
+          if (obj.toString().contains('REQUEST')) {
+            print('🌐 HTTP_REQUEST: $obj');
+          } else if (obj.toString().contains('RESPONSE')) {
+            print('✅ HTTP_RESPONSE: $obj');
+          } else if (obj.toString().contains('ERROR')) {
+            print('❌ HTTP_ERROR: $obj');
+          } else {
+            print('📡 HTTP_LOG: $obj');
+          }
+        },
       ))
       ..interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) async {
