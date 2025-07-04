@@ -69,11 +69,6 @@ class _HomePageState extends State<HomePage> {
             icon: const Icon(Icons.settings),
             onPressed: _onSettingsPressed,
           ),
-          IconButton(
-            icon: const Icon(Icons.bug_report),
-            onPressed: () => Navigator.pushNamed(context, '/test-image-refresh'),
-            tooltip: 'Test Image Refresh API',
-          ),
         ],
       ),
       body: _pages[_currentIndex],

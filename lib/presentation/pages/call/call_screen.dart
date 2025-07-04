@@ -39,14 +39,18 @@ class _CallScreenState extends State<CallScreen> {
   Future<void> _initializeCall() async {
     try {
       await _callService.startCall(widget.channelName, widget.isAudioCall);
-      setState(() {
-        _isInitialized = true;
-      });
-      AppLogger.info('✅ Call initialized successfully');
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        AppLogger.info('✅ Call initialized successfully');
+      }
     } catch (e) {
       AppLogger.error('❌ Failed to initialize call: $e');
       // Handle initialization error
-      Navigator.of(context).pop();
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
   }
 
@@ -99,7 +103,7 @@ class _CallScreenState extends State<CallScreen> {
         AgoraVideoView(
           controller: VideoViewController.remote(
             rtcEngine: _callService.engine!,
-            canvas: VideoCanvas(uid: 0),
+            canvas: const VideoCanvas(uid: 0),
             connection: RtcConnection(channelId: widget.channelName),
           ),
         ),
