@@ -7,6 +7,7 @@ import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
 import 'package:hushmate/presentation/pages/auth/forgot_password_page.dart';
 import 'package:hushmate/presentation/pages/profile/profile_creation_page.dart';
 import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
+import 'package:hushmate/presentation/pages/home/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -55,15 +56,22 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state is Authenticated) {
             if (state.user.isProfileComplete) {
-              // Navigate to home page
-              Navigator.pushReplacementNamed(context, '/home');
+              // Navigate to home page and clear navigation stack
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HomePage(),
+                ),
+                (route) => false, // Remove all previous routes
+              );
             } else {
-              // Navigate to profile creation
-              Navigator.pushReplacement(
+              // Navigate to profile creation and clear navigation stack
+              Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const ProfileCreationPage(),
                 ),
+                (route) => false, // Remove all previous routes
               );
             }
           } else if (state is AuthError) {

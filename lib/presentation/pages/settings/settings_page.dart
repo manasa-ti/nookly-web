@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hushmate/presentation/pages/profile/edit_profile_page.dart';
+import 'package:hushmate/presentation/pages/auth/login_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -78,7 +79,13 @@ class SettingsPage extends StatelessWidget {
               final authRepository = GetIt.instance<AuthRepository>();
               await authRepository.logout();
               if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const LoginPage(),
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
               }
             },
           ),

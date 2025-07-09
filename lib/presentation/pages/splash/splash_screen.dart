@@ -61,25 +61,28 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       listener: (context, state) {
         if (state is Authenticated) {
           if (state.user.isProfileComplete) {
-            // Navigate to home page if profile is complete
-            Navigator.of(context).pushReplacement(
+            // Navigate to home page if profile is complete and clear navigation stack
+            Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const HomePage(),
               ),
+              (route) => false, // Remove all previous routes
             );
           } else {
-            // Navigate to profile creation if profile is incomplete
-            Navigator.of(context).pushReplacement(
+            // Navigate to profile creation if profile is incomplete and clear navigation stack
+            Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const ProfileCreationPage(),
               ),
+              (route) => false, // Remove all previous routes
             );
           }
         } else if (state is Unauthenticated) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(
               builder: (context) => const LoginPage(),
             ),
+            (route) => false, // Remove all previous routes
           );
         }
       },

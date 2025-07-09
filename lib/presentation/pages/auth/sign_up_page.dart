@@ -49,12 +49,13 @@ class _SignUpPageState extends State<SignUpPage> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
-            // Navigate to profile creation
-            Navigator.pushReplacement(
+            // Navigate to profile creation and clear navigation stack
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
                 builder: (context) => const ProfileCreationPage(),
               ),
+              (route) => false, // Remove all previous routes
             );
           } else if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(

@@ -190,10 +190,11 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
               ),
             );
           } else if (state is ProfileSaved) {
-            Navigator.of(context).pushReplacement(
+            Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const HomePage(),
               ),
+              (route) => false, // Remove all previous routes
             );
           } else if (state is ProfileError) {
             ScaffoldMessenger.of(context).showSnackBar(

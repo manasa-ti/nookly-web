@@ -53,54 +53,61 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('HushMate'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: _onProfilePressed,
-          ),
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: _onNotificationsPressed,
-          ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: _onSettingsPressed,
-          ),
-        ],
-      ),
-      body: _pages[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Discover',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_outline),
-            selectedIcon: Icon(Icons.favorite),
-            label: 'Likes',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_outlined),
-            selectedIcon: Icon(Icons.chat),
-            label: 'Chat',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.star_outline),
-            selectedIcon: Icon(Icons.star),
-            label: 'Features',
-          ),
-        ],
+    return WillPopScope(
+      onWillPop: () async {
+        // Prevent back navigation from home screen
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          automaticallyImplyLeading: false, // Remove back button
+          title: const Text('HushMate'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.person),
+              onPressed: _onProfilePressed,
+            ),
+            IconButton(
+              icon: const Icon(Icons.notifications),
+              onPressed: _onNotificationsPressed,
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings),
+              onPressed: _onSettingsPressed,
+            ),
+          ],
+        ),
+        body: _pages[_currentIndex],
+        bottomNavigationBar: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined),
+              selectedIcon: Icon(Icons.home),
+              label: 'Discover',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.favorite_outline),
+              selectedIcon: Icon(Icons.favorite),
+              label: 'Likes',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.chat_outlined),
+              selectedIcon: Icon(Icons.chat),
+              label: 'Chat',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.star_outline),
+              selectedIcon: Icon(Icons.star),
+              label: 'Features',
+            ),
+          ],
+        ),
       ),
     );
   }
