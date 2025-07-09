@@ -13,6 +13,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignUpWithEmailAndPassword>(_onSignUpWithEmailAndPassword);
     on<SignInWithGoogle>(_onSignInWithGoogle);
     on<SignOut>(_onSignOut);
+    on<ForceLogout>(_onForceLogout);
     on<ResetPassword>(_onResetPassword);
     on<CheckAuthStatus>(_onCheckAuthStatus);
   }
@@ -72,6 +73,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(Unauthenticated());
     } catch (e) {
       emit(AuthError(e.toString()));
+    }
+  }
+
+  Future<void> _onForceLogout(
+    ForceLogout event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      await _authRepository.signOut();
+      emit(AuthError('Invalid Token: ${event.reason}'));
+    } catch (e) {
+      emit(AuthError('Failed to logout: ${e.toString()}'));
     }
   }
 

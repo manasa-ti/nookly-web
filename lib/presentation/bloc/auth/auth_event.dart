@@ -37,6 +37,15 @@ class SignInWithGoogle extends AuthEvent {}
 
 class SignOut extends AuthEvent {}
 
+class ForceLogout extends AuthEvent {
+  final String reason;
+
+  const ForceLogout({required this.reason});
+
+  @override
+  List<Object?> get props => [reason];
+}
+
 class ResetPassword extends AuthEvent {
   final String email;
 

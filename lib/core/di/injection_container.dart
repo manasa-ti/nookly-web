@@ -24,6 +24,7 @@ import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.da
 import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
 import 'package:hushmate/core/network/socket_service.dart';
+import 'package:hushmate/core/services/auth_handler.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -31,6 +32,9 @@ Future<void> init() async {
   // External
   final sharedPreferences = await SharedPreferences.getInstance();
   sl.registerLazySingleton(() => sharedPreferences);
+
+  // Services
+  sl.registerLazySingleton<AuthHandler>(() => AuthHandler());
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(

@@ -2,11 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
+import 'package:hushmate/core/services/auth_handler.dart';
+import 'package:hushmate/core/utils/logger.dart';
 
 class NetworkService {
   static Dio? _dio;
   static SharedPreferences? _prefs;
   static String? _customBaseUrl;
+  static AuthHandler? _authHandler;
 
   static String get baseUrl {
     final url = _customBaseUrl ?? (Platform.isAndroid ? 'http://10.0.2.2:3000/api/' : 'http://localhost:3000/api/');
@@ -18,6 +21,10 @@ class NetworkService {
     print('debug disappearing: Setting NetworkService baseUrl to: $url');
     _customBaseUrl = url;
     _dio = null; // Force recreation of Dio instance with new baseUrl
+  }
+
+  static void setAuthHandler(AuthHandler authHandler) {
+    _authHandler = authHandler;
   }
 
   static Dio get dio {
@@ -91,8 +98,39 @@ class NetworkService {
             );
           }
           if (e.response?.statusCode == 401) {
+            AppLogger.warning('🔐 NetworkService: Received 401 Unauthorized error');
+            
+            // Get the error message from response
+            String errorMessage = '';
+            try {
+              if (e.response?.data != null) {
+                if (e.response!.data is Map) {
+                  errorMessage = e.response!.data['message'] ?? '';
+                } else if (e.response!.data is String) {
+                  errorMessage = e.response!.data;
+                }
+              }
+            } catch (ex) {
+              AppLogger.warning('🔐 NetworkService: Could not parse error message: $ex');
+            }
+            
+            AppLogger.info('🔐 NetworkService: 401 error message: "$errorMessage"');
+            
             // Clear token on authentication error
             clearAuthToken();
+            
+            // Only trigger logout for "Invalid token" message on critical endpoints
+            if (_authHandler != null && 
+                _authHandler!.isCriticalEndpoint(e.requestOptions.path) &&
+                errorMessage.toLowerCase().contains('invalid token')) {
+              AppLogger.warning('🔐 NetworkService: Invalid token on critical endpoint, triggering logout');
+              AppLogger.warning('🔐 NetworkService: Failed endpoint: ${e.requestOptions.path}');
+              
+              // Trigger logout through auth handler
+              _authHandler!.triggerLogout();
+            } else {
+              AppLogger.info('🔐 NetworkService: 401 error not triggering logout (non-critical endpoint or different error message)');
+            }
           }
           return handler.next(e);
         },
