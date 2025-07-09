@@ -15,7 +15,18 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   @override
   void initState() {
     super.initState();
+    _loadProfiles();
+  }
+
+  void _loadProfiles() {
     context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // This will be called when the page is rebuilt, including after navigation
+    // We don't need to reload here as it would cause infinite loops
   }
 
   @override

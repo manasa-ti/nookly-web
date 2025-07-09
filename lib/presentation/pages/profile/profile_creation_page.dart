@@ -5,6 +5,7 @@ import 'package:hushmate/presentation/bloc/profile/profile_event.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_state.dart';
 import 'package:hushmate/presentation/widgets/interest_chips.dart';
 import 'package:hushmate/presentation/widgets/objective_chips.dart';
+import 'package:hushmate/presentation/widgets/distance_radius_slider.dart';
 import 'package:hushmate/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
 import 'package:hushmate/domain/entities/user.dart';
@@ -26,6 +27,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   String? _selectedSex;
   String? _selectedWishToFind;
   RangeValues _ageRange = const RangeValues(18, 80);
+  double _distanceRadius = 40.0; // Default value of 40 km
   List<String> _selectedInterests = [];
   List<String> _selectedObjectives = [];
   List<String> _availableObjectives = [];
@@ -156,6 +158,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         bio: _bioController.text,
         interests: _selectedInterests,
         objectives: _selectedObjectives,
+        preferredDistanceRadius: _distanceRadius.round(),
       );
       context.read<ProfileBloc>().add(SaveProfile(user));
     }
@@ -336,6 +339,15 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                             Text('${_ageRange.start.round()} years'),
                             Text('${_ageRange.end.round()} years'),
                           ],
+                        ),
+                        const SizedBox(height: 24),
+                        DistanceRadiusSlider(
+                          value: _distanceRadius,
+                          onChanged: (value) {
+                            setState(() {
+                              _distanceRadius = value;
+                            });
+                          },
                         ),
                       ],
                     ),

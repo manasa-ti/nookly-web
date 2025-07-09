@@ -106,6 +106,15 @@ class UpdateObjective extends ProfileEvent {
   List<Object?> get props => [objectives];
 }
 
+class UpdateDistanceRadius extends ProfileEvent {
+  final int distanceRadius;
+
+  const UpdateDistanceRadius(this.distanceRadius);
+
+  @override
+  List<Object?> get props => [distanceRadius];
+}
+
 class SaveProfile extends ProfileEvent {
   final User user;
 

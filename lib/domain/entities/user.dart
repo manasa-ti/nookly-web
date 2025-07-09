@@ -14,6 +14,7 @@ class User extends Equatable {
   final List<String>? interests;
   final List<String>? objectives;
   final String? profilePic;
+  final int? preferredDistanceRadius;
 
   const User({
     required this.id,
@@ -29,6 +30,7 @@ class User extends Equatable {
     this.interests,
     this.objectives,
     this.profilePic,
+    this.preferredDistanceRadius,
   });
 
   bool get isProfileComplete {
@@ -83,6 +85,7 @@ class User extends Equatable {
       interests: (json['interests'] as List<dynamic>?)?.cast<String>(),
       objectives: (json['objectives'] as List<dynamic>?)?.cast<String>(),
       profilePic: json['profilePic'] as String?,
+      preferredDistanceRadius: json['preferred_distance_radius'] as int? ?? 40,
     );
   }
 
@@ -101,6 +104,7 @@ class User extends Equatable {
       'interests': interests,
       'objectives': objectives,
       'profile_pic': profilePic,
+      'preferred_distance_radius': preferredDistanceRadius,
     };
   }
 
@@ -119,5 +123,6 @@ class User extends Equatable {
         interests,
         objectives,
         profilePic,
+        preferredDistanceRadius,
       ];
 } 

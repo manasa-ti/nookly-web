@@ -9,6 +9,7 @@ import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logger/logger.dart';
+import 'package:hushmate/presentation/widgets/distance_radius_slider.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -35,6 +36,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   List<String> _availableInterests = [];
   List<String> _availableObjectives = [];
   RangeValues _ageRange = const RangeValues(18, 80);
+  double _distanceRadius = 40.0; // Default value of 40 km
   bool _usedFallbackInterests = false;
   bool _usedFallbackObjectives = false;
   late User _currentUser;
@@ -121,6 +123,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _selectedInterests = _currentUser.interests ?? [];
       _selectedObjectives = _currentUser.objectives ?? [];
       
+      // Set distance radius from user's preferred distance radius
+      _distanceRadius = (_currentUser.preferredDistanceRadius ?? 40).toDouble();
+      
       // Set age range from user's preferred age range
       AppLogger.debug("preferredAgeRange initialized:$_currentUser.preferredAgeRange.toString()");
       if (_currentUser.preferredAgeRange != null) {
@@ -190,6 +195,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final hasObjectivesChanged = !listEquals(_selectedObjectives, _currentUser.objectives ?? []);
     final hasAgeRangeChanged = _ageRange.start != (_currentUser.preferredAgeRange?['lower_limit']?.toDouble() ?? 18) ||
                               _ageRange.end != (_currentUser.preferredAgeRange?['upper_limit']?.toDouble() ?? 80);
+    final hasDistanceRadiusChanged = _distanceRadius.round() != (_currentUser.preferredDistanceRadius ?? 40);
     final hasImageChanged = _selectedImagePath != null;
 
     // At least one field should be modified
@@ -198,6 +204,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
            hasInterestsChanged || 
            hasObjectivesChanged || 
            hasAgeRangeChanged || 
+           hasDistanceRadiusChanged ||
            hasImageChanged;
   }
 
@@ -226,6 +233,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 'upper_limit': _ageRange.end.round(),
               }
             : _currentUser.preferredAgeRange,
+        preferredDistanceRadius: _distanceRadius.round() != (_currentUser.preferredDistanceRadius ?? 40)
+            ? _distanceRadius.round()
+            : _currentUser.preferredDistanceRadius,
         profilePic: _selectedImagePath != null ? _selectedImagePath : _currentUser.profilePic,
         // Keep existing values for other fields
         age: _currentUser.age,
@@ -490,6 +500,17 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     Text(
                       '${_ageRange.start.round()} - ${_ageRange.end.round()} years',
                       textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Distance Radius
+                    DistanceRadiusSlider(
+                      value: _distanceRadius,
+                      onChanged: (value) {
+                        setState(() {
+                          _distanceRadius = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 24),
 

@@ -198,6 +198,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'interests': userData['interests'] ?? [],
         'objectives': userData['objectives'] ?? [],
         'profilePic': userData['profile_pic'] ?? '',
+        'preferred_distance_radius': userData['preferred_distance_radius'] ?? 40,
       };
 
       AppLogger.info('Processed user data: $safeUserData');

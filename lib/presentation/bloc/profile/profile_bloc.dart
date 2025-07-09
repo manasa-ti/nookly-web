@@ -23,6 +23,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     on<RegenerateProfilePicture>(_onRegenerateProfilePicture);
     on<UpdateInterests>(_onUpdateInterests);
     on<UpdateObjective>(_onUpdateObjective);
+    on<UpdateDistanceRadius>(_onUpdateDistanceRadius);
     on<SaveProfile>(_onSaveProfile);
 
     // Initialize with current user
@@ -51,6 +52,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
           interests: null,
           objectives: null,
           profilePic: null,
+          preferredDistanceRadius: null,
         );
         _emitLoadedState();
       }
@@ -81,6 +83,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -100,6 +103,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -119,6 +123,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -138,6 +143,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -160,6 +166,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -179,6 +186,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -198,6 +206,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -223,6 +232,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: _currentUser.objectives,
       profilePic: event.profilePictureUrl,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -252,6 +262,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: event.interests,
       objectives: _currentUser.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
     );
     _emitLoadedState();
   }
@@ -271,6 +282,27 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       interests: _currentUser.interests,
       objectives: event.objectives,
       profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: _currentUser.preferredDistanceRadius,
+    );
+    _emitLoadedState();
+  }
+
+  void _onUpdateDistanceRadius(UpdateDistanceRadius event, Emitter<ProfileState> emit) {
+    _currentUser = User(
+      id: _currentUser.id,
+      email: _currentUser.email,
+      name: _currentUser.name,
+      age: _currentUser.age,
+      sex: _currentUser.sex,
+      seekingGender: _currentUser.seekingGender,
+      location: _currentUser.location,
+      preferredAgeRange: _currentUser.preferredAgeRange,
+      hometown: _currentUser.hometown,
+      bio: _currentUser.bio,
+      interests: _currentUser.interests,
+      objectives: _currentUser.objectives,
+      profilePic: _currentUser.profilePic,
+      preferredDistanceRadius: event.distanceRadius,
     );
     _emitLoadedState();
   }

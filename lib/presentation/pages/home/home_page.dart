@@ -4,8 +4,11 @@ import 'package:hushmate/presentation/pages/home/received_likes_page.dart';
 import 'package:hushmate/presentation/pages/home/chat_inbox_page.dart';
 import 'package:hushmate/presentation/pages/home/purchased_features_page.dart';
 import 'package:hushmate/presentation/pages/profile/profile_page.dart';
+import 'package:hushmate/presentation/pages/profile/profile_filters_page.dart';
 import 'package:hushmate/presentation/pages/settings/settings_page.dart';
 import 'package:hushmate/presentation/pages/notifications/notifications_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -51,6 +54,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _onFiltersPressed() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfileFiltersPage(),
+      ),
+    );
+    
+    // If filters were updated, refresh the recommended profiles
+    if (result == true && _currentIndex == 0) {
+      // Refresh the recommended profiles
+      // We need to access the bloc from the current page
+      final recommendedProfilesBloc = context.read<RecommendedProfilesBloc>();
+      recommendedProfilesBloc.add(LoadRecommendedProfiles());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -63,6 +83,12 @@ class _HomePageState extends State<HomePage> {
           automaticallyImplyLeading: false, // Remove back button
           title: const Text('HushMate'),
           actions: [
+            // Filter icon - only show on Discover tab
+            if (_currentIndex == 0)
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: _onFiltersPressed,
+              ),
             IconButton(
               icon: const Icon(Icons.person),
               onPressed: _onProfilePressed,
