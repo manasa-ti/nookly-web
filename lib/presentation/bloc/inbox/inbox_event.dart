@@ -8,6 +8,8 @@ abstract class InboxEvent {
 
 class LoadInbox extends InboxEvent {} 
 
+class RefreshInbox extends InboxEvent {}
+
 class MarkConversationAsRead extends InboxEvent {
   final String conversationId;
   

@@ -30,6 +30,7 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
        _currentUserId = currentUserId,
        super(InboxInitial()) {
     on<LoadInbox>(_onLoadInbox);
+    on<RefreshInbox>(_onRefreshInbox);
     on<MarkConversationAsRead>(_onMarkConversationAsRead);
   }
 
@@ -128,6 +129,10 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
     } catch (e) {
       emit(InboxError('Failed to load inbox: ${e.toString()}'));
     }
+  }
+
+  Future<void> _onRefreshInbox(RefreshInbox event, Emitter<InboxState> emit) async {
+    await _onLoadInbox(LoadInbox(), emit);
   }
 
   Future<void> _onMarkConversationAsRead(

@@ -414,7 +414,28 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
   @override
   Future<void> blockUser(String userId) async {
-    throw UnimplementedError('blockUser not implemented with API yet.');
+    try {
+      AppLogger.info('🔵 Blocking user: $userId');
+      
+      final response = await NetworkService.dio.post(
+        '/users/block/$userId',
+      );
+
+      AppLogger.info('🔵 Block response: ${response.statusCode}');
+      AppLogger.info('🔵 Block response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        AppLogger.info('✅ Successfully blocked user: $userId');
+      } else {
+        throw Exception('Failed to block user: ${response.statusCode}');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Error blocking user: $e');
+      if (e is DioException) {
+        throw Exception('Failed to block user: ${e.response?.data?['message'] ?? e.message}');
+      }
+      throw Exception('Failed to block user: $e');
+    }
   }
 
   @override
@@ -434,7 +455,34 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
   @override
   Future<void> leaveConversation(String conversationId) async {
-    throw UnimplementedError('leaveConversation not implemented with API yet.');
+    try {
+      AppLogger.info('🔵 Leaving conversation (unmatching): $conversationId');
+      
+      final response = await NetworkService.dio.delete(
+        '/users/unmatch/$conversationId',
+      );
+
+      AppLogger.info('🔵 Unmatch response: ${response.statusCode}');
+      AppLogger.info('🔵 Unmatch response data: ${response.data}');
+
+      if (response.statusCode == 200) {
+        AppLogger.info('✅ Successfully unmatched with user: $conversationId');
+      } else {
+        throw Exception('Failed to unmatch: ${response.statusCode}');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Error leaving conversation (unmatching): $e');
+      if (e is DioException) {
+        if (e.response?.statusCode == 404) {
+          throw Exception('Profile not found or no match exists with this user');
+        } else if (e.response?.statusCode == 500) {
+          throw Exception('Server error during unmatch process');
+        } else {
+          throw Exception('Failed to unmatch: ${e.response?.data?['message'] ?? e.message}');
+        }
+      }
+      throw Exception('Failed to unmatch: $e');
+    }
   }
 
   @override

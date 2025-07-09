@@ -40,6 +40,14 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     WidgetsBinding.instance.removeObserver(this);
     _leaveAllChatRooms();
     _inboxBloc?.close();
+    if (_socketService != null) {
+      _socketService!.off('private_message');
+      _socketService!.off('typing');
+      _socketService!.off('stop_typing');
+      _socketService!.off('conversation_updated');
+      _socketService!.off('conversation_removed');
+      _socketService!.off('error');
+    }
     _socketService?.disconnect();
     super.dispose();
   }
@@ -284,6 +292,52 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       }
     });
 
+    _socketService!.on('conversation_removed', (data) {
+      AppLogger.info('🔵 Conversation removed event received: $data');
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        
+        // Extract user IDs from the event
+        final sender = data['sender'] as String?;
+        final receiver = data['receiver'] as String?;
+        
+        AppLogger.info('🔵 Unmatch event - Sender: $sender, Receiver: $receiver, Current user: ${_currentUser?.id}');
+        
+        // Determine which conversation to remove based on current user
+        String? conversationToRemove;
+        if (_currentUser?.id == sender) {
+          // Current user initiated the unmatch, remove the receiver's conversation
+          conversationToRemove = receiver;
+        } else if (_currentUser?.id == receiver) {
+          // Current user was unmatched, remove the sender's conversation
+          conversationToRemove = sender;
+        }
+        
+        if (conversationToRemove != null) {
+          AppLogger.info('🔵 Removing conversation with user: $conversationToRemove');
+          
+          // Remove the conversation from the list
+          final updatedConversations = conversations.where((c) => c.id != conversationToRemove).toList();
+          
+          // Emit updated state immediately
+          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          
+          AppLogger.info('🔵 Conversation removed successfully. Remaining conversations: ${updatedConversations.length}');
+          
+          // Show feedback to user
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Conversation ended'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+      }
+    });
+
     _socketService!.on('error', (data) {
       AppLogger.error('❌ Socket error in inbox: $data');
     });
@@ -307,8 +361,12 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       ),
     );
 
-    // Reconnect socket and rejoin rooms when returning from chat page
+    // Refresh conversations when returning from chat page
     if (mounted) {
+      AppLogger.info('🔵 Returning from chat page, refreshing conversations');
+      _inboxBloc?.add(RefreshInbox());
+      
+      // Also reconnect socket and rejoin rooms
       await _reconnectSocket();
     }
   }
@@ -465,43 +523,49 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                 ),
               );
             }
-            return ListView.builder(
-              itemCount: state.conversations.length,
-              itemBuilder: (context, index) {
-                final conversation = state.conversations[index];
-                final hasUnread = conversation.unreadCount > 0;
-                final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.first : null;
-                final isMe = lastMessage?.sender == _currentUser?.id;
-
-                return ListTile(
-                  onTap: () => _onConversationTap(conversation),
-                  leading: _buildAvatar(conversation),
-                  title: Text(conversation.participantName),
-                  subtitle: conversation.isTyping == true
-                      ? const Text(
-                          'typing...',
-                          style: TextStyle(
-                            fontStyle: FontStyle.italic,
-                            color: Colors.grey,
-                          ),
-                        )
-                      : lastMessage != null
-                          ? Text(
-                              _getMessageDisplayText(lastMessage!, isMe),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            )
-                          : const Text('No messages yet'),
-                  trailing: Text(
-                    _formatTimestamp(conversation.lastMessageTime),
-                    style: TextStyle(
-                      color: hasUnread ? Colors.black : Colors.grey[600],
-                      fontSize: 12,
-                      fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                );
+            return RefreshIndicator(
+              onRefresh: () async {
+                AppLogger.info('🔵 Pull to refresh triggered');
+                _inboxBloc?.add(RefreshInbox());
               },
+              child: ListView.builder(
+                itemCount: state.conversations.length,
+                itemBuilder: (context, index) {
+                  final conversation = state.conversations[index];
+                  final hasUnread = conversation.unreadCount > 0;
+                  final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.first : null;
+                  final isMe = lastMessage?.sender == _currentUser?.id;
+
+                  return ListTile(
+                    onTap: () => _onConversationTap(conversation),
+                    leading: _buildAvatar(conversation),
+                    title: Text(conversation.participantName),
+                    subtitle: conversation.isTyping == true
+                        ? const Text(
+                            'typing...',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey,
+                            ),
+                          )
+                        : lastMessage != null
+                            ? Text(
+                                _getMessageDisplayText(lastMessage!, isMe),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              )
+                            : const Text('No messages yet'),
+                    trailing: Text(
+                      _formatTimestamp(conversation.lastMessageTime),
+                      style: TextStyle(
+                        color: hasUnread ? Colors.black : Colors.grey[600],
+                        fontSize: 12,
+                        fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  );
+                },
+              ),
             );
           }
           return const Center(child: Text('Something went wrong.')); // Fallback for unhandled state

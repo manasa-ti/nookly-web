@@ -145,6 +145,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       _socketService!.off('stop_typing');
       _socketService!.off('message_edited');
       _socketService!.off('message_deleted');
+      _socketService!.off('conversation_removed');
       _socketService!.off('error');
       
       // Leave the private chat room
@@ -292,6 +293,32 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     _socketService!.on('error', (data) {
       AppLogger.error('❌ Socket error: $data');
+    });
+
+    // Add listener for conversation removal (unmatch)
+    _socketService!.on('conversation_removed', (data) {
+      if (!mounted) return;
+      AppLogger.info('🔵 Conversation removed event received in chat page: $data');
+      
+      // Extract user IDs from the event
+      final sender = data['sender'] as String?;
+      final receiver = data['receiver'] as String?;
+      
+      AppLogger.info('🔵 Unmatch event in chat - Sender: $sender, Receiver: $receiver, Current user: $_currentUserId');
+      
+      // Only navigate if current user is the receiver (not the sender)
+      if (_currentUserId == receiver) {
+        AppLogger.info('🔵 Current user is receiver, navigating back');
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Conversation ended by the other user'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      } else {
+        AppLogger.info('🔵 Current user is sender, skipping navigation (already handled by bloc)');
+      }
     });
 
     // Modify image_viewed event handler
@@ -1604,6 +1631,40 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       }
                     }
                   }
+                } else if (state is ConversationLeft) {
+                  // Navigate back when conversation is left (for initiator)
+                  AppLogger.info('🔵 Conversation left, navigating back (initiator)');
+                  if (mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Conversation ended')),
+                    );
+                  }
+                } else if (state is ConversationError) {
+                  // Show error message
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error: ${state.message}')),
+                    );
+                  }
+                } else if (state is ConversationLoaded) {
+                  // Check if this is a response to block or report action
+                  final currentState = state as ConversationLoaded;
+                  if (currentState.conversation.isBlocked) {
+                    // User was blocked successfully
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('User blocked successfully')),
+                      );
+                    }
+                  } else if (currentState.conversation.isMuted) {
+                    // User was reported successfully (using mute as report)
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('User reported successfully')),
+                      );
+                    }
+                  }
                 }
               },
               child: Column(
@@ -1884,8 +1945,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.notifications_off),
-                    title: const Text('Mute Conversation'),
+                    leading: const Icon(Icons.report),
+                    title: const Text('Report'),
                     onTap: () {
                       context.read<ConversationBloc>().add(
                         MuteConversation(conversationId: widget.conversationId),
