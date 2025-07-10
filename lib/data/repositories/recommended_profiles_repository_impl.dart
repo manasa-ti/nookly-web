@@ -1,8 +1,8 @@
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/core/utils/logger.dart';
-import 'package:hushmate/data/models/recommended_profile_model.dart';
-import 'package:hushmate/domain/entities/recommended_profile.dart';
-import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/data/models/recommended_profile_model.dart';
+import 'package:nookly/domain/entities/recommended_profile.dart';
+import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 
 class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository {
   @override

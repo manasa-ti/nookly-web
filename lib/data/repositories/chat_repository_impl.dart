@@ -1,8 +1,8 @@
-import 'package:hushmate/data/models/chat_conversation_model.dart';
-import 'package:hushmate/domain/entities/chat_conversation.dart';
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/message.dart';
-import 'package:hushmate/domain/repositories/chat_repository.dart';
+import 'package:nookly/data/models/chat_conversation_model.dart';
+import 'package:nookly/domain/entities/chat_conversation.dart';
+import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/domain/repositories/chat_repository.dart';
 
 class ChatRepositoryImpl implements ChatRepository {
   // Mock data - using final to prevent accidental modifications

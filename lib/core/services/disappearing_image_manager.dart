@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class DisappearingImageState {
   final String messageId;

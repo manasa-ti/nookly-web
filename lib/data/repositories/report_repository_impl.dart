@@ -1,10 +1,10 @@
 import 'package:dio/dio.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/core/utils/logger.dart';
-import 'package:hushmate/data/models/report/report_reasons_response.dart';
-import 'package:hushmate/data/models/report/report_request.dart';
-import 'package:hushmate/data/models/report/report_response.dart';
-import 'package:hushmate/domain/repositories/report_repository.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/data/models/report/report_reasons_response.dart';
+import 'package:nookly/data/models/report/report_request.dart';
+import 'package:nookly/data/models/report/report_response.dart';
+import 'package:nookly/domain/repositories/report_repository.dart';
 
 class ReportRepositoryImpl implements ReportRepository {
   @override

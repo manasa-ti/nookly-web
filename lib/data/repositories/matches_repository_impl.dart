@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:hushmate/core/network/network_service.dart'; // Use NetworkService
-import 'package:hushmate/domain/entities/matched_profile.dart';
-import 'package:hushmate/domain/repositories/matches_repository.dart';
+import 'package:nookly/core/network/network_service.dart'; // Use NetworkService
+import 'package:nookly/domain/entities/matched_profile.dart';
+import 'package:nookly/domain/repositories/matches_repository.dart';
 
 class MatchesRepositoryImpl implements MatchesRepository {
   // No need for _dio, _authRepository, or _baseUrl here

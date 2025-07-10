@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class AuthHandler {
   static final AuthHandler _instance = AuthHandler._internal();

@@ -1,11 +1,11 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/message.dart';
-import 'package:hushmate/domain/repositories/conversation_repository.dart';
-import 'package:hushmate/domain/entities/matched_profile.dart'; 
-import 'package:hushmate/domain/repositories/matches_repository.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/domain/repositories/conversation_repository.dart';
+import 'package:nookly/domain/entities/matched_profile.dart'; 
+import 'package:nookly/domain/repositories/matches_repository.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 part 'inbox_event.dart';
 part 'inbox_state.dart';

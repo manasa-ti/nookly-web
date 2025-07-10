@@ -1,15 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/utils/logger.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:hushmate/core/config/app_config.dart';
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logger/logger.dart';
-import 'package:hushmate/presentation/widgets/distance_radius_slider.dart';
+import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;

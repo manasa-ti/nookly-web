@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/config/app_config.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/domain/entities/user.dart';
+import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/domain/entities/user.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 

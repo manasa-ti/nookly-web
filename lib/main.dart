@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/di/injection_container.dart' as di;
-import 'package:hushmate/core/services/call_service.dart';
-import 'package:hushmate/core/services/auth_handler.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
-import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
-import 'package:hushmate/presentation/bloc/chat/chat_bloc.dart';
-import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
-import 'package:hushmate/presentation/bloc/purchased_features/purchased_features_bloc.dart';
-import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
-import 'package:hushmate/presentation/bloc/report/report_bloc.dart';
-import 'package:hushmate/presentation/pages/splash/splash_screen.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/presentation/pages/home/home_page.dart';
-import 'package:hushmate/presentation/pages/auth/login_page.dart';
-import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
-import 'package:hushmate/presentation/widgets/auth_wrapper.dart';
+import 'package:nookly/core/di/injection_container.dart' as di;
+import 'package:nookly/core/services/call_service.dart';
+import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
+import 'package:nookly/presentation/bloc/received_likes/received_likes_bloc.dart';
+import 'package:nookly/presentation/bloc/chat/chat_bloc.dart';
+import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
+import 'package:nookly/presentation/bloc/purchased_features/purchased_features_bloc.dart';
+import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
+import 'package:nookly/presentation/bloc/report/report_bloc.dart';
+import 'package:nookly/presentation/pages/splash/splash_screen.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/pages/home/home_page.dart';
+import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
+import 'package:nookly/presentation/widgets/auth_wrapper.dart';
 import 'package:logger/logger.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 // Create a global logger instance
 final logger = Logger(
@@ -38,7 +38,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Add some initial logging
-  logger.i('Initializing HushMate application...');
+  logger.i('Initializing Nookly application...');
   
   await di.init();
   logger.i('Dependency injection initialized');
@@ -87,7 +87,7 @@ class MyApp extends StatelessWidget {
       ],
       child: AuthWrapper(
         child: MaterialApp(
-          title: 'HushMate',
+          title: 'Nookly',
           navigatorKey: AuthHandler.navigatorKey, // Add global navigator key
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),

@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/message.dart';
-import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
-import 'package:hushmate/presentation/widgets/message_bubble.dart';
-import 'package:hushmate/core/network/socket_service.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/core/di/injection_container.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
+import 'package:nookly/presentation/widgets/message_bubble.dart';
+import 'package:nookly/core/network/socket_service.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-import 'package:hushmate/presentation/pages/call/call_screen.dart';
+import 'package:nookly/presentation/pages/call/call_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
-import 'package:hushmate/core/services/image_url_service.dart';
+import 'package:nookly/core/services/image_url_service.dart';
 
-import 'package:hushmate/presentation/widgets/disappearing_time_selector.dart';
-import 'package:hushmate/core/services/disappearing_image_manager.dart';
-import 'package:hushmate/presentation/pages/report/report_page.dart';
+import 'package:nookly/presentation/widgets/disappearing_time_selector.dart';
+import 'package:nookly/core/services/disappearing_image_manager.dart';
+import 'package:nookly/presentation/pages/report/report_page.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -500,9 +500,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'createdAt': serverTimestamp, // Use server's timestamp
           'messageType': data['messageType']?.toString() ?? 'text',
           'status': data['status']?.toString() ?? 'sent',
-          'isDisappearing': data['isDisappearing'],
-          'disappearingTime': data['disappearingTime'],
         };
+        
+        // Only set disappearing properties for image messages
+        final messageType = data['messageType']?.toString() ?? 'text';
+        if (messageType == 'image') {
+          messageData['isDisappearing'] = data['isDisappearing'];
+          messageData['disappearingTime'] = data['disappearingTime'];
+        }
         
         // Handle metadata conversion properly
         if (data['metadata'] != null) {
@@ -1636,10 +1641,23 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   // Navigate back when conversation is left (for initiator)
                   AppLogger.info('🔵 Conversation left, navigating back (initiator)');
                   if (mounted) {
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Conversation ended')),
-                    );
+                    // Close side menu if open
+                    if (_isMenuOpen) {
+                      setState(() {
+                        _isMenuOpen = false;
+                        _menuAnimationController.reverse();
+                      });
+                    }
+                    
+                    // Navigate after ensuring menu is closed
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (mounted) {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Conversation ended')),
+                        );
+                      }
+                    });
                   }
                 } else if (state is ConversationError) {
                   // Show error message
@@ -1878,15 +1896,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildSideMenuWithBackdrop(Conversation conversation) {
     return Stack(
       children: [
-        // Backdrop that closes the menu when tapped
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: _toggleMenu,
-            child: Container(
-              color: Colors.black.withOpacity(0.3),
+        // Invisible layer for touch outside to close (no visual backdrop)
+        if (_isMenuOpen)
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: _toggleMenu,
+              child: Container(
+                color: Colors.transparent,
+              ),
             ),
           ),
-        ),
         // Side menu
         _buildSideMenu(conversation),
       ],

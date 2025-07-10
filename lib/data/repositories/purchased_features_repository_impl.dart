@@ -1,6 +1,6 @@
-import 'package:hushmate/data/models/purchased_feature_model.dart';
-import 'package:hushmate/domain/entities/purchased_feature.dart';
-import 'package:hushmate/domain/repositories/purchased_features_repository.dart';
+import 'package:nookly/data/models/purchased_feature_model.dart';
+import 'package:nookly/domain/entities/purchased_feature.dart';
+import 'package:nookly/domain/repositories/purchased_features_repository.dart';
 
 class PurchasedFeaturesRepositoryImpl implements PurchasedFeaturesRepository {
   @override

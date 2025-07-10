@@ -1,4 +1,4 @@
-import 'package:hushmate/domain/entities/recommended_profile.dart';
+import 'package:nookly/domain/entities/recommended_profile.dart';
 
 class RecommendedProfileModel extends RecommendedProfile {
   RecommendedProfileModel({

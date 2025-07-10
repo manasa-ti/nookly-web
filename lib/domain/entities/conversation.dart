@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/message.dart';
+import 'package:nookly/domain/entities/message.dart';
 
 class Conversation extends Equatable {
   final String id;

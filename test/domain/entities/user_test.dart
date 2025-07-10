@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hushmate/domain/entities/user.dart';
+import 'package:nookly/domain/entities/user.dart';
 
 void main() {
   group('User', () {

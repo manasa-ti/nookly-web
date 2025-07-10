@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
-import 'package:hushmate/presentation/bloc/profile/profile_event.dart';
-import 'package:hushmate/presentation/bloc/profile/profile_state.dart';
-import 'package:hushmate/presentation/widgets/interest_chips.dart';
-import 'package:hushmate/presentation/widgets/objective_chips.dart';
-import 'package:hushmate/presentation/widgets/distance_radius_slider.dart';
-import 'package:hushmate/presentation/pages/home/home_page.dart';
+import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
+import 'package:nookly/presentation/bloc/profile/profile_event.dart';
+import 'package:nookly/presentation/bloc/profile/profile_state.dart';
+import 'package:nookly/presentation/widgets/interest_chips.dart';
+import 'package:nookly/presentation/widgets/objective_chips.dart';
+import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
+import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});

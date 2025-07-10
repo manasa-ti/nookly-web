@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/domain/entities/recommended_profile.dart';
-import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
+import 'package:nookly/domain/entities/recommended_profile.dart';
+import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});

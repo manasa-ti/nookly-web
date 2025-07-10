@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/domain/repositories/report_repository.dart';
-import 'package:hushmate/presentation/bloc/report/report_event.dart';
-import 'package:hushmate/presentation/bloc/report/report_state.dart';
+import 'package:nookly/domain/repositories/report_repository.dart';
+import 'package:nookly/presentation/bloc/report/report_event.dart';
+import 'package:nookly/presentation/bloc/report/report_state.dart';
 
 class ReportBloc extends Bloc<ReportEvent, ReportState> {
   final ReportRepository _reportRepository;

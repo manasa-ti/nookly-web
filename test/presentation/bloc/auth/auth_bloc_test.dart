@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hushmate/data/repositories/auth_repository_impl.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/data/repositories/auth_repository_impl.dart';
+import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 
 void main() {
   late AuthBloc bloc;

@@ -1,4 +1,4 @@
-import 'package:hushmate/domain/entities/purchased_feature.dart';
+import 'package:nookly/domain/entities/purchased_feature.dart';
 
 class PurchasedFeatureModel extends PurchasedFeature {
   const PurchasedFeatureModel({

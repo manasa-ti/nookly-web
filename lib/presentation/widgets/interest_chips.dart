@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
 
 class InterestChips extends StatefulWidget {
   final List<String> selectedInterests;

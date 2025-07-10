@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/presentation/pages/home/recommended_profiles_page.dart';
-import 'package:hushmate/presentation/pages/home/received_likes_page.dart';
-import 'package:hushmate/presentation/pages/home/chat_inbox_page.dart';
-import 'package:hushmate/presentation/pages/home/purchased_features_page.dart';
-import 'package:hushmate/presentation/pages/profile/profile_page.dart';
-import 'package:hushmate/presentation/pages/profile/profile_filters_page.dart';
-import 'package:hushmate/presentation/pages/settings/settings_page.dart';
-import 'package:hushmate/presentation/pages/notifications/notifications_page.dart';
+import 'package:nookly/presentation/pages/home/recommended_profiles_page.dart';
+import 'package:nookly/presentation/pages/home/received_likes_page.dart';
+import 'package:nookly/presentation/pages/home/chat_inbox_page.dart';
+import 'package:nookly/presentation/pages/home/purchased_features_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_filters_page.dart';
+import 'package:nookly/presentation/pages/settings/settings_page.dart';
+import 'package:nookly/presentation/pages/notifications/notifications_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
+import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -81,7 +81,7 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false, // Remove back button
-          title: const Text('HushMate'),
+          title: const Text('Nookly'),
           actions: [
             // Filter icon - only show on Discover tab
             if (_currentIndex == 0)

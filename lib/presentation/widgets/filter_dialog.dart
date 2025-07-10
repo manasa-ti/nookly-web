@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/core/config/app_config.dart';
+import 'package:nookly/core/config/app_config.dart';
 
 class FilterDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onApplyFilters;

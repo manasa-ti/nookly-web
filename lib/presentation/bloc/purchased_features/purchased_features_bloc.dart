@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/purchased_feature.dart';
-import 'package:hushmate/domain/repositories/purchased_features_repository.dart';
+import 'package:nookly/domain/entities/purchased_feature.dart';
+import 'package:nookly/domain/repositories/purchased_features_repository.dart';
 
 // Events
 abstract class PurchasedFeaturesEvent extends Equatable {

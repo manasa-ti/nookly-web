@@ -5,11 +5,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
-import 'package:hushmate/data/models/auth/auth_response_model.dart' as _i3;
-import 'package:hushmate/data/models/auth/login_request_model.dart' as _i6;
-import 'package:hushmate/data/models/auth/register_request_model.dart' as _i7;
-import 'package:hushmate/domain/entities/user.dart' as _i2;
-import 'package:hushmate/domain/repositories/auth_repository.dart' as _i4;
+import 'package:nookly/data/models/auth/auth_response_model.dart' as _i3;
+import 'package:nookly/data/models/auth/login_request_model.dart' as _i6;
+import 'package:nookly/data/models/auth/register_request_model.dart' as _i7;
+import 'package:nookly/domain/entities/user.dart' as _i2;
+import 'package:nookly/domain/repositories/auth_repository.dart' as _i4;
 import 'package:mockito/mockito.dart' as _i1;
 
 // ignore_for_file: type=lint

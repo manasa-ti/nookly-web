@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/message.dart';
-import 'package:hushmate/domain/repositories/chat_repository.dart';
+import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/domain/repositories/chat_repository.dart';
 
 // Events
 abstract class ChatEvent extends Equatable {

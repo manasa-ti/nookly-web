@@ -1,4 +1,4 @@
-import 'package:hushmate/domain/entities/chat_conversation.dart';
+import 'package:nookly/domain/entities/chat_conversation.dart';
 
 class ChatConversationModel extends ChatConversation {
   const ChatConversationModel({

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/user.dart';
+import 'package:nookly/domain/entities/user.dart';
 
 abstract class ProfileEvent extends Equatable {
   const ProfileEvent();

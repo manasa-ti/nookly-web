@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/di/injection_container.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/presentation/bloc/inbox/inbox_bloc.dart';
-import 'package:hushmate/presentation/pages/chat/chat_page.dart';
+import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/bloc/inbox/inbox_bloc.dart';
+import 'package:nookly/presentation/pages/chat/chat_page.dart';
 import 'package:intl/intl.dart';
-import 'package:hushmate/core/network/socket_service.dart';
+import 'package:nookly/core/network/socket_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:hushmate/core/utils/logger.dart';
-import 'package:hushmate/domain/entities/message.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/domain/entities/message.dart';
 
 class ChatInboxPage extends StatefulWidget {
   const ChatInboxPage({super.key});
@@ -169,10 +169,10 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             timestamp: DateTime.parse(data['createdAt'] ?? DateTime.now().toIso8601String()),
             type: messageType, // ✅ Use proper message type
             status: data['status'] ?? 'sent',
-            isDisappearing: data['isDisappearing'] ?? false,
-            disappearingTime: data['disappearingTime'],
+            isDisappearing: messageType == MessageType.image ? (data['isDisappearing'] ?? false) : false,
+            disappearingTime: messageType == MessageType.image ? data['disappearingTime'] : null,
             metadata: {
-              if (data['isDisappearing'] != null) 'isDisappearing': data['isDisappearing'].toString(),
+              if (data['isDisappearing'] != null && messageType == MessageType.image) 'isDisappearing': data['isDisappearing'].toString(),
               if (data['viewedAt'] != null) 'viewedAt': data['viewedAt'].toString(),
             },
           );

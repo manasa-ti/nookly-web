@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:hushmate/core/services/call_service.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/services/call_service.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class CallScreen extends StatefulWidget {
   final String channelName;

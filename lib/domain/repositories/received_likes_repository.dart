@@ -1,6 +1,6 @@
-import 'package:hushmate/domain/entities/received_like.dart';
-import 'package:hushmate/domain/entities/recommended_profile.dart';
-import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
+import 'package:nookly/domain/entities/received_like.dart';
+import 'package:nookly/domain/entities/recommended_profile.dart';
+import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 
 abstract class ReceivedLikesRepository {
   final RecommendedProfilesRepository recommendedProfilesRepository;

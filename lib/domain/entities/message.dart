@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 enum MessageType {
   text,
@@ -263,9 +263,14 @@ class Message extends Equatable {
     bool isDisappearing = false;
     try {
       // First check if disappearingTime is present (this should make the message disappearing)
-      if (disappearingTime != null) {
+      // But only for image messages - text messages should never be disappearing
+      if (disappearingTime != null && messageType == MessageType.image) {
         isDisappearing = true;
-        AppLogger.info('🔵 DEBUGGING API MESSAGE: Inferring isDisappearing=true because disappearingTime=$disappearingTime is present');
+        AppLogger.info('🔵 DEBUGGING API MESSAGE: Inferring isDisappearing=true because disappearingTime=$disappearingTime is present for image message');
+      } else if (disappearingTime != null && messageType == MessageType.text) {
+        // Text messages should never be disappearing, even if disappearingTime is present
+        isDisappearing = false;
+        AppLogger.warning('🔵 DEBUGGING API MESSAGE: Ignoring disappearingTime=$disappearingTime for text message - text messages should not disappear');
       } else {
         // Only check explicit isDisappearing field if no disappearingTime is present
         if (json['metadata'] != null && json['metadata']['isDisappearing'] != null) {

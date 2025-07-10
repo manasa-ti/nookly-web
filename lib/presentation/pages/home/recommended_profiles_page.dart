@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
-import 'package:hushmate/presentation/widgets/profile_card.dart';
-import 'package:hushmate/presentation/widgets/profile_detail_dialog.dart';
+import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
+import 'package:nookly/presentation/widgets/profile_card.dart';
+import 'package:nookly/presentation/widgets/profile_detail_dialog.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});

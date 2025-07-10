@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/presentation/bloc/profile/profile_event.dart';
-import 'package:hushmate/presentation/bloc/profile/profile_state.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/bloc/profile/profile_event.dart';
+import 'package:nookly/presentation/bloc/profile/profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   final AuthRepository _authRepository;
@@ -242,9 +242,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     Emitter<ProfileState> emit,
   ) {
     // TODO: Implement profile picture generation logic
-    final generatedPictureUrl =
-        'https://api.hushmate.com/generate-profile-picture/${DateTime.now().millisecondsSinceEpoch}';
-    _onUpdateProfilePicture(UpdateProfilePicture(generatedPictureUrl), emit);
+    final imageUrl = 'https://api.nookly.com/generate-profile-picture/${DateTime.now().millisecondsSinceEpoch}';
+    _onUpdateProfilePicture(UpdateProfilePicture(imageUrl), emit);
   }
 
   void _onUpdateInterests(UpdateInterests event, Emitter<ProfileState> emit) {

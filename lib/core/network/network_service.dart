@@ -2,8 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
-import 'package:hushmate/core/services/auth_handler.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class NetworkService {
   static Dio? _dio;

@@ -1,4 +1,4 @@
-import 'package:hushmate/domain/entities/received_like.dart';
+import 'package:nookly/domain/entities/received_like.dart';
 
 class ReceivedLikeModel extends ReceivedLike {
   const ReceivedLikeModel({

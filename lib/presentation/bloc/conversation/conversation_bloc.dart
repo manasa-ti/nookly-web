@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/conversation.dart'; // Required for ConversationLoaded state
-import 'package:hushmate/domain/entities/message.dart'; // Import Message entity
-import 'package:hushmate/domain/repositories/conversation_repository.dart';
-import 'package:hushmate/core/network/socket_service.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/domain/entities/conversation.dart'; // Required for ConversationLoaded state
+import 'package:nookly/domain/entities/message.dart'; // Import Message entity
+import 'package:nookly/domain/repositories/conversation_repository.dart';
+import 'package:nookly/core/network/socket_service.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 part 'conversation_event.dart';
 part 'conversation_state.dart';

@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/core/di/injection_container.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/core/utils/logger.dart';
 import 'dart:convert';
 
 class ImageUrlService {

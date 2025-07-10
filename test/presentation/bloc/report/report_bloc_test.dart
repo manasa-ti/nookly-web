@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bloc_test/bloc_test.dart';
-import 'package:hushmate/presentation/bloc/report/report_bloc.dart';
-import 'package:hushmate/presentation/bloc/report/report_event.dart';
-import 'package:hushmate/presentation/bloc/report/report_state.dart';
-import 'package:hushmate/domain/repositories/report_repository.dart';
+import 'package:nookly/presentation/bloc/report/report_bloc.dart';
+import 'package:nookly/presentation/bloc/report/report_event.dart';
+import 'package:nookly/presentation/bloc/report/report_state.dart';
+import 'package:nookly/domain/repositories/report_repository.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
 

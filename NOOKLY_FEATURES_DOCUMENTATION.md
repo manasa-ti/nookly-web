@@ -1,7 +1,7 @@
-# HushMate Dating App - Features Documentation
+# Nookly Dating App - Features Documentation
 
 ## Overview
-HushMate is a comprehensive dating application built with Flutter that provides users with a complete dating experience including profile management, matching, messaging, voice/video calls, and premium features.
+Nookly is a comprehensive dating application built with Flutter that provides users with a complete dating experience including profile management, matching, messaging, voice/video calls, and premium features.
 
 ## Core Features
 
@@ -276,4 +276,4 @@ HushMate is a comprehensive dating application built with Flutter that provides 
 - **Web** (Flutter web)
 - **Desktop** (Windows, macOS, Linux)
 
-This documentation provides a comprehensive overview of all features implemented in the HushMate dating application. Each feature is designed to provide a complete and engaging dating experience while maintaining security, privacy, and user safety standards. 
+This documentation provides a comprehensive overview of all features implemented in the Nookly dating application. Each feature is designed to provide a complete and engaging dating experience while maintaining security, privacy, and user safety standards. 

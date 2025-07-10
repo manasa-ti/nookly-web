@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/config/app_config.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
-import 'package:hushmate/presentation/pages/auth/forgot_password_page.dart';
-import 'package:hushmate/presentation/pages/profile/profile_creation_page.dart';
-import 'package:hushmate/presentation/pages/auth/sign_up_page.dart';
-import 'package:hushmate/presentation/pages/home/home_page.dart';
+import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/presentation/pages/auth/forgot_password_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
+import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
+import 'package:nookly/presentation/pages/home/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -90,7 +90,7 @@ class _LoginPageState extends State<LoginPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    'Welcome to HushMate',
+                    'Welcome to Nookly',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

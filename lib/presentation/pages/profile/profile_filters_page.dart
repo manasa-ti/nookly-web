@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:hushmate/presentation/widgets/interest_chips.dart';
-import 'package:hushmate/presentation/widgets/objective_chips.dart';
-import 'package:hushmate/presentation/widgets/distance_radius_slider.dart';
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/widgets/interest_chips.dart';
+import 'package:nookly/presentation/widgets/objective_chips.dart';
+import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 
 class ProfileFiltersPage extends StatefulWidget {

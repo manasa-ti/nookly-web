@@ -1,4 +1,4 @@
-import 'package:hushmate/data/models/auth/location_age_range_models.dart';
+import 'package:nookly/data/models/auth/location_age_range_models.dart';
 
 class AuthResponseModel {
   final String token;

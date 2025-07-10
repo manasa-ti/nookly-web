@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppConfig {
-  static const String appName = 'HushMate';
+  static const String appName = 'Nookly';
   static const String appVersion = '1.0.0';
   
   // API Configuration
-  static const String baseUrl = 'https://api.hushmate.com'; // Replace with actual API URL
+  static const String baseUrl = 'https://api.nookly.com'; // Replace with actual API URL
   static const int apiTimeout = 30000; // 30 seconds
   
   // Cache Configuration

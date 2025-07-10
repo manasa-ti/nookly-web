@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;

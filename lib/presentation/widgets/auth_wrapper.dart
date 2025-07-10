@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/services/auth_handler.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
-import 'package:hushmate/presentation/pages/auth/login_page.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class AuthWrapper extends StatefulWidget {
   final Widget child;

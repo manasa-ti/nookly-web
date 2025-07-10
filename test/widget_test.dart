@@ -7,7 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hushmate/presentation/widgets/distance_radius_slider.dart';
+import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
 
 void main() {
   testWidgets('Distance radius slider widget test', (WidgetTester tester) async {

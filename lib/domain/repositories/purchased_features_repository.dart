@@ -1,4 +1,4 @@
-import 'package:hushmate/domain/entities/purchased_feature.dart';
+import 'package:nookly/domain/entities/purchased_feature.dart';
 
 abstract class PurchasedFeaturesRepository {
   Future<List<PurchasedFeature>> getPurchasedFeatures();

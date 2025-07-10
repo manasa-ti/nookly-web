@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/core/config/app_config.dart';
-import 'package:hushmate/core/utils/logger.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
-import 'package:hushmate/presentation/pages/profile/edit_profile_page.dart';
-import 'package:hushmate/presentation/pages/auth/login_page.dart';
+import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
+import 'package:nookly/presentation/pages/auth/login_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});

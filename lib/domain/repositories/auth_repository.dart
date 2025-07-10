@@ -1,7 +1,7 @@
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/data/models/auth/auth_response_model.dart';
-import 'package:hushmate/data/models/auth/login_request_model.dart';
-import 'package:hushmate/data/models/auth/register_request_model.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/data/models/auth/auth_response_model.dart';
+import 'package:nookly/data/models/auth/login_request_model.dart';
+import 'package:nookly/data/models/auth/register_request_model.dart';
 
 abstract class AuthRepository {
   Future<User> signInWithEmailAndPassword(String email, String password);

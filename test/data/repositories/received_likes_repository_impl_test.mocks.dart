@@ -5,8 +5,8 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
 
-import 'package:hushmate/domain/entities/recommended_profile.dart' as _i4;
-import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart'
+import 'package:nookly/domain/entities/recommended_profile.dart' as _i4;
+import 'package:nookly/domain/repositories/recommended_profiles_repository.dart'
     as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 

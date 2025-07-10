@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/presentation/bloc/report/report_bloc.dart';
-import 'package:hushmate/presentation/bloc/report/report_event.dart';
-import 'package:hushmate/presentation/bloc/report/report_state.dart';
+import 'package:nookly/presentation/bloc/report/report_bloc.dart';
+import 'package:nookly/presentation/bloc/report/report_event.dart';
+import 'package:nookly/presentation/bloc/report/report_state.dart';
 
 class ReportPage extends StatefulWidget {
   final String reportedUserId;

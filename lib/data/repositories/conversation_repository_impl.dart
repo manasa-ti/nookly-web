@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
-import 'package:hushmate/core/network/network_service.dart'; // Use NetworkService
-import 'package:hushmate/core/utils/logger.dart'; // Add logger import
-import 'package:hushmate/domain/entities/conversation.dart';
-import 'package:hushmate/domain/entities/message.dart';
-import 'package:hushmate/domain/repositories/conversation_repository.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart'; // Still needed for currentUserId
-import 'package:hushmate/domain/entities/user.dart'; 
+import 'package:nookly/core/network/network_service.dart'; // Use NetworkService
+import 'package:nookly/core/utils/logger.dart'; // Add logger import
+import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/domain/repositories/conversation_repository.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart'; // Still needed for currentUserId
+import 'package:nookly/domain/entities/user.dart'; 
 
 class ConversationRepositoryImpl implements ConversationRepository {
   // Dio instance is now managed by NetworkService

@@ -2,13 +2,13 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
-import 'package:hushmate/core/network/network_service.dart';
-import 'package:hushmate/core/utils/logger.dart';
-import 'package:hushmate/data/models/auth/auth_response_model.dart';
-import 'package:hushmate/data/models/auth/login_request_model.dart';
-import 'package:hushmate/data/models/auth/register_request_model.dart';
-import 'package:hushmate/domain/entities/user.dart';
-import 'package:hushmate/domain/repositories/auth_repository.dart';
+import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/data/models/auth/auth_response_model.dart';
+import 'package:nookly/data/models/auth/login_request_model.dart';
+import 'package:nookly/data/models/auth/register_request_model.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final SharedPreferences _prefs;

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_event.dart';
-import 'package:hushmate/presentation/bloc/auth/auth_state.dart';
-import 'package:hushmate/presentation/pages/auth/login_page.dart';
-import 'package:hushmate/presentation/pages/home/home_page.dart';
-import 'package:hushmate/presentation/pages/profile/profile_creation_page.dart';
+import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
+import 'package:nookly/presentation/bloc/auth/auth_event.dart';
+import 'package:nookly/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/presentation/pages/home/home_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
+import 'package:nookly/core/config/app_config.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -106,10 +107,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'HushMate',
-                        style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimary,
+                        'Nookly',
+                        style: TextStyle(
+                          fontSize: 32,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 8),

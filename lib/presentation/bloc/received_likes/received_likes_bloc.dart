@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:hushmate/domain/entities/received_like.dart';
-import 'package:hushmate/domain/repositories/received_likes_repository.dart';
+import 'package:nookly/domain/entities/received_like.dart';
+import 'package:nookly/domain/repositories/received_likes_repository.dart';
 
 // Events
 abstract class ReceivedLikesEvent extends Equatable {

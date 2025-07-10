@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/foundation.dart';
-import 'package:hushmate/core/utils/logger.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();

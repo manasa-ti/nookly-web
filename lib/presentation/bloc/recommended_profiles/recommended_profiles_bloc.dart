@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hushmate/domain/entities/recommended_profile.dart';
-import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
+import 'package:nookly/domain/entities/recommended_profile.dart';
+import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 
 // Events
 abstract class RecommendedProfilesEvent {}
