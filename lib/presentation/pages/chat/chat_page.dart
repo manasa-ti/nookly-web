@@ -21,6 +21,7 @@ import 'package:hushmate/core/services/image_url_service.dart';
 
 import 'package:hushmate/presentation/widgets/disappearing_time_selector.dart';
 import 'package:hushmate/core/services/disappearing_image_manager.dart';
+import 'package:hushmate/presentation/pages/report/report_page.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -1797,8 +1798,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _buildMessageInput(),
         ],
       ),
-      // Add side menu overlay
-      if (_isMenuOpen) _buildSideMenu(Conversation(
+      // Add side menu overlay with backdrop
+      if (_isMenuOpen) _buildSideMenuWithBackdrop(Conversation(
         id: widget.conversationId,
         participantId: widget.conversationId,
         participantName: widget.participantName,
@@ -1874,6 +1875,24 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
+  Widget _buildSideMenuWithBackdrop(Conversation conversation) {
+    return Stack(
+      children: [
+        // Backdrop that closes the menu when tapped
+        Positioned.fill(
+          child: GestureDetector(
+            onTap: _toggleMenu,
+            child: Container(
+              color: Colors.black.withOpacity(0.3),
+            ),
+          ),
+        ),
+        // Side menu
+        _buildSideMenu(conversation),
+      ],
+    );
+  }
+
   Widget _buildSideMenu(Conversation conversation) {
     return AnimatedBuilder(
       animation: _menuAnimation,
@@ -1891,11 +1910,23 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header with close button
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Chat Options',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Chat Options',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: _toggleMenu,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                        ),
+                      ],
                     ),
                   ),
                   const Divider(),
@@ -1948,8 +1979,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     leading: const Icon(Icons.report),
                     title: const Text('Report'),
                     onTap: () {
-                      context.read<ConversationBloc>().add(
-                        MuteConversation(conversationId: widget.conversationId),
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => ReportPage(
+                            reportedUserId: widget.conversationId,
+                            reportedUserName: widget.participantName,
+                          ),
+                        ),
                       );
                     },
                   ),

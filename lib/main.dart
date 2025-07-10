@@ -12,6 +12,7 @@ import 'package:hushmate/presentation/bloc/chat/chat_bloc.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:hushmate/presentation/bloc/purchased_features/purchased_features_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
+import 'package:hushmate/presentation/bloc/report/report_bloc.dart';
 import 'package:hushmate/presentation/pages/splash/splash_screen.dart';
 import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:hushmate/presentation/pages/home/home_page.dart';
@@ -76,6 +77,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => di.sl<ProfileBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => di.sl<ReportBloc>(),
         ),
         RepositoryProvider(
           create: (context) => di.sl<AuthRepository>(),

@@ -8,6 +8,7 @@ import 'package:hushmate/data/repositories/matches_repository_impl.dart';
 import 'package:hushmate/data/repositories/purchased_features_repository_impl.dart';
 import 'package:hushmate/data/repositories/received_likes_repository_impl.dart';
 import 'package:hushmate/data/repositories/recommended_profiles_repository_impl.dart';
+import 'package:hushmate/data/repositories/report_repository_impl.dart';
 import 'package:hushmate/domain/repositories/auth_repository.dart';
 import 'package:hushmate/domain/repositories/chat_repository.dart';
 import 'package:hushmate/domain/repositories/conversation_repository.dart';
@@ -15,6 +16,7 @@ import 'package:hushmate/domain/repositories/matches_repository.dart';
 import 'package:hushmate/domain/repositories/purchased_features_repository.dart';
 import 'package:hushmate/domain/repositories/received_likes_repository.dart';
 import 'package:hushmate/domain/repositories/recommended_profiles_repository.dart';
+import 'package:hushmate/domain/repositories/report_repository.dart';
 import 'package:hushmate/presentation/bloc/auth/auth_bloc.dart';
 import 'package:hushmate/presentation/bloc/chat/chat_bloc.dart';
 import 'package:hushmate/presentation/bloc/conversation/conversation_bloc.dart';
@@ -23,6 +25,7 @@ import 'package:hushmate/presentation/bloc/purchased_features/purchased_features
 import 'package:hushmate/presentation/bloc/received_likes/received_likes_bloc.dart';
 import 'package:hushmate/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:hushmate/presentation/bloc/profile/profile_bloc.dart';
+import 'package:hushmate/presentation/bloc/report/report_bloc.dart';
 import 'package:hushmate/core/network/socket_service.dart';
 import 'package:hushmate/core/services/auth_handler.dart';
 
@@ -63,6 +66,10 @@ Future<void> init() async {
   
   sl.registerLazySingleton<PurchasedFeaturesRepository>(
     () => PurchasedFeaturesRepositoryImpl(),
+  );
+  
+  sl.registerLazySingleton<ReportRepository>(
+    () => ReportRepositoryImpl(),
   );
   
   sl.registerLazySingleton<SocketService>(() => SocketService());
@@ -106,5 +113,9 @@ Future<void> init() async {
 
   sl.registerFactory(
     () => ProfileBloc(authRepository: sl()),
+  );
+  
+  sl.registerFactory(
+    () => ReportBloc(reportRepository: sl()),
   );
 } 
