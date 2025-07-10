@@ -1,0 +1,185 @@
+Feature Category,Test Case ID,Test Case Name,Test Description,Preconditions,Test Steps,Expected Result,Priority,Status,Notes
+Authentication,TC_AUTH_001,User Registration - Valid Email and Password,Verify user can register with valid email and password,App is launched and user is on sign up page,"1. Enter valid email address
+2. Enter password with minimum 6 characters
+3. Confirm password matches
+4. Tap Sign Up button",User account is created successfully and navigated to profile creation page,High,Not Tested,
+Authentication,TC_AUTH_002,User Registration - Invalid Email Format,Verify registration fails with invalid email format,App is launched and user is on sign up page,"1. Enter invalid email address (e.g., test@)
+2. Enter valid password
+3. Confirm password
+4. Tap Sign Up button",Error message displayed: 'Please enter a valid email',High,Not Tested,
+Authentication,TC_AUTH_003,User Registration - Weak Password,Verify registration fails with password less than 6 characters,App is launched and user is on sign up page,"1. Enter valid email address
+2. Enter password with less than 6 characters
+3. Confirm password
+4. Tap Sign Up button",Error message displayed: 'Password must be at least 6 characters',High,Not Tested,
+Authentication,TC_AUTH_004,User Registration - Password Mismatch,Verify registration fails when passwords don't match,App is launched and user is on sign up page,"1. Enter valid email address
+2. Enter valid password
+3. Enter different password in confirm field
+4. Tap Sign Up button",Error message displayed: 'Passwords do not match',High,Not Tested,
+Authentication,TC_AUTH_005,User Login - Valid Credentials,Verify user can login with valid email and password,User has registered account,"1. Enter valid email address
+2. Enter correct password
+3. Tap Sign In button",User is logged in and navigated to home page or profile completion,High,Not Tested,
+Authentication,TC_AUTH_006,User Login - Invalid Credentials,Verify login fails with invalid credentials,App is launched and user is on login page,"1. Enter invalid email or password
+2. Tap Sign In button",Error message displayed for invalid credentials,High,Not Tested,
+Authentication,TC_AUTH_007,User Login - Empty Fields,Verify login fails with empty fields,App is launched and user is on login page,"1. Leave email field empty
+2. Leave password field empty
+3. Tap Sign In button",Error messages displayed for required fields,High,Not Tested,
+Authentication,TC_AUTH_008,Password Visibility Toggle,Verify password visibility can be toggled,User is on login or sign up page,"1. Enter password in password field
+2. Tap visibility toggle icon",Password text toggles between visible and hidden,Medium,Not Tested,
+Authentication,TC_AUTH_009,Forgot Password Navigation,Verify forgot password page navigation,User is on login page,"1. Tap 'Forgot Password?' link",User is navigated to forgot password page,Medium,Not Tested,
+Authentication,TC_AUTH_010,Logout Functionality,Verify user can logout successfully,User is logged in and on settings page,"1. Navigate to Settings page
+2. Tap Logout option",User is logged out and navigated to login page,High,Not Tested,
+Profile Management,TC_PROF_001,Profile Creation - Basic Info Step,Verify basic info step in profile creation,User has registered and is on profile creation page,"1. Select age from date picker
+2. Select gender (Male/Female/Other)
+3. Select seeking gender (Male/Female/Any)
+4. Tap Next",Step validation passes and moves to next step,High,Not Tested,
+Profile Management,TC_PROF_002,Profile Creation - Location Step,Verify location and age preferences step,User is on location step of profile creation,"1. Enter hometown
+2. Adjust age range slider
+3. Tap Next",Step validation passes and moves to next step,High,Not Tested,
+Profile Management,TC_PROF_003,Profile Creation - Profile Details Step,Verify profile details step completion,User is on profile details step,"1. Enter bio text
+2. Select at least one interest
+3. Tap Next",Step validation passes and moves to next step,High,Not Tested,
+Profile Management,TC_PROF_004,Profile Creation - Objectives Step,Verify objectives step completion,User is on objectives step,"1. Select at least one objective
+2. Tap Save Profile",Profile is saved and user navigated to home page,High,Not Tested,
+Profile Management,TC_PROF_005,Profile Creation - Validation Errors,Verify validation errors for incomplete steps,User is on any profile creation step,"1. Try to proceed without filling required fields
+2. Tap Next/Save",Error message displayed for missing required fields,High,Not Tested,
+Profile Management,TC_PROF_006,Profile Editing - Load Current Data,Verify current profile data loads in edit form,User is logged in and navigates to edit profile,"1. Navigate to Settings > Edit Profile
+2. Verify form fields are populated with current data",All form fields display current user data,High,Not Tested,
+Profile Management,TC_PROF_007,Profile Editing - Update Profile Picture,Verify profile picture can be updated,User is on edit profile page,"1. Tap profile picture
+2. Select image from gallery or camera
+3. Verify upload progress
+4. Save changes",Profile picture is updated successfully,High,Not Tested,
+Profile Management,TC_PROF_008,Profile Editing - Update Bio,Verify bio can be updated,User is on edit profile page,"1. Modify bio text
+2. Save changes",Bio is updated successfully,High,Not Tested,
+Profile Management,TC_PROF_009,Profile Editing - Update Interests,Verify interests can be updated,User is on edit profile page,"1. Modify selected interests
+2. Save changes",Interests are updated successfully,High,Not Tested,
+Profile Management,TC_PROF_010,Profile Editing - Update Age Range,Verify age range preferences can be updated,User is on edit profile page,"1. Adjust age range slider
+2. Save changes",Age range preferences are updated successfully,High,Not Tested,
+Profile Management,TC_PROF_011,Profile Editing - Update Distance Radius,Verify distance radius can be updated,User is on edit profile page,"1. Adjust distance radius slider
+2. Save changes",Distance radius is updated successfully,High,Not Tested,
+Profile Management,TC_PROF_012,Profile Viewing - Display Profile Data,Verify profile page displays all user data,User is logged in and navigates to profile page,"1. Navigate to Profile page
+2. Verify all profile information is displayed",All profile information is correctly displayed,Medium,Not Tested,
+Discovery & Matching,TC_DISC_001,Recommended Profiles - Load Profiles,Verify recommended profiles load successfully,User is logged in and on Discover tab,"1. Navigate to Discover tab
+2. Wait for profiles to load",Profiles are loaded and displayed in cards,High,Not Tested,
+Discovery & Matching,TC_DISC_002,Recommended Profiles - Swipe Right (Like),Verify swipe right functionality,User is on Discover tab with profiles loaded,"1. Swipe right on a profile card",Profile is liked and next profile is shown,High,Not Tested,
+Discovery & Matching,TC_DISC_003,Recommended Profiles - Swipe Left (Dislike),Verify swipe left functionality,User is on Discover tab with profiles loaded,"1. Swipe left on a profile card",Profile is disliked and next profile is shown,High,Not Tested,
+Discovery & Matching,TC_DISC_004,Recommended Profiles - Tap Profile Card,Verify profile detail modal opens,User is on Discover tab with profiles loaded,"1. Tap on a profile card",Profile detail modal opens with full information,Medium,Not Tested,
+Discovery & Matching,TC_DISC_005,Recommended Profiles - Empty State,Verify empty state when no profiles available,User has no more recommended profiles,"1. Swipe through all available profiles",Empty state message is displayed,Medium,Not Tested,
+Discovery & Matching,TC_DISC_006,Profile Filters - Access Filters,Verify filters can be accessed,User is on Discover tab,"1. Tap filter icon in app bar",Filters page opens with current preferences,High,Not Tested,
+Discovery & Matching,TC_DISC_007,Profile Filters - Update Age Range,Verify age range filter can be updated,User is on filters page,"1. Adjust age range slider
+2. Save filters",Age range filter is updated and applied,High,Not Tested,
+Discovery & Matching,TC_DISC_008,Profile Filters - Update Distance Radius,Verify distance radius filter can be updated,User is on filters page,"1. Adjust distance radius slider
+2. Save filters",Distance radius filter is updated and applied,High,Not Tested,
+Discovery & Matching,TC_DISC_009,Profile Filters - Update Interests,Verify interests filter can be updated,User is on filters page,"1. Modify selected interests
+2. Save filters",Interests filter is updated and applied,High,Not Tested,
+Discovery & Matching,TC_DISC_010,Profile Filters - Update Objectives,Verify objectives filter can be updated,User is on filters page,"1. Modify selected objectives
+2. Save filters",Objectives filter is updated and applied,High,Not Tested,
+Discovery & Matching,TC_DISC_011,Received Likes - Load Likes,Verify received likes load successfully,User is logged in and on Likes tab,"1. Navigate to Likes tab
+2. Wait for likes to load",Received likes are loaded and displayed,High,Not Tested,
+Discovery & Matching,TC_DISC_012,Received Likes - Accept Like,Verify accept like functionality,User is on Likes tab with received likes,"1. Swipe right on a received like",Like is accepted and match is created,High,Not Tested,
+Discovery & Matching,TC_DISC_013,Received Likes - Reject Like,Verify reject like functionality,User is on Likes tab with received likes,"1. Swipe left on a received like",Like is rejected and removed from list,High,Not Tested,
+Discovery & Matching,TC_DISC_014,Received Likes - Empty State,Verify empty state when no received likes,User has no received likes,"1. Navigate to Likes tab",Empty state message is displayed,Medium,Not Tested,
+Messaging System,TC_MSG_001,Chat Inbox - Load Conversations,Verify chat inbox loads conversations,User is logged in and on Chat tab,"1. Navigate to Chat tab
+2. Wait for conversations to load",Conversations are loaded and displayed in list,High,Not Tested,
+Messaging System,TC_MSG_002,Chat Inbox - Unread Count,Verify unread message count is displayed,User has conversations with unread messages,"1. Navigate to Chat tab
+2. Check conversation list",Unread count is displayed on conversations,High,Not Tested,
+Messaging System,TC_MSG_003,Chat Inbox - Last Message Preview,Verify last message preview is shown,User has conversations with messages,"1. Navigate to Chat tab
+2. Check conversation list",Last message preview is displayed for each conversation,Medium,Not Tested,
+Messaging System,TC_MSG_004,Chat Inbox - Online Status,Verify online status is displayed,User has conversations with online users,"1. Navigate to Chat tab
+2. Check conversation list",Online status indicators are displayed,Medium,Not Tested,
+Messaging System,TC_MSG_005,Chat Inbox - Open Conversation,Verify conversation opens when tapped,User is on Chat tab with conversations,"1. Tap on a conversation",Conversation opens and messages are loaded,High,Not Tested,
+Messaging System,TC_MSG_006,Individual Chat - Send Text Message,Verify text message can be sent,User is in a conversation,"1. Type message in text field
+2. Tap send button",Message is sent and appears in conversation,High,Not Tested,
+Messaging System,TC_MSG_007,Individual Chat - Send Image Message,Verify image message can be sent,User is in a conversation,"1. Tap attachment icon
+2. Select image from gallery
+3. Send image",Image message is sent and appears in conversation,High,Not Tested,
+Messaging System,TC_MSG_008,Individual Chat - Send Voice Message,Verify voice message can be sent,User is in a conversation,"1. Tap voice message button
+2. Record voice message
+3. Send voice message",Voice message is sent and appears in conversation,High,Not Tested,
+Messaging System,TC_MSG_009,Individual Chat - Message Status,Verify message status is tracked,User sends a message,"1. Send a message
+2. Check message status indicator",Message status shows sent, delivered, or read,Medium,Not Tested,
+Messaging System,TC_MSG_010,Individual Chat - Typing Indicator,Verify typing indicator is shown,Other user is typing in conversation,"1. Wait for other user to type",Typing indicator is displayed,Medium,Not Tested,
+Messaging System,TC_MSG_011,Individual Chat - Message Pagination,Verify message history loads with pagination,User has many messages in conversation,"1. Scroll up in conversation
+2. Check if older messages load",Older messages load when scrolling up,Medium,Not Tested,
+Messaging System,TC_MSG_012,Disappearing Messages - Set Timer,Verify disappearing message timer can be set,User is in a conversation,"1. Tap disappearing message option
+2. Select timer duration
+3. Send message",Message is sent with disappearing timer,High,Not Tested,
+Messaging System,TC_MSG_013,Disappearing Messages - Message Expiration,Verify disappearing messages expire,User has disappearing message in conversation,"1. Wait for message timer to expire
+2. Check if message disappears",Message disappears after timer expires,High,Not Tested,
+Voice & Video Calling,TC_CALL_001,Call Service - Initialize,Verify call service initializes properly,App is launched,"1. Check call service initialization",Call service initializes without errors,High,Not Tested,
+Voice & Video Calling,TC_CALL_002,Call Service - Request Permissions,Verify microphone and camera permissions are requested,User initiates a call,"1. Start a call
+2. Check permission dialogs",Permission dialogs are shown for microphone and camera,High,Not Tested,
+Voice & Video Calling,TC_CALL_003,Audio Call - Start Call,Verify audio call can be started,User is in a conversation,"1. Tap call button in conversation
+2. Select audio call option",Audio call screen opens and call starts,High,Not Tested,
+Voice & Video Calling,TC_CALL_004,Video Call - Start Call,Verify video call can be started,User is in a conversation,"1. Tap call button in conversation
+2. Select video call option",Video call screen opens and call starts,High,Not Tested,
+Voice & Video Calling,TC_CALL_005,Call Controls - Mute Microphone,Verify microphone can be muted during call,User is in an active call,"1. Tap mute button during call",Microphone is muted and icon changes,Medium,Not Tested,
+Voice & Video Calling,TC_CALL_006,Call Controls - Toggle Camera,Verify camera can be toggled during video call,User is in an active video call,"1. Tap camera toggle button",Camera is toggled on/off,Medium,Not Tested,
+Voice & Video Calling,TC_CALL_007,Call Controls - Toggle Speaker,Verify speaker can be toggled during call,User is in an active call,"1. Tap speaker button during call",Speaker is toggled on/off,Medium,Not Tested,
+Voice & Video Calling,TC_CALL_008,Call Controls - End Call,Verify call can be ended,User is in an active call,"1. Tap end call button",Call ends and user returns to conversation,High,Not Tested,
+Premium Features,TC_PREM_001,Premium Features - View Features,Verify premium features page loads,User is logged in and on Features tab,"1. Navigate to Features tab
+2. Check premium features list",Premium features are displayed with status indicators,Medium,Not Tested,
+Premium Features,TC_PREM_002,Premium Features - Subscription Plans,Verify subscription plans are displayed,User is on Features tab,"1. Scroll to subscription plans section
+2. Check plan options",Subscription plans are displayed with pricing,Medium,Not Tested,
+Premium Features,TC_PREM_003,Premium Features - Feature Status,Verify feature status is correctly displayed,User has active subscription,"1. Check feature status indicators",Active features show 'Active' status,Medium,Not Tested,
+User Safety & Moderation,TC_SAFE_001,Report User - Access Report Page,Verify report page can be accessed,User is viewing another user's profile,"1. Tap report option on profile
+2. Check report page opens",Report page opens with reason selection,High,Not Tested,
+User Safety & Moderation,TC_SAFE_002,Report User - Select Reason,Verify report reason can be selected,User is on report page,"1. Select a report reason from list
+2. Check reason is selected",Report reason is selected and highlighted,High,Not Tested,
+User Safety & Moderation,TC_SAFE_003,Report User - Add Details,Verify additional details can be added,User is on report page with reason selected,"1. Enter additional details in text field
+2. Check details are saved",Additional details are saved with report,Medium,Not Tested,
+User Safety & Moderation,TC_SAFE_004,Report User - Submit Report,Verify report can be submitted,User is on report page with reason selected,"1. Tap submit report button
+2. Check submission process",Report is submitted successfully with confirmation,High,Not Tested,
+User Safety & Moderation,TC_SAFE_005,Report User - Validation Error,Verify validation errors for incomplete reports,User is on report page,"1. Try to submit without selecting reason
+2. Check error message",Error message is displayed for missing reason,High,Not Tested,
+Settings & Preferences,TC_SETT_001,Settings - Access Settings Page,Verify settings page can be accessed,User is logged in,"1. Navigate to Settings page
+2. Check settings options",Settings page opens with all options displayed,Medium,Not Tested,
+Settings & Preferences,TC_SETT_002,Settings - Edit Profile Navigation,Verify edit profile can be accessed from settings,User is on Settings page,"1. Tap Edit Profile option
+2. Check navigation",User is navigated to edit profile page,Medium,Not Tested,
+Settings & Preferences,TC_SETT_003,Settings - Logout Functionality,Verify logout works from settings,User is on Settings page,"1. Tap Logout option
+2. Check logout process",User is logged out and returned to login page,High,Not Tested,
+Notifications,TC_NOTIF_001,Notifications - View Notifications,Verify notifications page loads,User is logged in,"1. Navigate to Notifications page
+2. Check notifications list",Notifications are displayed in list format,Medium,Not Tested,
+Notifications,TC_NOTIF_002,Notifications - Notification Details,Verify notification details are displayed,User is on Notifications page,"1. Check notification items
+2. Verify title, message, and time",Notification details are correctly displayed,Medium,Not Tested,
+Technical Features,TC_TECH_001,State Management - BLoC Pattern,Verify BLoC pattern works correctly,App is running,"1. Perform various user actions
+2. Check state updates",State is managed correctly through BLoC pattern,High,Not Tested,
+Technical Features,TC_TECH_002,Network Layer - API Calls,Verify API calls work correctly,App has internet connection,"1. Perform actions requiring API calls
+2. Check API responses",API calls are successful and data is received,High,Not Tested,
+Technical Features,TC_TECH_003,Network Layer - WebSocket Connection,Verify WebSocket connection works,App has internet connection,"1. Check real-time features
+2. Verify WebSocket connection",WebSocket connects and real-time features work,High,Not Tested,
+Technical Features,TC_TECH_004,Data Persistence - Local Storage,Verify local storage works correctly,App is running,"1. Perform actions requiring local storage
+2. Restart app and check data persistence",Data is persisted locally and survives app restart,Medium,Not Tested,
+Technical Features,TC_TECH_005,Error Handling - Network Errors,Verify error handling for network issues,App has no internet connection,"1. Perform actions requiring network
+2. Check error messages",Appropriate error messages are displayed,Medium,Not Tested,
+Technical Features,TC_TECH_006,Error Handling - API Errors,Verify error handling for API errors,App has internet but API is down,"1. Perform actions requiring API
+2. Check error handling",Appropriate error handling is implemented,Medium,Not Tested,
+UI/UX Features,TC_UI_001,UI - Material Design 3,Verify Material Design 3 implementation,App is running,"1. Check UI components
+2. Verify design consistency",UI follows Material Design 3 guidelines,Medium,Not Tested,
+UI/UX Features,TC_UI_002,UI - Responsive Design,Verify responsive design on different screen sizes,App is running on different devices,"1. Test on different screen sizes
+2. Check layout adaptation",UI adapts correctly to different screen sizes,Medium,Not Tested,
+UI/UX Features,TC_UI_003,UI - Loading States,Verify loading states are displayed,App is performing async operations,"1. Perform actions requiring loading
+2. Check loading indicators",Loading states are displayed appropriately,Medium,Not Tested,
+UI/UX Features,TC_UI_004,UI - Animations,Verify smooth animations,App is running,"1. Navigate between screens
+2. Perform swipe actions",Animations are smooth and performant,Low,Not Tested,
+Security Features,TC_SEC_001,Security - Token Storage,Verify tokens are stored securely,User is logged in,"1. Check token storage method
+2. Verify token security",Tokens are stored securely,High,Not Tested,
+Security Features,TC_SEC_002,Security - Data Encryption,Verify data transmission is encrypted,App is communicating with backend,"1. Check network traffic
+2. Verify encryption",Data transmission is encrypted,High,Not Tested,
+Security Features,TC_SEC_003,Security - Session Management,Verify session management works correctly,User is logged in,"1. Check session handling
+2. Verify token refresh",Session is managed correctly,High,Not Tested,
+Platform Support,TC_PLAT_001,Platform - Android Support,Verify app works on Android,App is installed on Android device,"1. Test all major features on Android
+2. Check Android-specific functionality",App works correctly on Android platform,High,Not Tested,
+Platform Support,TC_PLAT_002,Platform - iOS Support,Verify app works on iOS,App is installed on iOS device,"1. Test all major features on iOS
+2. Check iOS-specific functionality",App works correctly on iOS platform,High,Not Tested,
+Platform Support,TC_PLAT_003,Platform - Web Support,Verify app works on web,App is running in web browser,"1. Test all major features on web
+2. Check web-specific functionality",App works correctly on web platform,Medium,Not Tested,
+Performance,TC_PERF_001,Performance - App Launch Time,Verify app launches quickly,App is installed,"1. Measure app launch time
+2. Check launch performance",App launches within acceptable time limits,Medium,Not Tested,
+Performance,TC_PERF_002,Performance - Memory Usage,Verify memory usage is reasonable,App is running,"1. Monitor memory usage
+2. Check for memory leaks",Memory usage is reasonable and stable,Medium,Not Tested,
+Performance,TC_PERF_003,Performance - Battery Usage,Verify battery usage is reasonable,App is running,"1. Monitor battery usage
+2. Check for excessive battery drain",Battery usage is reasonable,Low,Not Tested,
+Accessibility,TC_ACC_001,Accessibility - Screen Reader Support,Verify screen reader compatibility,App is running with screen reader,"1. Test with screen reader enabled
+2. Check navigation and content",App is accessible with screen reader,Medium,Not Tested,
+Accessibility,TC_ACC_002,Accessibility - Text Scaling,Verify text scaling works,App is running,"1. Change system text size
+2. Check app text scaling",App text scales with system settings,Low,Not Tested, 
