@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/foundation.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/config/environment_manager.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
@@ -17,10 +18,7 @@ class SocketService {
   String? get socketId => _socket?.id;
 
     static String get socketUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:3000'; // Android emulator
-    }
-    return 'http://localhost:3000'; // iOS simulator and others
+    return EnvironmentManager.socketUrl;
   }
 
   void connect({required String serverUrl, required String token, required String userId}) {

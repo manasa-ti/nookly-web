@@ -78,4 +78,16 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-    - assets/animations/ 
+    - assets/animations/
+
+# Build flavors for different environments
+flavors:
+  development:
+    app_name: "Nookly Dev"
+    app_id: "com.nookly.dev"
+  staging:
+    app_name: "Nookly Staging"
+    app_id: "com.nookly.staging"
+  production:
+    app_name: "Nookly"
+    app_id: "com.nookly" 

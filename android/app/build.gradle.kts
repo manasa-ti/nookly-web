@@ -20,6 +20,26 @@ android {
         versionName = "1.0"
     }
 
+    flavorDimensions += "environment"
+    productFlavors {
+        create("development") {
+            dimension = "environment"
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            buildConfigField("String", "ENVIRONMENT", "\"development\"")
+        }
+        create("staging") {
+            dimension = "environment"
+            applicationIdSuffix = ".staging"
+            versionNameSuffix = "-staging"
+            buildConfigField("String", "ENVIRONMENT", "\"staging\"")
+        }
+        create("production") {
+            dimension = "environment"
+            buildConfigField("String", "ENVIRONMENT", "\"production\"")
+        }
+    }
+
     buildTypes {
         release {
             // Enables code shrinking, obfuscation, and optimization for only

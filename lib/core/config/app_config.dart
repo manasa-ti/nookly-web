@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'environment_manager.dart';
 
 class AppConfig {
   static const String appName = 'Nookly';
   static const String appVersion = '1.0.0';
   
   // API Configuration
-  static const String baseUrl = 'https://api.nookly.com'; // Replace with actual API URL
+  static String get baseUrl => EnvironmentManager.baseUrl;
+  static String get socketUrl => EnvironmentManager.socketUrl;
   static const int apiTimeout = 30000; // 30 seconds
   
   // Cache Configuration

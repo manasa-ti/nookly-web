@@ -21,6 +21,7 @@ import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
 import 'package:nookly/presentation/widgets/auth_wrapper.dart';
 import 'package:logger/logger.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/config/environment_manager.dart';
 
 // Create a global logger instance
 final logger = Logger(
@@ -39,6 +40,10 @@ void main() async {
   
   // Add some initial logging
   logger.i('Initializing Nookly application...');
+  
+  // Debug: Print current environment and API URL
+  logger.i('Current Environment: ${EnvironmentManager.currentEnvironment}');
+  logger.i('API Base URL: ${EnvironmentManager.baseUrl}');
   
   await di.init();
   logger.i('Dependency injection initialized');

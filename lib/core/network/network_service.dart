@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/config/environment_manager.dart';
 
 class NetworkService {
   static Dio? _dio;
@@ -12,7 +13,7 @@ class NetworkService {
   static AuthHandler? _authHandler;
 
   static String get baseUrl {
-    final url = _customBaseUrl ?? (Platform.isAndroid ? 'http://10.0.2.2:3000/api/' : 'http://localhost:3000/api/');
+    final url = _customBaseUrl ?? EnvironmentManager.baseUrl;
     print('debug disappearing: NetworkService baseUrl getter called, returning: $url');
     return url;
   }
