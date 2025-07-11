@@ -9,10 +9,9 @@ The app now supports three different environments:
 - **Staging**: `https://staging-api.nookly.app/api`
 - **Production**: `https://api.nookly.app/api`
 
-## Build Flavors
+## Environment Configuration
 
-### Android
-The app uses Android build flavors to manage different environments:
+The app uses Dart environment variables to manage different environments:
 
 - `development` - Development environment
 - `staging` - Staging environment  
@@ -35,16 +34,28 @@ The app uses Android build flavors to manage different environments:
 #### Manual Build Commands
 ```bash
 # Development
-flutter build apk --flavor development --dart-define=ENVIRONMENT=development
-flutter build ios --flavor development --dart-define=ENVIRONMENT=development
+flutter build apk --dart-define=ENVIRONMENT=development
+flutter build ios --dart-define=ENVIRONMENT=development
 
 # Staging
-flutter build apk --flavor staging --dart-define=ENVIRONMENT=staging
-flutter build ios --flavor staging --dart-define=ENVIRONMENT=staging
+flutter build apk --dart-define=ENVIRONMENT=staging
+flutter build ios --dart-define=ENVIRONMENT=staging
 
 # Production
-flutter build apk --flavor production --dart-define=ENVIRONMENT=production
-flutter build ios --flavor production --dart-define=ENVIRONMENT=production
+flutter build apk --dart-define=ENVIRONMENT=production
+flutter build ios --dart-define=ENVIRONMENT=production
+```
+
+#### Running in Debug Mode
+```bash
+# Development (default)
+flutter run
+
+# Staging
+flutter run --dart-define=ENVIRONMENT=staging
+
+# Production
+flutter run --dart-define=ENVIRONMENT=production
 ```
 
 ## Configuration Files
