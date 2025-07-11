@@ -90,12 +90,23 @@ class ReceivedLikesBloc extends Bloc<ReceivedLikesEvent, ReceivedLikesState> {
     AcceptLike event,
     Emitter<ReceivedLikesState> emit,
   ) async {
-    try {
-      await repository.acceptLike(event.likeId);
-      // Refresh the likes list after accepting
-      add(LoadReceivedLikes());
-    } catch (e) {
-      emit(ReceivedLikesError(e.toString()));
+    // Get current state
+    final currentState = state;
+    if (currentState is ReceivedLikesLoaded) {
+      // Immediately remove the profile from UI
+      final updatedLikes = currentState.likes.where((like) => like.id != event.likeId).toList();
+      emit(ReceivedLikesLoaded(updatedLikes));
+      
+      // Make API call in background
+      try {
+        await repository.acceptLike(event.likeId);
+        // API call successful - conversation will be created automatically
+      } catch (e) {
+        // API call failed - restore the profile to the list
+        final restoredLikes = [...updatedLikes, ...currentState.likes.where((like) => like.id == event.likeId)];
+        emit(ReceivedLikesLoaded(restoredLikes));
+        emit(ReceivedLikesError(e.toString()));
+      }
     }
   }
 
@@ -103,12 +114,23 @@ class ReceivedLikesBloc extends Bloc<ReceivedLikesEvent, ReceivedLikesState> {
     RejectLike event,
     Emitter<ReceivedLikesState> emit,
   ) async {
-    try {
-      await repository.rejectLike(event.likeId);
-      // Refresh the likes list after rejecting
-      add(LoadReceivedLikes());
-    } catch (e) {
-      emit(ReceivedLikesError(e.toString()));
+    // Get current state
+    final currentState = state;
+    if (currentState is ReceivedLikesLoaded) {
+      // Immediately remove the profile from UI
+      final updatedLikes = currentState.likes.where((like) => like.id != event.likeId).toList();
+      emit(ReceivedLikesLoaded(updatedLikes));
+      
+      // Make API call in background
+      try {
+        await repository.rejectLike(event.likeId);
+        // API call successful
+      } catch (e) {
+        // API call failed - restore the profile to the list
+        final restoredLikes = [...updatedLikes, ...currentState.likes.where((like) => like.id == event.likeId)];
+        emit(ReceivedLikesLoaded(restoredLikes));
+        emit(ReceivedLikesError(e.toString()));
+      }
     }
   }
 } 
