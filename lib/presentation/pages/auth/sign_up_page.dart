@@ -43,8 +43,11 @@ class _SignUpPageState extends State<SignUpPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        title: const Text('Sign Up'),
+        title: const Text('Sign Up', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+        backgroundColor: const Color(0xFF234481),
+        elevation: 0,
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -75,102 +78,147 @@ class _SignUpPageState extends State<SignUpPage> {
                   const Text(
                     'Create Account',
                     style: TextStyle(
+                      fontFamily: 'Nunito',
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
-                      }
-                      if (!value.contains('@')) {
-                        return 'Please enter a valid email';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: !_isPasswordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                  Card(
+                    color: const Color(0xFF35548b),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                          prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6)),
+                          border: InputBorder.none,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _isPasswordVisible = !_isPasswordVisible;
-                          });
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your email';
+                          }
+                          if (!value.contains('@')) {
+                            return 'Please enter a valid email';
+                          }
+                          return null;
                         },
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
-                      }
-                      return null;
-                    },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: !_isConfirmPasswordVisible,
-                    decoration: InputDecoration(
-                      labelText: 'Confirm Password',
-                      prefixIcon: const Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isConfirmPasswordVisible
-                              ? Icons.visibility_off
-                              : Icons.visibility,
+                  Card(
+                    color: const Color(0xFF35548b),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: TextFormField(
+                        controller: _passwordController,
+                        obscureText: !_isPasswordVisible,
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                          prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6)),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFFD6D9E6),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
+                          ),
+                          border: InputBorder.none,
                         ),
-                        onPressed: () {
-                          setState(() {
-                            _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                          });
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter your password';
+                          }
+                          if (value.length < 6) {
+                            return 'Password must be at least 6 characters';
+                          }
+                          return null;
                         },
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please confirm your password';
-                      }
-                      if (value != _passwordController.text) {
-                        return 'Passwords do not match';
-                      }
-                      return null;
-                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Card(
+                    color: const Color(0xFF35548b),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: TextFormField(
+                        controller: _confirmPasswordController,
+                        obscureText: !_isConfirmPasswordVisible,
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        decoration: InputDecoration(
+                          labelText: 'Confirm Password',
+                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                          prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6)),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                              color: const Color(0xFFD6D9E6),
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                              });
+                            },
+                          ),
+                          border: InputBorder.none,
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please confirm your password';
+                          }
+                          if (value != _passwordController.text) {
+                            return 'Passwords do not match';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
                     onPressed: _onSignUpPressed,
-                    child: const Text('Sign Up'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFf4656f),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text(
+                      'Sign Up',
+                      style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Already have an account?'),
+                      const Text(
+                        'Already have an account?',
+                        style: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                      ),
                       TextButton(
                         onPressed: () => Navigator.pop(context),
-                        child: const Text('Sign In'),
+                        child: const Text(
+                          'Sign In',
+                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        ),
                       ),
                     ],
                   ),

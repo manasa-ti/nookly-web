@@ -23,29 +23,43 @@ class DisappearingTimeSelector extends StatelessWidget {
             'Message will disappear after:',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Nunito',
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Wrap(
             spacing: 8,
             runSpacing: 8,
             alignment: WrapAlignment.center,
             children: times.map((time) {
               final isSelected = time == selectedTime;
-              return ChoiceChip(
-                label: Text('$time seconds'),
+              return FilterChip(
+                label: Text(
+                  '$time seconds',
+                  style: TextStyle(
+                    color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+                    fontFamily: 'Nunito',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
                 selected: isSelected,
                 onSelected: (selected) {
                   if (selected) {
                     onTimeSelected(time);
                   }
                 },
-                backgroundColor: Colors.grey[200],
-                selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-                labelStyle: TextStyle(
-                  color: isSelected ? Theme.of(context).primaryColor : Colors.black87,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                selectedColor: const Color(0xFF4C5C8A),
+                backgroundColor: const Color(0xFF35548b),
+                checkmarkColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),
+                  width: 1,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
               );
             }).toList(),

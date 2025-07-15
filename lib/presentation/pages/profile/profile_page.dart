@@ -4,6 +4,7 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:get_it/get_it.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -45,139 +46,141 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  Widget _buildProfileImage() {
-    if (_user!.profilePic == null || _user!.profilePic!.isEmpty) {
-      print('No profile picture URL available');
-      return const Icon(Icons.person, size: 50);
-    }
 
-    final imageUrl = _user!.profilePic!;
-    print('Loading profile image from URL: $imageUrl');
-    
-    if (imageUrl.toLowerCase().contains('dicebear') || imageUrl.toLowerCase().endsWith('.svg')) {
-      print('Loading SVG image');
-      return SvgPicture.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        placeholderBuilder: (context) => const Center(
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-          ),
-        ),
-      );
-    } else {
-      print('Loading regular image');
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          print('Error loading image: $error');
-          return const Icon(Icons.person, size: 50);
-        },
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          print('Loading progress: ${loadingProgress.expectedTotalBytes != null ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes! : 'unknown'}');
-          return const Center(
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          );
-        },
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text('Error: $_error'))
-              : _user == null
-                  ? const Center(child: Text('No profile data available'))
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.all(AppConfig.defaultPadding),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      color: const Color(0xFF232B5D),
+      child: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? Center(child: Text('Error: $_error', style: TextStyle(color: Colors.white)))
+                : _user == null
+                    ? const Center(child: Text('No profile data available', style: TextStyle(color: Colors.white)))
+                    : ListView(
+                        padding: const EdgeInsets.all(20),
                         children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Colors.pink[100],
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(50),
-                              child: _buildProfileImage(),
+                          // Profile Info
+                          Center(
+                            child: Column(
+                              children: [
+                                CustomAvatar(
+                                  name: _user!.name,
+                                  size: 100,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _user!.name ?? '',
+                                  style: const TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  _user!.email,
+                                  style: const TextStyle(
+                                    fontFamily: 'Nunito',
+                                    color: Color(0xFFD6D9E6),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF4C5C8A),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    // Navigate to edit profile
+                                  },
+                                  child: const Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          // Purchased Features Section
+                          Card(
+                            color: const Color(0xFF3A4A7A),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  const SizedBox(height: 12),
+                                  _buildFeatureTile('See Who Likes You', 'Find out who has liked your profile before you match', Icons.favorite, true),
+                                  _buildFeatureTile('Unlimited Likes', 'No daily limit on the number of profiles you can like', Icons.all_inclusive, true),
+                                  _buildFeatureTile('Advanced Filters', 'Filter by education, height, and more', Icons.filter_list, false),
+                                  _buildFeatureTile('Read Receipts', 'See when your messages are read', Icons.done_all, false),
+                                  _buildFeatureTile('Priority Likes', 'Get seen by more people with priority placement', Icons.star, false),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 32),
+                          // Notifications Section
+                          Card(
+                            color: const Color(0xFF3A4A7A),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            child: ListTile(
+                              leading: const Icon(Icons.notifications, color: Colors.white),
+                              title: const Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.bold)),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white),
+                              onTap: () {
+                                // Navigate to notifications page
+                              },
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text(
-                            _user!.name ?? '',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                          // Settings Section
+                          Card(
+                            color: const Color(0xFF3A4A7A),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            child: Column(
+                              children: [
+                                _buildSettingsTile(Icons.privacy_tip, 'Privacy', () {}),
+                                _buildSettingsTile(Icons.help, 'Help & Support', () {}),
+                                _buildSettingsTile(Icons.info, 'About', () {}),
+                                _buildSettingsTile(Icons.logout, 'Logout', () {}),
+                              ],
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _user!.email,
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'About Me',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(_user!.bio ?? 'No bio available'),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'Interests',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: (_user!.interests ?? []).map((interest) => Chip(
-                              label: Text(interest),
-                              backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                            )).toList(),
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            'Seeking',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: (_user!.objectives ?? [])
-                                .map((objective) => Chip(
-                                      label: Text(objective),
-                                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                                    ))
-                                .toList(),
                           ),
                         ],
                       ),
-                    ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureTile(String title, String description, IconData icon, bool isActive) {
+    return ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF4C5C8A) : Colors.grey.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 24),
+      ),
+      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.bold)),
+      subtitle: Text(description, style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+      trailing: isActive ? const Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito')), backgroundColor: Color(0xFF4C5C8A)) : null,
+    );
+  }
+
+  Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white),
+      onTap: onTap,
     );
   }
 } 

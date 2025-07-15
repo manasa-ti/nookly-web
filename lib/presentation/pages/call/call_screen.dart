@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:nookly/core/services/call_service.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -131,14 +132,9 @@ class _CallScreenState extends State<CallScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 60,
-            backgroundImage: widget.participantAvatar != null
-                ? NetworkImage(widget.participantAvatar!)
-                : null,
-            child: widget.participantAvatar == null
-                ? const Icon(Icons.person, size: 60)
-                : null,
+          CustomAvatar(
+            name: widget.participantName,
+            size: 120,
           ),
           const SizedBox(height: 20),
           Text(

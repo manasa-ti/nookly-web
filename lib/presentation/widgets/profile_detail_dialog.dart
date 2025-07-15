@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 
 class ProfileDetailDialog extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -109,19 +110,9 @@ class _ProfileDetailDialogState extends State<ProfileDetailDialog>
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(16),
                           ),
-                          child: Image.network(
-                            widget.profile['profilePicture'],
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey[300],
-                                child: const Icon(
-                                  Icons.person,
-                                  size: 100,
-                                  color: Colors.grey,
-                                ),
-                              );
-                            },
+                          child: CustomAvatar(
+                            name: widget.profile['name'],
+                            size: 300,
                           ),
                         ),
                       ),

@@ -199,7 +199,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           'Adjust your preferences to find better matches',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey,
+                            color: Colors.white,
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -213,16 +213,30 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        RangeSlider(
-                          values: _ageRange,
-                          min: 18,
-                          max: 80,
-                          divisions: 62,
-                          labels: RangeLabels(
-                            '${_ageRange.start.round()} years',
-                            '${_ageRange.end.round()} years',
+                        SliderTheme(
+                          data: SliderTheme.of(context).copyWith(
+                            trackHeight: 3.0, // Reduced from default 4.0
+                            activeTrackColor: Colors.white,
+                            inactiveTrackColor: const Color(0xFF4C5C8A),
+                            thumbColor: Colors.white,
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
+                            rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                            rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
+                            valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
+                            valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
                           ),
-                          onChanged: _onAgeRangeChanged,
+                          child: RangeSlider(
+                            values: _ageRange,
+                            min: 18,
+                            max: 80,
+                            divisions: 62,
+                            labels: RangeLabels(
+                              '${_ageRange.start.round()} years',
+                              '${_ageRange.end.round()} years',
+                            ),
+                            onChanged: _onAgeRangeChanged,
+                          ),
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -279,7 +293,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                             onPressed: _isLoading ? null : _updateFilters,
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
-                              backgroundColor: Theme.of(context).primaryColor,
+                              backgroundColor: const Color(0xFFf4656f),
                               foregroundColor: Colors.white,
                             ),
                             child: _isLoading

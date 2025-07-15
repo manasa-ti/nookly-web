@@ -395,6 +395,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
+      
+      // Check if message already exists to prevent duplicates
+      final messageExists = currentState.messages.any((msg) => msg.id == event.message.id);
+      if (messageExists) {
+        AppLogger.warning('⚠️ Message already exists in state, skipping duplicate: ${event.message.id}');
+        return;
+      }
+      
       final updatedMessages = [event.message, ...currentState.messages];
       
       // Debug: Log disappearing image messages
@@ -641,6 +649,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
+      
+      // Check if message already exists to prevent duplicates
+      final messageExists = currentState.messages.any((msg) => msg.id == event.message.id);
+      if (messageExists) {
+        AppLogger.warning('⚠️ Sent message already exists in state, skipping duplicate: ${event.message.id}');
+        return;
+      }
+      
       final updatedMessages = [event.message, ...currentState.messages];
       
       // Debug: Log disappearing image messages

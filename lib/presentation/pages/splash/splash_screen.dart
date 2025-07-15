@@ -88,7 +88,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         }
       },
       child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.primary,
+        backgroundColor: const Color(0xFF234481),
         body: Center(
           child: AnimatedBuilder(
             animation: _controller,
@@ -103,22 +103,26 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       Icon(
                         Icons.favorite,
                         size: 100,
-                        color: Theme.of(context).colorScheme.onPrimary,
+                        color: Colors.white,
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Nookly',
-                        style: TextStyle(
+                        'nookly',
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
                           fontSize: 32,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
+                          letterSpacing: 1.2,
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Find your perfect match',
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.8),
+                        'Never be lonely',
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 16,
+                          color: Color(0xFFD6D9E6),
                         ),
                       ),
                     ],

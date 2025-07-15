@@ -20,6 +20,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/services/image_url_service.dart';
 
 import 'package:nookly/presentation/widgets/disappearing_time_selector.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/disappearing_image_manager.dart';
 import 'package:nookly/presentation/pages/report/report_page.dart';
 
@@ -667,39 +668,37 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       }
     });
 
-    _socketService!.on('new_message', (data) {
-      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Raw timestamp from socket: ${data['timestamp']}');
-      final timestamp = DateTime.parse(data['timestamp'] as String);
-      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Parsed timestamp: $timestamp');
-      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Local timezone: ${DateTime.now().timeZoneName}');
-      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Local time: ${DateTime.now()}');
-      
-      final message = Message.fromJson({
-        ...data,
-        'timestamp': timestamp.toIso8601String(),
-      });
-      AppLogger.info('🔵 DEBUGGING TIMESTAMP: Message timestamp after fromJson: ${message.timestamp}');
-      
-      if (message.sender == widget.conversationId) {
-        context.read<ConversationBloc>().add(MessageReceived(message));
-      }
-    });
+    // Removed redundant new_message handler - private_message handler already processes all messages
   }
 
   void _showImagePicker() {
     AppLogger.info('debug disappearing: Opening image picker modal');
     showModalBottomSheet(
         context: context,
+        backgroundColor: const Color(0xFF234481),
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
       builder: (context) {
         int selectedTime = 5; // Default disappearing time
         AppLogger.info('debug disappearing: Default disappearing time set to 5 seconds');
         return StatefulBuilder(
           builder: (context, setState) {
             return Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                  const Text(
+                    'Send Disappearing Image',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Nunito',
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
                   DisappearingTimeSelector(
                     selectedTime: selectedTime,
                     onTimeSelected: (time) {
@@ -709,123 +708,154 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       });
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            AppLogger.info('debug disappearing: Gallery button pressed');
-                            final picker = ImagePicker();
-                            final image = await picker.pickImage(
-                              source: ImageSource.gallery,
-                              imageQuality: 80, // Compress image to reduce size
-                              maxWidth: 1920, // Limit max width
-                              maxHeight: 1920, // Limit max height
-                            );
-                            
-                            if (image != null) {
-                              AppLogger.info('debug disappearing: Image selected from gallery: ${image.path}');
-                              AppLogger.info('debug disappearing: Image name: ${image.name}');
-                              AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            try {
+                              AppLogger.info('debug disappearing: Gallery button pressed');
+                              final picker = ImagePicker();
+                              final image = await picker.pickImage(
+                                source: ImageSource.gallery,
+                                imageQuality: 80, // Compress image to reduce size
+                                maxWidth: 1920, // Limit max width
+                                maxHeight: 1920, // Limit max height
+                              );
                               
-                              // Verify file exists and check format
-                              final file = File(image.path);
-                              if (await file.exists()) {
-                                AppLogger.info('debug disappearing: File exists and is readable');
-                                final fileSize = await file.length();
-                                AppLogger.info('debug disappearing: File size: $fileSize bytes');
+                              if (image != null) {
+                                AppLogger.info('debug disappearing: Image selected from gallery: ${image.path}');
+                                AppLogger.info('debug disappearing: Image name: ${image.name}');
+                                AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
                                 
-                                // Check file extension
-                                final extension = image.path.split('.').last.toLowerCase();
-                                if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
-                                  throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                // Verify file exists and check format
+                                final file = File(image.path);
+                                if (await file.exists()) {
+                                  AppLogger.info('debug disappearing: File exists and is readable');
+                                  final fileSize = await file.length();
+                                  AppLogger.info('debug disappearing: File size: $fileSize bytes');
+                                  
+                                  // Check file extension
+                                  final extension = image.path.split('.').last.toLowerCase();
+                                  if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+                                    throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                  }
+                                  
+                                  Navigator.pop(context);
+                                  await _sendImageMessage(
+                                    image.path,
+                                    isDisappearing: true,
+                                    disappearingTime: selectedTime,
+                                  );
+                                } else {
+                                  AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
+                                  throw Exception('Selected image file does not exist');
                                 }
-                                
-                                Navigator.pop(context);
-                                await _sendImageMessage(
-                                  image.path,
-                                  isDisappearing: true,
-                                  disappearingTime: selectedTime,
-                                );
                               } else {
-                                AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
-                                throw Exception('Selected image file does not exist');
+                                AppLogger.info('debug disappearing: No image selected from gallery');
                               }
-                            } else {
-                              AppLogger.info('debug disappearing: No image selected from gallery');
+                            } catch (e) {
+                              AppLogger.error('debug disappearing: Error picking image: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error selecting image: $e')),
+                              );
                             }
-                          } catch (e) {
-                            AppLogger.error('debug disappearing: Error picking image: $e');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error selecting image: $e')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.photo_library),
-                        label: const Text('Gallery'),
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF35548b),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.photo_library, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Gallery',
+                                style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () async {
-                          try {
-                            AppLogger.info('debug disappearing: Camera button pressed');
-                            final picker = ImagePicker();
-                            final image = await picker.pickImage(
-                              source: ImageSource.camera,
-                              imageQuality: 80, // Compress image to reduce size
-                              maxWidth: 1920, // Limit max width
-                              maxHeight: 1920, // Limit max height
-                            );
-                            
-                            if (image != null) {
-                              AppLogger.info('debug disappearing: Image captured from camera: ${image.path}');
-                              AppLogger.info('debug disappearing: Image name: ${image.name}');
-                              AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            try {
+                              AppLogger.info('debug disappearing: Camera button pressed');
+                              final picker = ImagePicker();
+                              final image = await picker.pickImage(
+                                source: ImageSource.camera,
+                                imageQuality: 80, // Compress image to reduce size
+                                maxWidth: 1920, // Limit max width
+                                maxHeight: 1920, // Limit max height
+                              );
                               
-                              // Verify file exists and check format
-                              final file = File(image.path);
-                              if (await file.exists()) {
-                                AppLogger.info('debug disappearing: File exists and is readable');
-                                final fileSize = await file.length();
-                                AppLogger.info('debug disappearing: File size: $fileSize bytes');
+                              if (image != null) {
+                                AppLogger.info('debug disappearing: Image captured from camera: ${image.path}');
+                                AppLogger.info('debug disappearing: Image name: ${image.name}');
+                                AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
                                 
-                                // Check file extension
-                                final extension = image.path.split('.').last.toLowerCase();
-                                if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
-                                  throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                // Verify file exists and check format
+                                final file = File(image.path);
+                                if (await file.exists()) {
+                                  AppLogger.info('debug disappearing: File exists and is readable');
+                                  final fileSize = await file.length();
+                                  AppLogger.info('debug disappearing: File size: $fileSize bytes');
+                                  
+                                  // Check file extension
+                                  final extension = image.path.split('.').last.toLowerCase();
+                                  if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+                                    throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                  }
+                                  
+                                  Navigator.pop(context);
+                                  await _sendImageMessage(
+                                    image.path,
+                                    isDisappearing: true,
+                                    disappearingTime: selectedTime,
+                                  );
+                                } else {
+                                  AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
+                                  throw Exception('Captured image file does not exist');
                                 }
-                                
-                                Navigator.pop(context);
-                                await _sendImageMessage(
-                                  image.path,
-                                  isDisappearing: true,
-                                  disappearingTime: selectedTime,
-                                );
                               } else {
-                                AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
-                                throw Exception('Captured image file does not exist');
+                                AppLogger.info('debug disappearing: No image captured from camera');
                               }
-                            } else {
-                              AppLogger.info('debug disappearing: No image captured from camera');
+                            } catch (e) {
+                              AppLogger.error('debug disappearing: Error capturing image: $e');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error capturing image: $e')),
+                              );
                             }
-                          } catch (e) {
-                            AppLogger.error('debug disappearing: Error capturing image: $e');
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error capturing image: $e')),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.camera_alt),
-                        label: const Text('Camera'),
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4C5C8A),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Camera',
+                                style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ],
-                ),
-              ],
-            ),
-          );
-        },
-      );
+                  ),
+                ],
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -1490,12 +1520,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     AppLogger.info('🔵 Current state: ${context.read<ConversationBloc>().state}');
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF234481),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Row(
@@ -1509,17 +1539,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   Text(
                     widget.participantName,
                     style: const TextStyle(
-                      color: Colors.black,
+                      color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      fontFamily: 'Nunito',
                     ),
                   ),
                   if (widget.isOnline)
                   const Text(
                       'Online',
                     style: TextStyle(
-                        color: Colors.green,
+                        color: Color(0xFF4CAF50),
                       fontSize: 12,
+                      fontFamily: 'Nunito',
                     ),
                   ),
               ],
@@ -1529,15 +1561,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.call, color: Colors.black),
+            icon: const Icon(Icons.call, color: Colors.white),
             onPressed: () => _startCall(true), // Audio call
           ),
           IconButton(
-            icon: const Icon(Icons.videocam, color: Colors.black),
+            icon: const Icon(Icons.videocam, color: Colors.white),
             onPressed: () => _startCall(false), // Video call
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black),
+            icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: _toggleMenu,
           ),
         ],
@@ -1713,7 +1745,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   return const Center(
                                     child: Padding(
                                       padding: EdgeInsets.all(8.0),
-                                      child: CircularProgressIndicator(),
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
                                     ),
                                   );
                                 }
@@ -1800,8 +1834,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                             Text(
                               '${widget.participantName} is typing...',
                               style: const TextStyle(
-                                color: Colors.grey,
+                                color: Colors.white70,
                                 fontStyle: FontStyle.italic,
+                                fontFamily: 'Nunito',
                               ),
                             ),
                           ],
@@ -1838,54 +1873,84 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildMessageInput() {
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(16.0),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: const Color(0xFF234481),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 8,
               offset: const Offset(0, -2),
             ),
           ],
         ),
         child: Row(
           children: [
-            IconButton(
-              icon: const Icon(Icons.add),
-              onPressed: _showOptionsMenu,
-            ),
-            IconButton(
-              icon: const Icon(Icons.image),
-              onPressed: _showImagePicker,
-            ),
-            Expanded(
-              child: TextField(
-                controller: _messageController,
-                decoration: const InputDecoration(
-                  hintText: 'Type a message...',
-                  border: InputBorder.none,
-                ),
-                maxLines: null,
-                textCapitalization: TextCapitalization.sentences,
-                onChanged: (text) {
-                  if (!_isTyping && text.isNotEmpty) {
-                    setState(() => _isTyping = true);
-                    _socketService?.emit('typing', {'to': widget.conversationId});
-                  } else if (_isTyping && text.isEmpty) {
-                    setState(() => _isTyping = false);
-                    _socketService?.emit('stop_typing', {'to': widget.conversationId});
-                  }
-                },
-                onEditingComplete: () {
-                  setState(() => _isTyping = false);
-                  _socketService?.emit('stop_typing', {'to': widget.conversationId});
-                },
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.add, color: Colors.white),
+                onPressed: _showOptionsMenu,
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.send),
-              onPressed: _sendTextMessage,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: TextField(
+                  controller: _messageController,
+                  decoration: const InputDecoration(
+                    hintText: 'Type a message...',
+                    hintStyle: TextStyle(
+                      color: Colors.white70,
+                      fontFamily: 'Nunito',
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                  style: const TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 16,
+                    color: Colors.white,
+                  ),
+                  maxLines: null,
+                  textCapitalization: TextCapitalization.sentences,
+                  onChanged: (text) {
+                    if (!_isTyping && text.isNotEmpty) {
+                      setState(() => _isTyping = true);
+                      _socketService?.emit('typing', {'to': widget.conversationId});
+                    } else if (_isTyping && text.isEmpty) {
+                      setState(() => _isTyping = false);
+                      _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                    }
+                  },
+                  onEditingComplete: () {
+                    setState(() => _isTyping = false);
+                    _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.send, color: Color(0xFF234481)),
+                onPressed: _sendTextMessage,
+              ),
             ),
           ],
         ),
@@ -1924,7 +1989,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           child: Material(
             elevation: 8,
             child: Container(
-              color: Colors.white,
+              color: const Color(0xFF234481),
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1937,10 +2002,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       children: [
                         Text(
                           'Chat Options',
-                          style: Theme.of(context).textTheme.titleLarge,
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Colors.white,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close),
+                          icon: const Icon(Icons.close, color: Colors.white),
                           onPressed: _toggleMenu,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -1948,46 +2017,64 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       ],
                     ),
                   ),
-                  const Divider(),
+                  const Divider(color: Colors.white24),
                   ListTile(
-                    leading: const Icon(Icons.card_giftcard),
-                    title: const Text('Buy Gift'),
+                    leading: const Icon(Icons.card_giftcard, color: Colors.white),
+                    title: const Text(
+                      'Buy Gift',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       // Handle buy gift
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.games),
-                    title: const Text('Start Ice Breaker Game'),
+                    leading: const Icon(Icons.games, color: Colors.white),
+                    title: const Text(
+                      'Start Ice Breaker Game',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       // Handle start game
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.casino),
-                    title: const Text('Start Fantasy Game'),
+                    leading: const Icon(Icons.casino, color: Colors.white),
+                    title: const Text(
+                      'Start Fantasy Game',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       // Handle start fantasy game
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.calendar_today),
-                    title: const Text('Plan a Date'),
+                    leading: const Icon(Icons.calendar_today, color: Colors.white),
+                    title: const Text(
+                      'Plan a Date',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       // Handle plan date
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.psychology),
-                    title: const Text('Get Inference'),
+                    leading: const Icon(Icons.psychology, color: Colors.white),
+                    title: const Text(
+                      'Get Inference',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       // Handle get inference
                     },
                   ),
-                  const Divider(),
+                  const Divider(color: Colors.white24),
                   ListTile(
-                    leading: const Icon(Icons.block),
-                    title: const Text('Block User'),
+                    leading: const Icon(Icons.block, color: Colors.white),
+                    title: const Text(
+                      'Block User',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       context.read<ConversationBloc>().add(
                         BlockUser(userId: conversation.participantId),
@@ -1995,8 +2082,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.report),
-                    title: const Text('Report'),
+                    leading: const Icon(Icons.report, color: Colors.white),
+                    title: const Text(
+                      'Report',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -2009,8 +2099,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.exit_to_app),
-                    title: const Text('Leave Conversation'),
+                    leading: const Icon(Icons.exit_to_app, color: Colors.white),
+                    title: const Text(
+                      'Leave Conversation',
+                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                    ),
                     onTap: () {
                       context.read<ConversationBloc>().add(
                         LeaveConversation(conversationId: widget.conversationId),
@@ -2082,57 +2175,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildAvatar() {
-    return Stack(
-      children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundColor: Colors.grey[300],
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: (widget.participantAvatar == null || widget.participantAvatar!.isEmpty)
-                ? Icon(Icons.person, color: Colors.grey[600], size: 40)
-                : (widget.participantAvatar!.toLowerCase().contains('dicebear') || widget.participantAvatar!.toLowerCase().endsWith('.svg'))
-                    ? SvgPicture.network(
-                        widget.participantAvatar!,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        placeholderBuilder: (context) => const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : Image.network(
-                        widget.participantAvatar!,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.person, color: Colors.grey[600], size: 40);
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                      ),
-          ),
-        ),
-        if (widget.isOnline)
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-            ),
-          ),
-      ],
+    return CustomAvatar(
+      name: widget.participantName,
+      size: 56,
+      isOnline: widget.isOnline,
     );
   }
 

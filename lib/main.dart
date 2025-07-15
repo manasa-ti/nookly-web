@@ -95,8 +95,21 @@ class MyApp extends StatelessWidget {
           title: 'Nookly',
           navigatorKey: AuthHandler.navigatorKey, // Add global navigator key
           theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF4C5C8A),
+              onPrimary: Colors.white,
+              surface: Color(0xFF35548b),
+              onSurface: Colors.white,
+              background: Color(0xFF234481),
+              onBackground: Colors.white,
+            ),
             useMaterial3: true,
+            fontFamily: 'Nunito',
+            textSelectionTheme: const TextSelectionThemeData(
+              cursorColor: Colors.white,
+              selectionColor: Color(0xFF4C5C8A),
+              selectionHandleColor: Color(0xFF4C5C8A),
+            ),
           ),
           home: const SplashScreen(),
           routes: {

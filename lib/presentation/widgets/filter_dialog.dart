@@ -51,20 +51,34 @@ class _FilterDialogState extends State<FilterDialog> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            RangeSlider(
-              values: _ageRange,
-              min: 18,
-              max: 100,
-              divisions: 82,
-              labels: RangeLabels(
-                _ageRange.start.round().toString(),
-                _ageRange.end.round().toString(),
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 3.0, // Reduced from default 4.0
+                activeTrackColor: Colors.white,
+                inactiveTrackColor: const Color(0xFF4C5C8A),
+                thumbColor: Colors.white,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
+                rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
+                valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
+                valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
               ),
-              onChanged: (RangeValues values) {
-                setState(() {
-                  _ageRange = values;
-                });
-              },
+              child: RangeSlider(
+                values: _ageRange,
+                min: 18,
+                max: 100,
+                divisions: 82,
+                labels: RangeLabels(
+                  _ageRange.start.round().toString(),
+                  _ageRange.end.round().toString(),
+                ),
+                onChanged: (RangeValues values) {
+                  setState(() {
+                    _ageRange = values;
+                  });
+                },
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -74,17 +88,29 @@ class _FilterDialogState extends State<FilterDialog> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Slider(
-              value: _maxDistance,
-              min: 1,
-              max: 100,
-              divisions: 99,
-              label: '${_maxDistance.round()} miles',
-              onChanged: (double value) {
-                setState(() {
-                  _maxDistance = value;
-                });
-              },
+            SliderTheme(
+              data: SliderTheme.of(context).copyWith(
+                trackHeight: 3.0, // Reduced from default 4.0
+                activeTrackColor: Colors.white,
+                inactiveTrackColor: const Color(0xFF4C5C8A),
+                thumbColor: Colors.white,
+                thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
+                valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
+                valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
+              ),
+              child: Slider(
+                value: _maxDistance,
+                min: 1,
+                max: 150,
+                divisions: 149,
+                label: '${_maxDistance.round()} km',
+                onChanged: (double value) {
+                  setState(() {
+                    _maxDistance = value;
+                  });
+                },
+              ),
             ),
             const SizedBox(height: 16),
             const Text(

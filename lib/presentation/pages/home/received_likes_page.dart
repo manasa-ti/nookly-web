@@ -20,109 +20,115 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ReceivedLikesBloc, ReceivedLikesState>(
-      listener: (context, state) {
-        if (state is ReceivedLikesError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      },
-      builder: (context, state) {
-        if (state is ReceivedLikesLoading) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-        
-        if (state is ReceivedLikesLoaded) {
-          if (state.likes.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.favorite_border,
-                    size: 80,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No likes yet',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'When someone likes your profile, they\'ll appear here',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
+    return Container(
+      color: const Color(0xFF234481),
+      child: BlocConsumer<ReceivedLikesBloc, ReceivedLikesState>(
+        listener: (context, state) {
+          if (state is ReceivedLikesError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is ReceivedLikesLoading) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             );
           }
           
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: state.likes.length,
-            itemBuilder: (context, index) {
-              final like = state.likes[index];
-              return ProfileCard(
-                profile: {
-                  'id': like.id,
-                  'name': like.name,
-                  'age': like.age,
-                  'gender': like.gender,
-                  'distance': like.distance,
-                  'bio': like.bio,
-                  'interests': like.interests,
-                  'profilePicture': like.profilePicture,
-                },
-                onSwipeRight: () {
-                  context.read<ReceivedLikesBloc>().add(
-                    AcceptLike(like.id),
-                  );
-                },
-                onSwipeLeft: () {
-                  context.read<ReceivedLikesBloc>().add(
-                    RejectLike(like.id),
-                  );
-                },
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => ProfileDetailDialog(
-                      profile: {
-                        'id': like.id,
-                        'name': like.name,
-                        'age': like.age,
-                        'gender': like.gender,
-                        'distance': like.distance,
-                        'bio': like.bio,
-                        'interests': like.interests,
-                        'profilePicture': like.profilePicture,
-                      },
+          if (state is ReceivedLikesLoaded) {
+            if (state.likes.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.favorite_border,
+                      size: 80,
+                      color: Color(0xFFD6D9E6),
                     ),
-                  );
-                },
+                    const SizedBox(height: 16),
+                    Text(
+                      'No likes yet',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'When someone likes your profile, they\'ll appear here',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Color(0xFFD6D9E6),
+                      ),
+                    ),
+                  ],
+                ),
               );
-            },
+            }
+            
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: state.likes.length,
+              itemBuilder: (context, index) {
+                final like = state.likes[index];
+                return ProfileCard(
+                  key: ValueKey(like.id), // Add unique key based on like ID
+                  profile: {
+                    'id': like.id,
+                    'name': like.name,
+                    'age': like.age,
+                    'gender': like.gender,
+                    'distance': like.distance,
+                    'bio': like.bio,
+                    'interests': like.interests,
+                    'profilePicture': like.profilePicture,
+                  },
+                  onSwipeRight: () {
+                    context.read<ReceivedLikesBloc>().add(
+                      AcceptLike(like.id),
+                    );
+                  },
+                  onSwipeLeft: () {
+                    context.read<ReceivedLikesBloc>().add(
+                      RejectLike(like.id),
+                    );
+                  },
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => ProfileDetailDialog(
+                        profile: {
+                          'id': like.id,
+                          'name': like.name,
+                          'age': like.age,
+                          'gender': like.gender,
+                          'distance': like.distance,
+                          'bio': like.bio,
+                          'interests': like.interests,
+                          'profilePicture': like.profilePicture,
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          }
+          
+          return const Center(
+            child: Text('Something went wrong. Please try again.'),
           );
-        }
-        
-        return const Center(
-          child: Text('Something went wrong. Please try again.'),
-        );
-      },
+        },
+      ),
     );
   }
 

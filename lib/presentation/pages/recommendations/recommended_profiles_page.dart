@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/domain/entities/recommended_profile.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});
@@ -89,7 +90,10 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                       ),
                     );
                   }
-                  return ProfileCard(profile: state.profiles[index]);
+                  return ProfileCard(
+                    key: ValueKey(state.profiles[index].id), // Add unique key based on profile ID
+                    profile: state.profiles[index],
+                  );
                 },
               ),
             );
@@ -118,20 +122,13 @@ class ProfileCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile Image
-          if (profile.profilePic != null)
-            AspectRatio(
-              aspectRatio: 1,
-              child: Image.network(
-                profile.profilePic!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: theme.colorScheme.surfaceVariant,
-                    child: const Icon(Icons.person, size: 100),
-                  );
-                },
-              ),
+          AspectRatio(
+            aspectRatio: 1,
+            child: CustomAvatar(
+              name: profile.name,
+              size: 200,
             ),
+          ),
 
           Padding(
             padding: const EdgeInsets.all(16.0),

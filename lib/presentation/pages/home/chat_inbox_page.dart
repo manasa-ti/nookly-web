@@ -12,6 +12,7 @@ import 'package:nookly/core/network/socket_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 
 class ChatInboxPage extends StatefulWidget {
   const ChatInboxPage({super.key});
@@ -389,59 +390,10 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   }
 
   Widget _buildAvatar(Conversation conversation) {
-    final avatarUrl = conversation.participantAvatar;
-    return Stack(
-      children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundColor: Colors.grey[300],
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(28),
-            child: (avatarUrl == null || avatarUrl.isEmpty)
-                ? Icon(Icons.person, color: Colors.grey[600], size: 40)
-                : (avatarUrl.toLowerCase().contains('dicebear') || avatarUrl.toLowerCase().endsWith('.svg'))
-                    ? SvgPicture.network(
-                        avatarUrl,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        placeholderBuilder: (context) => const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        // Optionally add errorBuilder if your flutter_svg version supports it
-                      )
-                    : Image.network(
-                        avatarUrl,
-                        width: 56,
-                        height: 56,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.person, color: Colors.grey[600], size: 40);
-                        },
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                      ),
-          ),
-        ),
-        if (conversation.isOnline)
-          Positioned(
-            right: 0,
-            bottom: 0,
-            child: Container(
-              width: 14,
-              height: 14,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 2),
-              ),
-            ),
-          ),
-      ],
+    return CustomAvatar(
+      name: conversation.participantName,
+      size: 56,
+      isOnline: conversation.isOnline,
     );
   }
 
@@ -469,7 +421,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     if (_isLoadingCurrentUser) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      );
     }
 
     if (_initializationError != null) {
@@ -486,90 +442,117 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       return const Center(child: Text('Bloc not initialized.'));
     }
 
-    return BlocProvider.value(
-      value: _inboxBloc!,
-      child: BlocBuilder<InboxBloc, InboxState>(
-        builder: (context, state) {
-          if (state is InboxLoading || state is InboxInitial) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is InboxError) {
-            return Center(
-                child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text('Failed to load conversations: ${state.message}', textAlign: TextAlign.center),
-            ));
-          }
-          if (state is InboxLoaded) {
-            // Join private chat rooms for each conversation
-            if (_socketService != null && _socketService!.isConnected) {
-              for (final conversation in state.conversations) {
-                AppLogger.info('Joining private chat room for conversation with: ${conversation.participantId}');
-                _socketService!.joinPrivateChat(conversation.participantId);
-              }
-            }
-
-            if (state.conversations.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
-                    const SizedBox(height: 16),
-                    Text('No conversations yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[600])),
-                    const SizedBox(height: 8),
-                    Text('When you match with someone, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey[600])),
-                  ],
+    return Container(
+      color: const Color(0xFF234481),
+      child: BlocProvider.value(
+        value: _inboxBloc!,
+        child: BlocBuilder<InboxBloc, InboxState>(
+          builder: (context, state) {
+            if (state is InboxLoading || state is InboxInitial) {
+              return const Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               );
             }
-            return RefreshIndicator(
-              onRefresh: () async {
-                AppLogger.info('🔵 Pull to refresh triggered');
-                _inboxBloc?.add(RefreshInbox());
-              },
-              child: ListView.builder(
-                itemCount: state.conversations.length,
-                itemBuilder: (context, index) {
-                  final conversation = state.conversations[index];
-                  final hasUnread = conversation.unreadCount > 0;
-                  final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.first : null;
-                  final isMe = lastMessage?.sender == _currentUser?.id;
+            if (state is InboxError) {
+              return Center(
+                  child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('Failed to load conversations: ${state.message}', textAlign: TextAlign.center),
+              ));
+            }
+            if (state is InboxLoaded) {
+              // Join private chat rooms for each conversation
+              if (_socketService != null && _socketService!.isConnected) {
+                for (final conversation in state.conversations) {
+                  AppLogger.info('Joining private chat room for conversation with: ${conversation.participantId}');
+                  _socketService!.joinPrivateChat(conversation.participantId);
+                }
+              }
 
-                  return ListTile(
-                    onTap: () => _onConversationTap(conversation),
-                    leading: _buildAvatar(conversation),
-                    title: Text(conversation.participantName),
-                    subtitle: conversation.isTyping == true
-                        ? const Text(
-                            'typing...',
-                            style: TextStyle(
-                              fontStyle: FontStyle.italic,
-                              color: Colors.grey,
-                            ),
-                          )
-                        : lastMessage != null
+              if (state.conversations.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text('No conversations yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                      const SizedBox(height: 8),
+                      Text('When you match with someone, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.7))),
+                    ],
+                  ),
+                );
+              }
+              return RefreshIndicator(
+                onRefresh: () async {
+                  AppLogger.info('🔵 Pull to refresh triggered');
+                  _inboxBloc?.add(RefreshInbox());
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  itemCount: state.conversations.length,
+                  itemBuilder: (context, index) {
+                    final conversation = state.conversations[index];
+                    final hasUnread = conversation.unreadCount > 0;
+                    final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.first : null;
+                    final isMe = lastMessage?.sender == _currentUser?.id;
+
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+                      child: Card(
+                        color: const Color(0xFF35548B),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListTile(
+                        onTap: () => _onConversationTap(conversation),
+                        leading: _buildAvatar(conversation),
+                        title: Text(
+                          conversation.participantName,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: conversation.isTyping == true
                             ? Text(
-                                _getMessageDisplayText(lastMessage!, isMe),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                'typing...',
+                                style: TextStyle(
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey[400],
+                                ),
                               )
-                            : const Text('No messages yet'),
-                    trailing: Text(
-                      _formatTimestamp(conversation.lastMessageTime),
-                      style: TextStyle(
-                        color: hasUnread ? Colors.black : Colors.grey[600],
-                        fontSize: 12,
-                        fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
+                            : lastMessage != null
+                                ? Text(
+                                    _getMessageDisplayText(lastMessage!, isMe),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(color: Colors.white),
+                                  )
+                                : Text(
+                                    'No messages yet',
+                                    style: TextStyle(color: Colors.grey[400]),
+                                  ),
+                        trailing: Text(
+                          _formatTimestamp(conversation.lastMessageTime),
+                          style: TextStyle(
+                            color: hasUnread ? Colors.white : Colors.grey[400],
+                            fontSize: 12,
+                            fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
                       ),
                     ),
                   );
-                },
-              ),
-            );
-          }
-          return const Center(child: Text('Something went wrong.')); // Fallback for unhandled state
-        },
+                  },
+                ),
+              );
+            }
+            return const Center(child: Text('Something went wrong.')); // Fallback for unhandled state
+          },
+        ),
       ),
     );
   }

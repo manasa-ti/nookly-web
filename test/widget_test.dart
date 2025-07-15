@@ -30,7 +30,7 @@ void main() {
     expect(find.text('Preferred Distance Radius'), findsOneWidget);
     expect(find.text('40 km'), findsOneWidget);
     expect(find.text('1 km'), findsOneWidget);
-    expect(find.text('500 km'), findsOneWidget);
+    expect(find.text('150 km'), findsOneWidget);
 
     // Verify that the slider widget exists
     expect(find.byType(Slider), findsOneWidget);

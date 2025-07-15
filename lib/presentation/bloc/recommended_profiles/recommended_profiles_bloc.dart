@@ -62,20 +62,51 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     Emitter<RecommendedProfilesState> emit,
   ) async {
     try {
-      emit(RecommendedProfilesLoading());
+      // If skip is 0, it's a fresh load, otherwise it's pagination
+      final isFreshLoad = event.skip == 0;
+      
+      print('🔵 DEBUG: LoadRecommendedProfiles event - skip: ${event.skip}, isFreshLoad: $isFreshLoad, currentSkip: $_currentSkip');
+      
+      if (isFreshLoad) {
+        print('🔵 DEBUG: Emitting loading state for fresh load');
+        emit(RecommendedProfilesLoading());
+        _currentSkip = 0;
+      }
       
       final skip = event.skip ?? _currentSkip;
+      print('🔵 PAGINATION: Loading profiles with skip: $skip, limit: ${event.limit ?? _defaultLimit}');
+      
       final profiles = await repository.getRecommendedProfiles(
         radius: event.radius,
         limit: event.limit ?? _defaultLimit,
         skip: skip,
       );
 
+      // Update skip counter for next pagination
       _currentSkip = skip + (event.limit ?? _defaultLimit);
       final hasMore = profiles.length == (event.limit ?? _defaultLimit);
+      print('🔵 PAGINATION: Received ${profiles.length} profiles, hasMore: $hasMore, next skip: $_currentSkip');
+      print('🔵 DEBUG: Profile IDs received: ${profiles.map((p) => p.id).toList()}');
       
-      emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
+      if (isFreshLoad) {
+        // Fresh load - replace all profiles
+        print('🔵 DEBUG: Emitting fresh load with ${profiles.length} profiles');
+        emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
+      } else {
+        // Pagination - append to existing profiles
+        final currentState = state;
+        if (currentState is RecommendedProfilesLoaded) {
+          final updatedProfiles = [...currentState.profiles, ...profiles];
+          print('🔵 DEBUG: Appending ${profiles.length} profiles to existing ${currentState.profiles.length} profiles');
+          print('🔵 DEBUG: Updated profile IDs: ${updatedProfiles.map((p) => p.id).toList()}');
+          emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: hasMore));
+        } else {
+          print('🔵 DEBUG: Current state is not loaded, emitting new state with ${profiles.length} profiles');
+          emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
+        }
+      }
     } catch (e) {
+      print('🔵 DEBUG: Error loading profiles: $e');
       emit(RecommendedProfilesError(e.toString()));
     }
   }
@@ -85,11 +116,35 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     Emitter<RecommendedProfilesState> emit,
   ) async {
     try {
-      await repository.likeProfile(event.profileId);
-      // Refresh the profiles list after liking
-      add(LoadRecommendedProfiles(skip: 0)); // Reset pagination
+      // Get current state
+      final currentState = state;
+      if (currentState is RecommendedProfilesLoaded) {
+        // Remove the profile from the UI immediately
+        final updatedProfiles = currentState.profiles
+            .where((profile) => profile.id != event.profileId)
+            .toList();
+        
+        // Emit updated state immediately for smooth UX
+        emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: currentState.hasMore));
+        
+        // Handle the backend call in the background
+        await repository.likeProfile(event.profileId);
+        
+        // Reset pagination counter since backend list has changed
+        print('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to like');
+        _currentSkip = 0;
+        
+        // Only refresh if we have 0 profiles left (empty state)
+        if (updatedProfiles.isEmpty) {
+          add(LoadRecommendedProfiles(skip: 0)); // Reset pagination for fresh start
+        }
+      }
     } catch (e) {
-      emit(RecommendedProfilesError(e.toString()));
+      // If backend call fails, we could optionally reload the list
+      // For now, we'll just log the error to avoid blocking the user
+      print('Error liking profile: $e');
+      // Optionally show a subtle error message without blocking
+      emit(RecommendedProfilesError('Failed to like profile, but you can continue browsing'));
     }
   }
 
@@ -98,11 +153,35 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     Emitter<RecommendedProfilesState> emit,
   ) async {
     try {
-      await repository.dislikeProfile(event.profileId);
-      // Refresh the profiles list after disliking
-      add(LoadRecommendedProfiles(skip: 0)); // Reset pagination
+      // Get current state
+      final currentState = state;
+      if (currentState is RecommendedProfilesLoaded) {
+        // Remove the profile from the UI immediately
+        final updatedProfiles = currentState.profiles
+            .where((profile) => profile.id != event.profileId)
+            .toList();
+        
+        // Emit updated state immediately for smooth UX
+        emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: currentState.hasMore));
+        
+        // Handle the backend call in the background
+        await repository.dislikeProfile(event.profileId);
+        
+        // Reset pagination counter since backend list has changed
+        print('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to dislike');
+        _currentSkip = 0;
+        
+        // Only refresh if we have 0 profiles left (empty state)
+        if (updatedProfiles.isEmpty) {
+          add(LoadRecommendedProfiles(skip: 0)); // Reset pagination for fresh start
+        }
+      }
     } catch (e) {
-      emit(RecommendedProfilesError(e.toString()));
+      // If backend call fails, we could optionally reload the list
+      // For now, we'll just log the error to avoid blocking the user
+      print('Error disliking profile: $e');
+      // Optionally show a subtle error message without blocking
+      emit(RecommendedProfilesError('Failed to dislike profile, but you can continue browsing'));
     }
   }
 

@@ -10,6 +10,7 @@ import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -33,8 +34,8 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   List<String> _availableObjectives = [];
   bool _usedFallbackObjectives = false;
 
-  final List<String> _sexOptions = ['Male', 'Female', 'Other'];
-  final List<String> _wishToFindOptions = ['Male', 'Female', 'Any'];
+  final List<String> _sexOptions = ['Man', 'Woman', 'Other'];
+  final List<String> _wishToFindOptions = ['Man', 'Woman', 'Any'];
 
   static const List<String> _fallbackObjectives = [
     'Short Term',
@@ -85,8 +86,29 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       initialDate: DateTime.now().subtract(const Duration(days: 6570)), // 18 years ago
       firstDate: DateTime.now().subtract(const Duration(days: 36500)), // 100 years ago
       lastDate: DateTime.now().subtract(const Duration(days: 6570)), // 18 years ago
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.white, // Selection circle is white
+              onPrimary: Color(0xFF4C5C8A), // Selected day number is accent blue
+              surface: Color(0xFF35548b),
+              onSurface: Colors.white,
+              secondary: Color(0xFF4C5C8A),
+              onSecondary: Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white, // OK/Cancel button text is white
+                textStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
-    if (picked != null && picked != _selectedDate && mounted) {
+    if (picked != null && mounted) {
       setState(() {
         _selectedDate = picked;
       });
@@ -145,8 +167,8 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         id: '', // This will be set by the backend
         email: '', // This will be set by the backend
         age: DateTime.now().difference(_selectedDate!).inDays ~/ 365,
-        sex: _selectedSex == 'Male' ? 'm' : _selectedSex == 'Female' ? 'f' : 'other',
-        seekingGender: _selectedWishToFind == 'Male' ? 'm' : _selectedWishToFind == 'Female' ? 'f' : 'any',
+        sex: _selectedSex == 'Man' ? 'm' : _selectedSex == 'Woman' ? 'f' : 'other',
+        seekingGender: _selectedWishToFind == 'Man' ? 'm' : _selectedWishToFind == 'Woman' ? 'f' : 'any',
         location: const {
           'coordinates': [0.0, 0.0], // [longitude, latitude]
         },
@@ -180,19 +202,23 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       });
     }
     return Scaffold(
+      backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        title: const Text('Create Profile'),
+        title: const Text(
+          'Create Profile',
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: const Color(0xFF234481),
+        elevation: 0,
       ),
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
-          if (state is ProfileLoading) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Saving your profile...'),
-                duration: Duration(seconds: 1),
-              ),
-            );
-          } else if (state is ProfileSaved) {
+          if (state is ProfileSaved) {
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const HomePage(),
@@ -211,215 +237,354 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
             
             return Form(
               key: _formKey,
-              child: Stepper(
-                currentStep: _currentStep,
-                onStepContinue: isLoading ? null : _onNextStep,
-                onStepCancel: isLoading ? null : _onPreviousStep,
-                steps: [
-                  Step(
-                    title: const Text('Basic Info'),
-                    content: Column(
-                      children: [
-                        ListTile(
-                          title: const Text('Birthdate'),
-                          subtitle: Text(
-                            _selectedDate != null
-                                ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
-                                : 'Select your birthdate',
-                          ),
-                          trailing: const Icon(Icons.calendar_today),
-                          onTap: () => _selectDate(context),
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _selectedSex,
-                          decoration: const InputDecoration(
-                            labelText: 'Sex',
-                          ),
-                          items: _sexOptions.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedSex = newValue;
-                            });
-                            if (newValue != null) {
-                              context.read<ProfileBloc>().add(UpdateSex(newValue));
-                            }
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select your sex';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        DropdownButtonFormField<String>(
-                          value: _selectedWishToFind,
-                          decoration: const InputDecoration(
-                            labelText: 'Wish to Find',
-                          ),
-                          items: _wishToFindOptions.map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          onChanged: (String? newValue) {
-                            setState(() {
-                              _selectedWishToFind = newValue;
-                            });
-                            if (newValue != null) {
-                              context
-                                  .read<ProfileBloc>()
-                                  .add(UpdateWishToFind(newValue));
-                            }
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select who you want to find';
-                            }
-                            return null;
-                          },
-                        ),
-                      ],
-                    ),
-                    isActive: _currentStep >= 0,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: Color(0xFF4C5C8A), // Accent color for completed steps
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF35548b),
+                    onSurface: Colors.white,
+                    secondary: Colors.white, // Incomplete steps and lines are white
+                    onSecondary: Color(0xFF4C5C8A),
                   ),
-                  Step(
-                    title: const Text('Location & Age'),
-                    content: Column(
-                      children: [
-                        TextFormField(
-                          controller: _hometownController,
-                          decoration: const InputDecoration(
-                            labelText: 'Hometown',
-                            prefixIcon: Icon(Icons.location_city),
+                ),
+                child: Stepper(
+                  currentStep: _currentStep,
+                  onStepContinue: isLoading ? null : _onNextStep,
+                  onStepCancel: isLoading ? null : _onPreviousStep,
+                  controlsBuilder: (context, details) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 16),
+                      child: Row(
+                        children: [
+                          if (_currentStep > 0)
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: isLoading ? null : details.onStepCancel,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF35548b),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                ),
+                                child: const Text(
+                                  'Previous',
+                                  style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ),
+                          if (_currentStep > 0) const SizedBox(width: 16),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: isLoading ? null : details.onStepContinue,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFf4656f),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                              ),
+                              child: isLoading && _currentStep == 3
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      ),
+                                    )
+                                  : Text(
+                                      _currentStep == 3 ? 'Save Profile' : 'Next',
+                                      style: const TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                                    ),
+                            ),
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your hometown';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            context.read<ProfileBloc>().add(UpdateHometown(value));
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text('Preferred Age Range'),
-                        RangeSlider(
-                          values: _ageRange,
-                          min: 18,
-                          max: 80,
-                          divisions: 62,
-                          labels: RangeLabels(
-                            _ageRange.start.round().toString(),
-                            _ageRange.end.round().toString(),
+                        ],
+                      ),
+                    );
+                  },
+                  steps: [
+                    Step(
+                      title: const Text('Basic Info', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        children: [
+                          Card(
+                            color: const Color(0xFF35548b),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: ListTile(
+                              title: const Text('Birthdate', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+                              subtitle: Text(
+                                _selectedDate != null
+                                    ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
+                                    : 'Select your birthdate',
+                                style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 16, fontWeight: FontWeight.w500),
+                              ),
+                              trailing: const Icon(Icons.calendar_today, color: Color(0xFFD6D9E6)),
+                              onTap: () => _selectDate(context),
+                            ),
                           ),
-                          onChanged: (RangeValues values) {
-                            setState(() {
-                              _ageRange = values;
-                            });
-                            context.read<ProfileBloc>().add(
-                                  UpdateAgePreferences(
-                                    minAge: values.start.round(),
-                                    maxAge: values.end.round(),
-                                  ),
-                                );
-                          },
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('${_ageRange.start.round()} years'),
-                            Text('${_ageRange.end.round()} years'),
-                          ],
-                        ),
-                        const SizedBox(height: 24),
-                        DistanceRadiusSlider(
-                          value: _distanceRadius,
-                          onChanged: (value) {
-                            setState(() {
-                              _distanceRadius = value;
-                            });
-                          },
-                        ),
-                      ],
+                          const SizedBox(height: 16),
+                          Card(
+                            color: const Color(0xFF35548b),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedSex,
+                                style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                                dropdownColor: const Color(0xFF35548b),
+                                decoration: const InputDecoration(
+                                  labelText: 'I am',
+                                  labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                items: _sexOptions.map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500)),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedSex = newValue;
+                                  });
+                                  if (newValue != null) {
+                                    context.read<ProfileBloc>().add(UpdateSex(newValue));
+                                  }
+                                },
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please select your sex';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Card(
+                            color: const Color(0xFF35548b),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: DropdownButtonFormField<String>(
+                                value: _selectedWishToFind,
+                                style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                                dropdownColor: const Color(0xFF35548b),
+                                decoration: const InputDecoration(
+                                  labelText: 'I want to find',
+                                  labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                                  border: InputBorder.none,
+                                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                ),
+                                items: _wishToFindOptions.map((String value) {
+                                  return DropdownMenuItem<String>(
+                                    value: value,
+                                    child: Text(value, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500)),
+                                  );
+                                }).toList(),
+                                onChanged: (String? newValue) {
+                                  setState(() {
+                                    _selectedWishToFind = newValue;
+                                  });
+                                  if (newValue != null) {
+                                    context
+                                        .read<ProfileBloc>()
+                                        .add(UpdateWishToFind(newValue));
+                                  }
+                                },
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please select who you want to find';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      isActive: _currentStep >= 0,
                     ),
-                    isActive: _currentStep >= 1,
-                  ),
-                  Step(
-                    title: const Text('Profile Details'),
-                    content: Column(
-                      children: [
-                        TextFormField(
-                          controller: _bioController,
-                          maxLines: 3,
-                          decoration: const InputDecoration(
-                            labelText: 'Bio',
-                            hintText: 'Tell us about yourself',
+                    Step(
+                      title: const Text('Location & Age', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        children: [
+                          TextFormField(
+                            controller: _hometownController,
+                            style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16),
+                            cursorColor: Colors.white,
+                            decoration: InputDecoration(
+                              labelText: 'Hometown',
+                              prefixIcon: const Icon(Icons.location_city, color: Color(0xFFD6D9E6)),
+                              labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                              border: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
+                              ),
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFF4C5C8A)),
+                              ),
+                              errorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                              ),
+                              focusedErrorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your hometown';
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              context.read<ProfileBloc>().add(UpdateHometown(value));
+                            },
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your bio';
-                            }
-                            return null;
-                          },
-                          onChanged: (value) {
-                            context.read<ProfileBloc>().add(UpdateBio(value));
-                          },
-                        ),
-                        const SizedBox(height: 24),
-                        const Text('Interests'),
-                        const SizedBox(height: 8),
-                        InterestChips(
-                          selectedInterests: _selectedInterests,
-                          onInterestsChanged: (interests) {
-                            setState(() {
-                              _selectedInterests = interests;
-                            });
-                            context
-                                .read<ProfileBloc>()
-                                .add(UpdateInterests(interests));
-                          },
-                          authRepository: context.read<AuthRepository>(),
-                        ),
-                      ],
-                    ),
-                    isActive: _currentStep >= 2,
-                  ),
-                  Step(
-                    title: const Text('Objective'),
-                    content: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('What are you looking for?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 8),
-                        if (_availableObjectives.isEmpty)
-                          const Center(child: CircularProgressIndicator())
-                        else
-                          ObjectiveChips(
-                            availableObjectives: _availableObjectives,
-                            selectedObjectives: _selectedObjectives,
-                            onObjectivesChanged: (objectives) {
+                          const SizedBox(height: 24),
+                          const Text('Preferred Age Range', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+                          SliderTheme(
+                            data: SliderTheme.of(context).copyWith(
+                              trackHeight: 3.0, // Reduced from default 4.0
+                              activeTrackColor: Colors.white,
+                              inactiveTrackColor: const Color(0xFF4C5C8A),
+                              thumbColor: Colors.white,
+                              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
+                              rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                              rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
+                              valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
+                              valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
+                            ),
+                            child: RangeSlider(
+                              values: _ageRange,
+                              min: 18,
+                              max: 80,
+                              divisions: 62,
+                              labels: RangeLabels(
+                                _ageRange.start.round().toString(),
+                                _ageRange.end.round().toString(),
+                              ),
+                              onChanged: (RangeValues values) {
+                                setState(() {
+                                  _ageRange = values;
+                                });
+                                context.read<ProfileBloc>().add(
+                                      UpdateAgePreferences(
+                                        minAge: values.start.round(),
+                                        maxAge: values.end.round(),
+                                      ),
+                                    );
+                              },
+                            ),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('${_ageRange.start.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 16, fontWeight: FontWeight.w500)),
+                              Text('${_ageRange.end.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 16, fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          DistanceRadiusSlider(
+                            value: _distanceRadius,
+                            onChanged: (value) {
                               setState(() {
-                                _selectedObjectives = objectives;
+                                _distanceRadius = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      isActive: _currentStep >= 1,
+                    ),
+                    Step(
+                      title: const Text('Profile Details', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        children: [
+                          TextFormField(
+                            controller: _bioController,
+                            maxLines: null,
+                            minLines: 3,
+                            style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16),
+                            cursorColor: Colors.white,
+                            decoration: InputDecoration(
+                              labelText: 'Bio',
+                              hintText: 'Tell us about yourself',
+                              hintStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                              labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                              border: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
+                              ),
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
+                              ),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFF4C5C8A)),
+                              ),
+                              errorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                              ),
+                              focusedErrorBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.red),
+                              ),
+                            ),
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your bio';
+                              }
+                              return null;
+                            },
+                            onChanged: (value) {
+                              context.read<ProfileBloc>().add(UpdateBio(value));
+                            },
+                          ),
+                          const SizedBox(height: 24),
+                          const Text('Interests', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 8),
+                          InterestChips(
+                            selectedInterests: _selectedInterests,
+                            onInterestsChanged: (interests) {
+                              setState(() {
+                                _selectedInterests = interests;
                               });
                               context
                                   .read<ProfileBloc>()
-                                  .add(UpdateObjective(objectives));
+                                  .add(UpdateInterests(interests));
                             },
+                            authRepository: context.read<AuthRepository>(),
                           ),
-                      ],
+                        ],
+                      ),
+                      isActive: _currentStep >= 2,
                     ),
-                    isActive: _currentStep >= 3,
-                  ),
-                ],
+                    Step(
+                      title: const Text('Objective', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('What are you looking for?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const SizedBox(height: 8),
+                          if (_availableObjectives.isEmpty)
+                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                          else
+                            ObjectiveChips(
+                              availableObjectives: _availableObjectives,
+                              selectedObjectives: _selectedObjectives,
+                              onObjectivesChanged: (objectives) {
+                                setState(() {
+                                  _selectedObjectives = objectives;
+                                });
+                                context
+                                    .read<ProfileBloc>()
+                                    .add(UpdateObjective(objectives));
+                              },
+                            ),
+                        ],
+                      ),
+                      isActive: _currentStep >= 3,
+                    ),
+                  ],
+                ),
               ),
             );
           },

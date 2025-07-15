@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/core/services/image_url_service.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -227,102 +228,120 @@ class _MessageBubbleState extends State<MessageBubble> {
                 if (!widget.isMe && widget.showAvatar) _buildAvatar(),
                 if (!widget.isMe && widget.showAvatar) const SizedBox(width: 8),
                 Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: widget.isMe ? Theme.of(context).primaryColor : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(20),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.7,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (widget.message?.isDisappearing == true && 
-                            widget.message?.disappearingTime != null &&
-                            widget.message?.type == MessageType.image)
-                          Builder(
-                            builder: (context) {
-                              // Log when timer is being displayed
-                              if (widget.message?.type == MessageType.image) {
-                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Displaying timer for image message: ${widget.message?.id}');
-                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Using timerNotifier: ${widget.timerNotifier != null}');
-                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
-                                AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.disappearingTime}');
-                              }
-                              
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 4),
-                                child: widget.timerNotifier != null
-                                    ? ValueListenableBuilder<int>(
-                                        valueListenable: widget.timerNotifier!,
-                                        builder: (context, time, child) {
-                                          return Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Icon(
-                                                Icons.timer,
-                                                size: 12,
-                                                color: widget.isMe ? Colors.white70 : Colors.black54,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                '${time}s',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: widget.isMe ? Colors.white70 : Colors.black54,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: widget.isMe ? const Color(0xFFf9666c) : const Color(0xFF585b8c),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.15),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (widget.message?.isDisappearing == true && 
+                              widget.message?.disappearingTime != null &&
+                              widget.message?.type == MessageType.image)
+                            Builder(
+                              builder: (context) {
+                                // Log when timer is being displayed
+                                if (widget.message?.type == MessageType.image) {
+                                  AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Displaying timer for image message: ${widget.message?.id}');
+                                  AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Using timerNotifier: ${widget.timerNotifier != null}');
+                                  AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
+                                  AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.disappearingTime}');
+                                }
+                                
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: widget.timerNotifier != null
+                                      ? ValueListenableBuilder<int>(
+                                          valueListenable: widget.timerNotifier!,
+                                          builder: (context, time, child) {
+                                            return Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.timer,
+                                                  size: 12,
+                                                  color: widget.isMe ? Colors.white : Colors.white70,
                                                 ),
-                                              ),
-                                            ],
-                                          );
-                                        },
-                                      )
-                                    : Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.timer,
-                                            size: 12,
-                                            color: widget.isMe ? Colors.white70 : Colors.black54,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: widget.isMe ? Colors.white70 : Colors.black54,
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  '${time}s',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontFamily: 'Nunito',
+                                                    color: widget.isMe ? Colors.white : Colors.white70,
+                                                  ),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        )
+                                      : Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.timer,
+                                              size: 12,
+                                              color: widget.isMe ? Colors.white : Colors.white70,
                                             ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontFamily: 'Nunito',
+                                                color: widget.isMe ? Colors.white : Colors.white70,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                );
+                              },
+                            ),
+                          if (widget.message?.type == MessageType.image)
+                            GestureDetector(
+                              onTap: widget.onImageTap,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _isLoadingImage
+                                    ? const SizedBox(
+                                        width: 200,
+                                        height: 200,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                           ),
-                                        ],
-                                      ),
-                              );
-                            },
-                          ),
-                        if (widget.message?.type == MessageType.image)
-                          GestureDetector(
-                            onTap: widget.onImageTap,
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: _isLoadingImage
-                                  ? const SizedBox(
-                                      width: 200,
-                                      height: 200,
-                                      child: Center(child: CircularProgressIndicator()),
-                                    )
-                                  : _buildImageContent(),
+                                        ),
+                                      )
+                                    : _buildImageContent(),
+                              ),
                             ),
-                          ),
-                        if (widget.message?.type == MessageType.text)
-                          Text(
-                            widget.message!.content,
-                            style: TextStyle(
-                              color: widget.isMe ? Colors.white : Colors.black,
+                          if (widget.message?.type == MessageType.text)
+                            Text(
+                              widget.message!.content,
+                              style: TextStyle(
+                                color: widget.isMe ? Colors.white : Colors.white,
+                                fontFamily: 'Nunito',
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              softWrap: true,
+                              overflow: TextOverflow.visible,
                             ),
-                          ),
-                        if (widget.statusWidget != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: widget.statusWidget!,
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -336,7 +355,8 @@ class _MessageBubbleState extends State<MessageBubble> {
                   widget.timestamp!,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    fontFamily: 'Nunito',
+                    color: Colors.white60,
                   ),
                 ),
               ),
@@ -369,6 +389,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             height: 200,
             child: Center(
               child: CircularProgressIndicator(
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF234481)),
                 value: loadingProgress.expectedTotalBytes != null
                     ? loadingProgress.cumulativeBytesLoaded /
                         loadingProgress.expectedTotalBytes!
@@ -387,7 +408,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             width: 200,
             height: 200,
             child: Center(
-              child: Icon(Icons.error_outline, size: 40),
+              child: Icon(Icons.error_outline, size: 40, color: Color(0xFF234481)),
             ),
           );
         },
@@ -410,9 +431,9 @@ class _MessageBubbleState extends State<MessageBubble> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Colors.purple.withOpacity(0.3 + (0.2 * value)),
-                Colors.blue.withOpacity(0.3 + (0.2 * value)),
-                Colors.pink.withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF234481).withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF4CAF50).withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF234481).withOpacity(0.3 + (0.2 * value)),
               ],
             ),
             border: Border.all(
@@ -421,7 +442,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.purple.withOpacity(0.3 * value),
+                color: const Color(0xFF234481).withOpacity(0.3 * value),
                 blurRadius: 10 + (10 * value),
                 spreadRadius: 2 * value,
               ),
@@ -444,10 +465,9 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   Widget _buildAvatar() {
-    return CircleAvatar(
-      radius: 16,
-      backgroundImage: widget.avatarUrl != null ? NetworkImage(widget.avatarUrl!) : null,
-      child: widget.avatarUrl == null ? const Icon(Icons.person) : null,
+    return CustomAvatar(
+      name: widget.avatarUrl, // Using avatarUrl as name for initials
+      size: 32,
     );
   }
 

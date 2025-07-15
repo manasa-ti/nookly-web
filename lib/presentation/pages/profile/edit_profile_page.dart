@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logger/logger.dart';
 import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
+import 'package:nookly/presentation/widgets/custom_avatar.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -263,6 +264,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+
+
+  void _showImagePicker() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('Choose from Gallery'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('Take a Photo'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // Show fallback snackbars if needed
@@ -294,11 +324,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
     AppLogger.debug("Profile pic : ${_currentUser.profilePic.toString()}");
     return Scaffold(
+      backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: const Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+        backgroundColor: const Color(0xFF234481),
+        elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(AppConfig.defaultPadding),
               child: Form(
@@ -310,217 +343,72 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     Center(
                       child: Stack(
                         children: [
-                          CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.pink[100],
-                            child: ClipOval(
-                              child: Builder(
-                                builder: (context) {
-                                  if (_selectedImagePath != null) {
-                                    // Display newly picked image from local file
-                                    AppLogger.debug("Displaying selected image: $_selectedImagePath");
-                                    return Image.file(
-                                      File(_selectedImagePath!),
-                                      width: 120,
-                                      height: 120,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        AppLogger.error("Error loading selected file image: $error", error, stackTrace);
-                                        return const Icon(Icons.broken_image, size: 60);
-                                      },
-                                    );
-                                  } else if (_currentUser.profilePic != null && _currentUser.profilePic!.isNotEmpty) {
-                                    // Display existing profile picture from URL
-                                    final imageUrl = _currentUser.profilePic!;
-                                    AppLogger.debug("Displaying network image: $imageUrl");
-
-                                    // Logic adapted from profile_page.dart
-                                    if (imageUrl.toLowerCase().contains('dicebear') || imageUrl.toLowerCase().endsWith('.svg')) {
-                                      AppLogger.debug("Attempting to load as SVG: $imageUrl");
-                                      return SvgPicture.network(
-                                        imageUrl,
-                                        width: 120,
-                                        height: 120,
-                                        fit: BoxFit.cover,
-                                        placeholderBuilder: (context) => const Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.pink),
-                                          ),
-                                        ),
-                                        errorBuilder: (context, error, stackTrace) {
-                                          AppLogger.error("Error loading SVG network image: $imageUrl, Error: $error", error, stackTrace);
-                                          return const Icon(Icons.person, size: 60); // Fallback for SVG load error
-                                        },
-                                      );
-                                    } else {
-                                      AppLogger.debug("Attempting to load as standard image: $imageUrl");
-                                      return Image.network(
-                                        imageUrl,
-                                        width: 120,
-                                        height: 120,
-                                        fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return const Center(
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.pink),
-                                            ),
-                                          );
-                                        },
-                                        errorBuilder: (context, error, stackTrace) {
-                                          AppLogger.error("Error loading standard network image: $imageUrl, Error: $error", error, stackTrace);
-                                          return const Icon(Icons.person, size: 60); // Fallback for standard image load error
-                                        },
-                                      );
-                                    }
-                                  } else {
-                                    // Fallback if no selected image and no profile picture URL
-                                    AppLogger.debug("No image selected and no profilePic URL. Displaying default icon.");
-                                    return const Icon(Icons.person, size: 60);
-                                  }
-                                },
-                              ),
-                            ),
+                          CustomAvatar(
+                            name: _nameController.text.isNotEmpty ? _nameController.text : _currentUser.name,
+                            size: 120,
                           ),
                           Positioned(
-                            right: 0,
                             bottom: 0,
+                            right: 0,
                             child: Container(
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).primaryColor,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFF4C5C8A),
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
                                 icon: const Icon(Icons.camera_alt, color: Colors.white),
-                                onPressed: () {
-                                  showModalBottomSheet(
-                                    context: context,
-                                    builder: (context) => Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        ListTile(
-                                          leading: const Icon(Icons.photo_library),
-                                          title: const Text('Choose from Gallery'),
-                                          onTap: () {
-                                            Navigator.pop(context);
-                                            _pickImage(ImageSource.gallery);
-                                          },
-                                        ),
-                                        ListTile(
-                                          leading: const Icon(Icons.camera_alt),
-                                          title: const Text('Take a Photo'),
-                                          onTap: () {
-                                            Navigator.pop(context);
-                                            _pickImage(ImageSource.camera);
-                                          },
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
+                                onPressed: () => _showImagePicker(),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
-                    if (_isUploading) ...[
-                      const SizedBox(height: 16),
-                      LinearProgressIndicator(value: _uploadProgress),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Uploading: ${(_uploadProgress * 100).toStringAsFixed(0)}%',
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
                     const SizedBox(height: 24),
-
-                    // Name
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Name',
-                        border: OutlineInputBorder(),
+                    Card(
+                      color: const Color(0xFF35548b),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: TextFormField(
+                          controller: _nameController,
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                            labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                            border: InputBorder.none,
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
+                        ),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        return null;
-                      },
-                      onChanged: (_) => setState(() {}),
                     ),
                     const SizedBox(height: 16),
-
-                    // Bio
-                    TextFormField(
-                      controller: _bioController,
-                      decoration: const InputDecoration(
-                        labelText: 'Bio',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your bio';
-                        }
-                        return null;
-                      },
-                      onChanged: (_) => setState(() {}),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Age Range
-                    const Text(
-                      'Age Preferences',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                    Card(
+                      color: const Color(0xFF35548b),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        child: TextFormField(
+                          controller: _bioController,
+                          maxLines: 3,
+                          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                          decoration: const InputDecoration(
+                            labelText: 'Bio',
+                            labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                            border: InputBorder.none,
+                          ),
+                        ),
                       ),
                     ),
-                    RangeSlider(
-                      values: _ageRange,
-                      min: 18.0,
-                      max: 80.0,
-                      divisions: 62,
-                      labels: RangeLabels(
-                        _ageRange.start.round().toString(),
-                        _ageRange.end.round().toString(),
-                      ),
-                      onChanged: (RangeValues values) {
-                        if (mounted) {
-                          setState(() {
-                            _ageRange = values;
-                          });
-                        }
-                      },
-                    ),
-                    Text(
-                      '${_ageRange.start.round()} - ${_ageRange.end.round()} years',
-                      textAlign: TextAlign.center,
-                    ),
                     const SizedBox(height: 24),
-
-                    // Distance Radius
-                    DistanceRadiusSlider(
-                      value: _distanceRadius,
-                      onChanged: (value) {
-                        setState(() {
-                          _distanceRadius = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Interests
                     const Text(
                       'Interests',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -529,8 +417,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       children: _availableInterests.map((interest) {
                         final isSelected = _selectedInterests.contains(interest);
                         return FilterChip(
-                          label: Text(interest),
+                          label: Text(
+                            interest,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+                              fontFamily: 'Nunito',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           selected: isSelected,
+                          selectedColor: const Color(0xFF4C5C8A),
+                          backgroundColor: const Color(0xFF35548b),
+                          checkmarkColor: Colors.white,
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           onSelected: (selected) {
                             setState(() {
                               if (selected) {
@@ -544,14 +450,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       }).toList(),
                     ),
                     const SizedBox(height: 24),
-
-                    // Objectives
                     const Text(
                       'Objectives',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                     const SizedBox(height: 8),
                     Wrap(
@@ -560,8 +461,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       children: _availableObjectives.map((objective) {
                         final isSelected = _selectedObjectives.contains(objective);
                         return FilterChip(
-                          label: Text(objective),
+                          label: Text(
+                            objective,
+                            style: TextStyle(
+                              color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+                              fontFamily: 'Nunito',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           selected: isSelected,
+                          selectedColor: const Color(0xFF4C5C8A),
+                          backgroundColor: const Color(0xFF35548b),
+                          checkmarkColor: Colors.white,
+                          side: BorderSide(
+                            color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),
+                            width: 1,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                           onSelected: (selected) {
                             setState(() {
                               if (selected) {
@@ -574,17 +493,74 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         );
                       }).toList(),
                     ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Preferred Age Range',
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3.0, // Reduced from default 4.0
+                        activeTrackColor: Colors.white,
+                        inactiveTrackColor: const Color(0xFF4C5C8A),
+                        thumbColor: Colors.white,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
+                        rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                        rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
+                        valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
+                        valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
+                      ),
+                      child: RangeSlider(
+                        values: _ageRange,
+                        min: 18,
+                        max: 80,
+                        divisions: 62,
+                        labels: RangeLabels(
+                          _ageRange.start.round().toString(),
+                          _ageRange.end.round().toString(),
+                        ),
+                        onChanged: (RangeValues values) {
+                          setState(() {
+                            _ageRange = values;
+                          });
+                        },
+                      ),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('${_ageRange.start.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+                        Text('${_ageRange.end.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Distance Radius',
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    DistanceRadiusSlider(
+                      value: _distanceRadius,
+                      onChanged: (value) {
+                        setState(() {
+                          _distanceRadius = value;
+                        });
+                      },
+                    ),
                     const SizedBox(height: 32),
-
-                    // Update Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isFormValid() ? _updateProfile : null,
                         style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFf4656f),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text('Update Profile'),
+                        child: const Text(
+                          'Save Changes',
+                          style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16),
+                        ),
                       ),
                     ),
                   ],

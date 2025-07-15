@@ -45,7 +45,7 @@ class _InterestChipsState extends State<InterestChips> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
     return Wrap(
@@ -54,7 +54,15 @@ class _InterestChipsState extends State<InterestChips> {
       children: _availableInterests.map((interest) {
         final isSelected = widget.selectedInterests.contains(interest);
         return FilterChip(
-          label: Text(interest),
+          label: Text(
+            interest,
+            style: TextStyle(
+              color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+              fontFamily: 'Nunito',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           selected: isSelected,
           onSelected: (bool selected) {
             final List<String> updatedInterests =
@@ -66,12 +74,15 @@ class _InterestChipsState extends State<InterestChips> {
             }
             widget.onInterestsChanged(updatedInterests);
           },
-          selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-          checkmarkColor: Theme.of(context).primaryColor,
-          labelStyle: TextStyle(
-            color: isSelected
-                ? Theme.of(context).primaryColor
-                : Theme.of(context).textTheme.bodyLarge?.color,
+          selectedColor: const Color(0xFF4C5C8A),
+          backgroundColor: const Color(0xFF35548b),
+          checkmarkColor: Colors.white,
+          side: BorderSide(
+            color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),
+            width: 1,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
         );
       }).toList(),
