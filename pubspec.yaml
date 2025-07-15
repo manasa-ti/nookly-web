@@ -47,10 +47,6 @@ dependencies:
   geolocator: ^10.1.0
   
   # Testing
-  mockito: ^5.4.4
-  build_runner: ^2.4.7
-  flutter_test:
-    sdk: flutter
   injectable: ^2.3.2
   dartz: ^0.10.1
   http: ^1.1.0
@@ -71,6 +67,18 @@ dev_dependencies:
   json_serializable: ^6.7.1
   bloc_test: ^9.1.4
   injectable_generator: ^2.4.1
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  min_sdk_android: 21
+  web:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+    background_color: "#234481"
+    theme_color: "#667eea"
 
 flutter:
   uses-material-design: true
