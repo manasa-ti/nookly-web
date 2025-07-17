@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nookly/core/config/app_config.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
@@ -47,6 +48,10 @@ class _LoginPageState extends State<LoginPage> {
         builder: (context) => const ForgotPasswordPage(),
       ),
     );
+  }
+
+  void _onGoogleSignInPressed() {
+    context.read<AuthBloc>().add(SignInWithGoogle());
   }
 
   @override
@@ -189,6 +194,69 @@ class _LoginPageState extends State<LoginPage> {
                     child: const Text(
                       'Sign In',
                       style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Divider with "or" text
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: const Color(0xFFD6D9E6).withOpacity(0.3),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'or',
+                          style: TextStyle(
+                            color: const Color(0xFFD6D9E6),
+                            fontFamily: 'Nunito',
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: const Color(0xFFD6D9E6).withOpacity(0.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  // Google Sign-In Button
+                  ElevatedButton.icon(
+                    onPressed: _onGoogleSignInPressed,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.black87,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                        side: BorderSide(
+                          color: const Color(0xFFD6D9E6).withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 2,
+                    ),
+                    icon: Container(
+                      width: 20,
+                      height: 20,
+                      child: SvgPicture.asset(
+                        'assets/icons/google_icon.svg',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    label: const Text(
+                      'Continue with Google',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),

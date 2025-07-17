@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/services/google_sign_in_service.dart';
 import 'package:nookly/data/models/auth/auth_response_model.dart';
 import 'package:nookly/data/models/auth/login_request_model.dart';
 import 'package:nookly/data/models/auth/register_request_model.dart';
@@ -125,7 +126,83 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<User> signInWithGoogle() async {
-    throw UnimplementedError('Google Sign In not implemented');
+    try {
+      AppLogger.info('Starting Google Sign-In process');
+      
+      // Get the Google Sign-In service instance
+      final googleSignInService = GoogleSignInService.instance;
+      try {
+        googleSignInService.initialize();
+        AppLogger.info('GoogleSignInService initialized in repository');
+      } catch (error) {
+        AppLogger.error('Failed to initialize GoogleSignInService in repository', error, StackTrace.current);
+        throw Exception('Failed to initialize Google Sign-In: $error');
+      }
+      
+      // Get Google auth data
+      final authData = await googleSignInService.getAuthData();
+      
+      if (authData == null) {
+        throw Exception('Google Sign-In was cancelled or failed');
+      }
+
+      AppLogger.info('Google auth data received, sending to backend');
+      AppLogger.info('=== SENDING TO BACKEND ===');
+      AppLogger.info('Email: ${authData['email']}');
+      AppLogger.info('Display Name: ${authData['displayName']}');
+      AppLogger.info('Photo URL: ${authData['photoUrl']}');
+      AppLogger.info('ID Token length: ${authData['idToken']?.length ?? 0}');
+      AppLogger.info('ID Token content: ${authData['idToken']}');
+      AppLogger.info('Access Token length: ${authData['accessToken']?.length ?? 0}');
+      AppLogger.info('Server Auth Code length: ${authData['serverAuthCode']?.length ?? 0}');
+      AppLogger.info('==========================');
+      
+      // Send Google auth data to backend
+      final response = await NetworkService.dio.post(
+        '/users/google-signin',
+        data: {
+          'idToken': authData['idToken'],
+          'accessToken': authData['accessToken'],
+          'serverAuthCode': authData['serverAuthCode'],
+          'email': authData['email'],
+          'displayName': authData['displayName'],
+          'photoUrl': authData['photoUrl'],
+        },
+      );
+
+      AppLogger.info('=== BACKEND RESPONSE ===');
+      AppLogger.info('Response status: ${response.statusCode}');
+      AppLogger.info('Response data: ${response.data}');
+      AppLogger.info('=======================');
+      
+      final authResponse = AuthResponseModel.fromJson(response.data);
+      await _saveToken(authResponse.token);
+      await _saveUserId(authResponse.user.id);
+      NetworkService.setAuthToken(authResponse.token);
+      
+      AppLogger.info('Google Sign-In successful for user: ${authData['email']}');
+      AppLogger.info('JWT Token received: ${authResponse.token.substring(0, 20)}...');
+      AppLogger.info('User ID: ${authResponse.user.id}');
+      return _mapUserModelToEntity(authResponse.user);
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Google Sign-In failed',
+        e,
+        StackTrace.current,
+      );
+      AppLogger.error('DioException details:');
+      AppLogger.error('Status code: ${e.response?.statusCode}');
+      AppLogger.error('Response data: ${e.response?.data}');
+      AppLogger.error('Error message: ${e.message}');
+      throw Exception('Failed to sign in with Google: ${e.response?.data ?? e.message}');
+    } catch (e) {
+      AppLogger.error(
+        'Unexpected error in Google Sign-In',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Google Sign-In failed: $e');
+    }
   }
 
   @override

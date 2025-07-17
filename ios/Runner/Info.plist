@@ -49,7 +49,18 @@
 <string>Need camera access for video calls</string>
 <key>NSMicrophoneUsageDescription</key>
 <string>Need microphone access for calls</string>
-<key>NSPhotoLibraryUsageDescription</key>
+	<key>NSPhotoLibraryUsageDescription</key>
 <string>This app needs access to photos to select images for chat messages</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.nookly.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.957642975258-256528neeadp0ieai104f80idjnmlngm</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

@@ -92,7 +92,7 @@ class MyApp extends StatelessWidget {
       ],
       child: AuthWrapper(
         child: MaterialApp(
-          title: 'Nookly',
+          title: 'nookly',
           navigatorKey: AuthHandler.navigatorKey, // Add global navigator key
           theme: ThemeData(
             colorScheme: const ColorScheme.dark(
