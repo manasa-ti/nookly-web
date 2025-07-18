@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/core/services/content_moderation_service.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -109,6 +110,21 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       },
     );
     if (picked != null && mounted) {
+      // Age verification - ensure user is 18 or older
+      final age = DateTime.now().difference(picked).inDays ~/ 365;
+      if (age < 18) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You must be 18 or older to use Nookly. Please select a different date of birth.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return; // Don't set the date if underage
+      }
+      
       setState(() {
         _selectedDate = picked;
       });
@@ -123,6 +139,20 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       // Validate based on current step
       switch (_currentStep) {
         case 0: // Basic Info
+          // Additional age verification for step 0
+          if (_selectedDate != null) {
+            final age = DateTime.now().difference(_selectedDate!).inDays ~/ 365;
+            if (age < 18) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('You must be 18 or older to use Nookly. Please select a different date of birth.'),
+                  backgroundColor: Colors.red,
+                  duration: Duration(seconds: 4),
+                ),
+              );
+              return;
+            }
+          }
           isValid = _selectedDate != null && _selectedSex != null && _selectedWishToFind != null;
           break;
         case 1: // Location & Age
@@ -163,6 +193,44 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
 
   void _onSaveProfile() {
     if (_formKey.currentState!.validate()) {
+      // Final age verification before saving profile
+      if (_selectedDate != null) {
+        final age = DateTime.now().difference(_selectedDate!).inDays ~/ 365;
+        if (age < 18) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You must be 18 or older to use Nookly. Please select a different date of birth.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+          return;
+        }
+      }
+      
+      // Content moderation for bio
+      final moderationService = ContentModerationService();
+      final bioModerationResult = moderationService.moderateContent(_bioController.text, ContentType.bio);
+      
+      if (!bioModerationResult.isAppropriate) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Bio contains inappropriate content. Please revise your bio.',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Nunito',
+              ),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
+      
       final user = User(
         id: '', // This will be set by the backend
         email: '', // This will be set by the backend
@@ -177,7 +245,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           'upper_limit': _ageRange.end.round(),
         },
         hometown: _hometownController.text,
-        bio: _bioController.text,
+        bio: bioModerationResult.filteredText, // Use filtered bio
         interests: _selectedInterests,
         objectives: _selectedObjectives,
         preferredDistanceRadius: _distanceRadius.round(),
@@ -316,6 +384,37 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               ),
                               trailing: const Icon(Icons.calendar_today, color: Color(0xFFD6D9E6)),
                               onTap: () => _selectDate(context),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4C5C8A).withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: const Color(0xFF4C5C8A), width: 1),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: Color(0xFFD6D9E6),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: const Text(
+                                    'Must be 18+ to use Nookly',
+                                    style: TextStyle(
+                                      fontFamily: 'Nunito',
+                                      color: Color(0xFFD6D9E6),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 16),

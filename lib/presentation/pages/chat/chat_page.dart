@@ -23,6 +23,7 @@ import 'package:nookly/presentation/widgets/disappearing_time_selector.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/disappearing_image_manager.dart';
 import 'package:nookly/presentation/pages/report/report_page.dart';
+import 'package:nookly/core/services/content_moderation_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -2215,7 +2216,41 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
 
     final content = _messageController.text.trim();
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Starting to send text message: $content');
+    
+    // Content moderation check
+    final moderationService = ContentModerationService();
+    final moderationResult = moderationService.moderateContent(content, ContentType.message);
+    
+    if (!moderationResult.isAppropriate) {
+      // Show error message to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Message contains inappropriate content. Please revise your message.',
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Nunito',
+            ),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      
+      // Report the inappropriate content
+      if (_currentUserId != null) {
+        moderationService.reportInappropriateContent(content, ContentType.message, _currentUserId!);
+      }
+      
+      return; // Don't send the message
+    }
+    
+    // Use filtered content if any filtering was applied
+    final finalContent = moderationResult.filteredText;
+    
+    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Starting to send text message: $finalContent');
     _messageController.clear();
 
     if (_socketService != null && _currentUserId != null) {
@@ -2228,7 +2263,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           '_id': DateTime.now().millisecondsSinceEpoch.toString(),  // Use '_id' to match API response format
           'from': _currentUserId,
           'to': widget.conversationId,
-          'content': content,
+          'content': finalContent, // Use filtered content
           'messageType': 'text',
           'status': 'sent', // Start with 'sent' status
           'createdAt': DateTime.now().toIso8601String(),
@@ -2240,7 +2275,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         
         // Add message to local state immediately with 'sent' status
         final msg = Message.fromJson({
-          '_id': messageData['id'],
+          '_id': messageData['_id'], // Fix: use '_id' instead of 'id'
           'sender': messageData['from'],
           'receiver': messageData['to'],
           'content': messageData['content'],

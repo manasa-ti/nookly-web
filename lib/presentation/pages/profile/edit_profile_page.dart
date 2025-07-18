@@ -11,6 +11,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:logger/logger.dart';
 import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/core/services/content_moderation_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -212,6 +213,29 @@ class _EditProfilePageState extends State<EditProfilePage> {
   Future<void> _updateProfile() async {
     if (!_formKey.currentState!.validate()) return;
 
+    // Content moderation for bio
+    final moderationService = ContentModerationService();
+    final bioModerationResult = moderationService.moderateContent(_bioController.text, ContentType.bio);
+    
+    if (!bioModerationResult.isAppropriate) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Bio contains inappropriate content. Please revise your bio.',
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Nunito',
+            ),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       // Create updated user with all existing data and new values for changed fields
@@ -220,7 +244,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         email: _currentUser.email,
         // Update only if changed
         name: _nameController.text != _currentUser.name ? _nameController.text : _currentUser.name,
-        bio: _bioController.text != (_currentUser.bio ?? '') ? _bioController.text : _currentUser.bio,
+        bio: _bioController.text != (_currentUser.bio ?? '') ? bioModerationResult.filteredText : _currentUser.bio,
         interests: !listEquals(_selectedInterests, _currentUser.interests ?? []) 
             ? _selectedInterests 
             : _currentUser.interests,
