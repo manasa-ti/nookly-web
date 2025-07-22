@@ -195,7 +195,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4), // Reduced from 8
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -206,7 +206,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16), // Reduced from 24
                   ElevatedButton(
                     onPressed: _isEmailLoading ? null : _onSignInPressed,
                     style: ElevatedButton.styleFrom(

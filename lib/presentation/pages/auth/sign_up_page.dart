@@ -21,6 +21,8 @@ class _SignUpPageState extends State<SignUpPage> {
   final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isEmailLoading = false; // Add loading state for email sign up
+  bool _isGoogleLoading = false; // Add loading state for Google sign up
 
   @override
   void dispose() {
@@ -32,6 +34,10 @@ class _SignUpPageState extends State<SignUpPage> {
 
   void _onSignUpPressed() {
     if (_formKey.currentState?.validate() ?? false) {
+      setState(() {
+        _isEmailLoading = true;
+        _isGoogleLoading = false;
+      });
       context.read<AuthBloc>().add(
             SignUpWithEmailAndPassword(
               email: _emailController.text.trim(),
@@ -42,6 +48,10 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   void _onGoogleSignInPressed() {
+    setState(() {
+      _isGoogleLoading = true;
+      _isEmailLoading = false;
+    });
     context.read<AuthBloc>().add(SignInWithGoogle());
   }
 
@@ -58,6 +68,10 @@ class _SignUpPageState extends State<SignUpPage> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is Authenticated) {
+            setState(() {
+              _isEmailLoading = false;
+              _isGoogleLoading = false;
+            });
             // Navigate to profile creation and clear navigation stack
             Navigator.pushAndRemoveUntil(
               context,
@@ -67,6 +81,10 @@ class _SignUpPageState extends State<SignUpPage> {
               (route) => false, // Remove all previous routes
             );
           } else if (state is AuthError) {
+            setState(() {
+              _isEmailLoading = false;
+              _isGoogleLoading = false;
+            });
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(content: Text(state.message)),
             );
@@ -78,9 +96,10 @@ class _SignUpPageState extends State<SignUpPage> {
             child: Form(
               key: _formKey,
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  const SizedBox(height: 40), // Match login page top margin
                   Text(
                     'Create Account',
                     style: TextStyle(
@@ -91,22 +110,22 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32), // Match login page spacing
                   Card(
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
                         decoration: InputDecoration(
                           labelText: 'Email',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8), // less height
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -125,11 +144,11 @@ class _SignUpPageState extends State<SignUpPage> {
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
@@ -147,7 +166,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8), // less height
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -166,11 +185,11 @@ class _SignUpPageState extends State<SignUpPage> {
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
                         decoration: InputDecoration(
                           labelText: 'Confirm Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
@@ -188,7 +207,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8), // less height
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -204,19 +223,27 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton(
-                    onPressed: _onSignUpPressed,
+                    onPressed: _isEmailLoading ? null : _onSignUpPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFf4656f),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12), // Match login page
                     ),
-                    child: Text(
-                      'Sign Up',
-                      style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500),
-                      textAlign: TextAlign.center,
-                    ),
+                    child: _isEmailLoading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : Text(
+                            'Sign Up',
+                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
+                          ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   // Divider with "or" text
                   Row(
                     children: [
@@ -227,13 +254,13 @@ class _SignUpPageState extends State<SignUpPage> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 12), // Match login page
                         child: Text(
                           'or',
                           style: TextStyle(
                             color: const Color(0xFFD6D9E6),
                             fontFamily: 'Nunito',
-                            fontSize: (size.width * 0.035).clamp(12.0, 15.0),
+                            fontSize: (size.width * 0.03).clamp(10.0, 12.0), // Match login page
                           ),
                         ),
                       ),
@@ -245,10 +272,10 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   // Google Sign-In Button
                   ElevatedButton.icon(
-                    onPressed: _onGoogleSignInPressed,
+                    onPressed: _isGoogleLoading ? null : _onGoogleSignInPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.white,
                       foregroundColor: Colors.black87,
@@ -259,22 +286,31 @@ class _SignUpPageState extends State<SignUpPage> {
                           width: 1,
                         ),
                       ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 12), // Match login page
                       elevation: 2,
                     ),
-                    icon: Container(
-                      width: 20,
-                      height: 20,
-                      child: SvgPicture.asset(
-                        'assets/icons/google_icon.svg',
-                        fit: BoxFit.contain,
-                      ),
-                    ),
+                    icon: _isGoogleLoading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+                            ),
+                          )
+                        : Container(
+                            width: 18,
+                            height: 18,
+                            child: SvgPicture.asset(
+                              'assets/icons/google_icon.svg',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
                     label: Text(
-                      'Continue with Google',
+                      _isGoogleLoading ? 'Signing up...' : 'Continue with Google',
                       style: TextStyle(
                         fontFamily: 'Nunito',
-                        fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                        fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
