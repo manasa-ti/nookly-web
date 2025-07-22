@@ -115,7 +115,7 @@ class ContentModerationService {
     // Check for commercial content
     final commercialKeywords = [
       'buy', 'sell', 'promote', 'advertisement', 'commercial', 'business',
-      'company', 'website', 'link', 'click here', 'visit', 'check out',
+      'website', 'link', 'click here', 'visit', 'check out',
     ];
     
     for (final keyword in commercialKeywords) {
