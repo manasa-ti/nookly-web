@@ -478,7 +478,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                     children: [
                       Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
                       const SizedBox(height: 16),
-                      Text('No conversations yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                      Text('No conversations yet', style: TextStyle(fontSize: (MediaQuery.of(context).size.width * 0.05).clamp(18.0, 22.0), fontWeight: FontWeight.w500, color: Colors.white, fontFamily: 'Nunito')),
                       const SizedBox(height: 8),
                       Text('When you match with someone, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.7))),
                     ],
@@ -534,8 +534,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                           _formatTimestamp(conversation.lastMessageTime),
                           style: TextStyle(
                             color: hasUnread ? Colors.white : Colors.grey[400],
-                            fontSize: 12,
-                            fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
+                            fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
+                            fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         ),

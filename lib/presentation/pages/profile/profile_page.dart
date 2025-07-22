@@ -50,6 +50,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
       color: const Color(0xFF232B5D),
       child: SafeArea(
@@ -73,19 +74,19 @@ class _ProfilePageState extends State<ProfilePage> {
                                 const SizedBox(height: 12),
                                 Text(
                                   _user!.name ?? '',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Nunito',
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
+                                    fontSize: (size.width * 0.05).clamp(16.0, 20.0),
+                                    fontWeight: FontWeight.w500,
                                     color: Colors.white,
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
                                   _user!.email,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Nunito',
-                                    fontSize: 14,
+                                    fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                                     color: Color(0xFFD6D9E6),
                                   ),
                                 ),
@@ -100,7 +101,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onPressed: () {
                                     // Navigate to edit profile
                                   },
-                                  child: const Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+                                  child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
                                 ),
                               ],
                             ),
@@ -115,13 +116,13 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 18.0), fontWeight: FontWeight.w500, color: Colors.white)),
                                   const SizedBox(height: 8),
-                                  _buildFeatureTile('See Who Likes You', 'Find out who has liked your profile before you match', Icons.favorite, true),
-                                  _buildFeatureTile('Unlimited Likes', 'No daily limit on the number of profiles you can like', Icons.all_inclusive, true),
-                                  _buildFeatureTile('Advanced Filters', 'Filter by education, height, and more', Icons.filter_list, false),
-                                  _buildFeatureTile('Read Receipts', 'See when your messages are read', Icons.done_all, false),
-                                  _buildFeatureTile('Priority Likes', 'Get seen by more people with priority placement', Icons.star, false),
+                                  _buildFeatureTile('See Who Likes You', 'Find out who has liked your profile before you match', Icons.favorite, true, size),
+                                  _buildFeatureTile('Unlimited Likes', 'No daily limit on the number of profiles you can like', Icons.all_inclusive, true, size),
+                                  _buildFeatureTile('Advanced Filters', 'Filter by education, height, and more', Icons.filter_list, false, size),
+                                  _buildFeatureTile('Read Receipts', 'See when your messages are read', Icons.done_all, false, size),
+                                  _buildFeatureTile('Priority Likes', 'Get seen by more people with priority placement', Icons.star, false, size),
                                 ],
                               ),
                             ),
@@ -134,7 +135,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               leading: const Icon(Icons.notifications, color: Colors.white, size: 20),
-                              title: const Text('Notifications', style: TextStyle(fontFamily: 'Nunito', fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold)),
+                              title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
                               trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
                               onTap: () {
                                 // Navigate to notifications page
@@ -148,10 +149,10 @@ class _ProfilePageState extends State<ProfilePage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Column(
                               children: [
-                                _buildSettingsTile(Icons.privacy_tip, 'Privacy', () {}),
-                                _buildSettingsTile(Icons.help, 'Help & Support', () {}),
-                                _buildSettingsTile(Icons.info, 'About', () {}),
-                                _buildSettingsTile(Icons.logout, 'Logout', () {}),
+                                _buildSettingsTile(Icons.privacy_tip, 'Privacy', () {}, size),
+                                _buildSettingsTile(Icons.help, 'Help & Support', () {}, size),
+                                _buildSettingsTile(Icons.info, 'About', () {}, size),
+                                _buildSettingsTile(Icons.logout, 'Logout', () {}, size),
                               ],
                             ),
                           ),
@@ -161,7 +162,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildFeatureTile(String title, String description, IconData icon, bool isActive) {
+  Widget _buildFeatureTile(String title, String description, IconData icon, bool isActive, Size size) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: Container(
@@ -172,17 +173,17 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
         child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 18),
       ),
-      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold)),
-      subtitle: Text(description, style: const TextStyle(fontFamily: 'Nunito', fontSize: 13, color: Color(0xFFD6D9E6))),
-      trailing: isActive ? const Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 12)), backgroundColor: Color(0xFF4C5C8A)) : null,
+      title: Text(title, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
+      subtitle: Text(description, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 14.0), color: Color(0xFFD6D9E6))),
+      trailing: isActive ? Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.03).clamp(10.0, 13.0))), backgroundColor: Color(0xFF4C5C8A)) : null,
     );
   }
 
-  Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap) {
+  Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap, Size size) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       leading: Icon(icon, color: Colors.white, size: 20),
-      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', fontSize: 15, color: Colors.white)),
+      title: Text(title, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
       trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
       onTap: onTap,
     );

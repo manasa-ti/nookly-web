@@ -52,21 +52,22 @@ class _ReportPageState extends State<ReportPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF234481),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Report User',
           style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            color: Colors.white,
+            fontSize: (size.width * 0.045).clamp(14.0, 18.0),
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
@@ -99,7 +100,7 @@ class _ReportPageState extends State<ReportPage> {
           builder: (context, state) {
             if (state is ReportLoading) {
               return const Center(
-                child: CircularProgressIndicator(),
+                child: CircularProgressIndicator(color: Colors.white),
               );
             } else if (state is ReportError && state.message.contains('reasons')) {
               // Error loading reasons, show retry option
@@ -115,29 +116,48 @@ class _ReportPageState extends State<ReportPage> {
                     const SizedBox(height: 16),
                     Text(
                       'Failed to load report reasons',
-                      style: Theme.of(context).textTheme.titleLarge,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: (size.width * 0.045).clamp(14.0, 18.0),
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       state.message,
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
+                      style: TextStyle(
+                        color: Color(0xFFD6D9E6),
+                        fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                       ),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFf4656f),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                      ),
                       onPressed: () {
                         context.read<ReportBloc>().add(LoadReportReasons());
                       },
-                      child: const Text('Retry'),
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: (size.width * 0.035).clamp(12.0, 15.0),
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               );
             } else {
               // Show form with reasons (if loaded) or loading
-              return _buildReportForm(state);
+              return _buildReportForm(state, size);
             }
           },
         ),
@@ -145,7 +165,7 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
-  Widget _buildReportForm(ReportState state) {
+  Widget _buildReportForm(ReportState state, Size size) {
     List<String> reasons = [];
     bool isLoading = false;
     bool isSubmitting = false;
@@ -169,15 +189,18 @@ class _ReportPageState extends State<ReportPage> {
             // Header
             Text(
               'Report ${widget.reportedUserName}',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: TextStyle(
+                fontSize: (size.width * 0.05).clamp(16.0, 20.0),
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Help us keep our community safe by reporting inappropriate behavior.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
+              style: TextStyle(
+                fontSize: (size.width * 0.035).clamp(12.0, 15.0),
+                color: Color(0xFFD6D9E6),
               ),
             ),
             const SizedBox(height: 24),
@@ -185,38 +208,52 @@ class _ReportPageState extends State<ReportPage> {
             // Report Reason Selection
             Text(
               'Reason for Report *',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: TextStyle(
+                fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 12),
             
             if (isLoading)
-              const Center(child: CircularProgressIndicator())
+              const Center(child: CircularProgressIndicator(color: Colors.white))
             else
-              _buildReasonSelection(reasons),
+              _buildReasonSelection(state is ReportReasonsLoaded ? state.reasons : (state is ReportSubmitting ? state.reasons : []), size),
 
             const SizedBox(height: 24),
 
             // Additional Details
             Text(
               'Additional Details (Optional)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+              style: TextStyle(
+                fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _detailsController,
               maxLines: 4,
+              style: TextStyle(
+                color: Colors.white,
+                fontFamily: 'Nunito',
+                fontSize: (size.width * 0.035).clamp(12.0, 15.0),
+              ),
               decoration: InputDecoration(
                 hintText: 'Please provide any additional details about your experience...',
+                hintStyle: TextStyle(
+                  color: Color(0xFFD6D9E6),
+                  fontSize: (size.width * 0.032).clamp(11.0, 13.0),
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFFD6D9E6)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.deepPurple),
+                  borderSide: const BorderSide(color: Color(0xFF4C5C8A)),
                 ),
               ),
               validator: (value) {
@@ -231,18 +268,18 @@ class _ReportPageState extends State<ReportPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: (isSubmitting || _selectedReason == null) 
+                onPressed: (state is ReportSubmitting || _selectedReason == null) 
                     ? null 
                     : _submitReport,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
+                  backgroundColor: const Color(0xFFf4656f),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: isSubmitting
+                child: state is ReportSubmitting
                     ? const SizedBox(
                         height: 20,
                         width: 20,
@@ -251,11 +288,12 @@ class _ReportPageState extends State<ReportPage> {
                           valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       )
-                    : const Text(
+                    : Text(
                         'Submit Report',
                         style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
+                          fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
                       ),
               ),
@@ -267,15 +305,15 @@ class _ReportPageState extends State<ReportPage> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange[50],
+                color: Colors.orange[900]?.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange[200]!),
+                border: Border.all(color: Colors.orange[700] ?? Colors.orange),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.warning_amber_rounded,
-                    color: Colors.orange[700],
+                    color: Colors.orange[400],
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -283,8 +321,8 @@ class _ReportPageState extends State<ReportPage> {
                     child: Text(
                       'False reports may result in your account being suspended.',
                       style: TextStyle(
-                        color: Colors.orange[700],
-                        fontSize: 12,
+                        color: Colors.orange[400],
+                        fontSize: (size.width * 0.03).clamp(10.0, 13.0),
                       ),
                     ),
                   ),
@@ -297,11 +335,11 @@ class _ReportPageState extends State<ReportPage> {
     );
   }
 
-  Widget _buildReasonSelection(List<String> reasons) {
+  Widget _buildReasonSelection(List<String> reasons, Size size) {
     return Column(
       children: reasons.map((reason) {
         return RadioListTile<String>(
-          title: Text(reason),
+          title: Text(reason, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500, color: Colors.white)),
           value: reason,
           groupValue: _selectedReason,
           onChanged: (value) {
@@ -309,7 +347,7 @@ class _ReportPageState extends State<ReportPage> {
               _selectedReason = value;
             });
           },
-          activeColor: Colors.red,
+          activeColor: const Color(0xFFf4656f),
           contentPadding: EdgeInsets.zero,
         );
       }).toList(),

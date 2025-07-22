@@ -81,7 +81,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
   Widget _customAvatar(String? name) {
     return CustomAvatar(
       name: name,
-      size: 52,
+      size: 44,
     );
   }
 
@@ -125,8 +125,8 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                         children: [
                           // Circular Profile Image
                           Container(
-                            width: 52,
-                            height: 52,
+                            width: 44,
+                            height: 44,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Colors.pink[100],
@@ -141,10 +141,10 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                               children: [
                                 Text(
                                   '${widget.profile['name']}, ${widget.profile['age']}',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Nunito',
-                                    fontSize: 18.0,
-                                    fontWeight: FontWeight.w600,
+                                    fontSize: (size.width * 0.045).clamp(15.0, 20.0),
+                                    fontWeight: FontWeight.w500,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -163,7 +163,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                         style: TextStyle(
                                           fontFamily: 'Nunito',
                                           color: Color(0xFFD6D9E6),
-                                          fontSize: 13.0,
+                                          fontSize: (size.width * 0.032).clamp(11.0, 15.0),
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -185,13 +185,13 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
                       // Bio (remove Expanded)
                       Text(
                         widget.profile['bio'],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Nunito',
-                          fontSize: 14.0,
+                          fontSize: (size.width * 0.035).clamp(12.0, 16.0),
                           height: 1.5,
                           color: Colors.white,
                         ),
@@ -219,11 +219,11 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                       ),
                                       child: Text(
                                         interest,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           color: Color(0xFFD6D9E6),
                                           fontFamily: 'Nunito',
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
+                                          fontSize: (size.width * 0.04).clamp(13.0, 16.0),
+                                          fontWeight: FontWeight.w500,
                                         ),
                                       ),
                                     ),

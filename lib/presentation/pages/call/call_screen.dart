@@ -71,6 +71,8 @@ class _CallScreenState extends State<CallScreen> {
       );
     }
 
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -128,6 +130,7 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Widget _buildAudioCallView() {
+    final size = MediaQuery.of(context).size;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -139,18 +142,19 @@ class _CallScreenState extends State<CallScreen> {
           const SizedBox(height: 20),
           Text(
             widget.participantName,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
+              fontSize: (size.width * 0.05).clamp(16.0, 24.0),
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
+          Text(
             'Calling...',
             style: TextStyle(
               color: Colors.white70,
-              fontSize: 16,
+              fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

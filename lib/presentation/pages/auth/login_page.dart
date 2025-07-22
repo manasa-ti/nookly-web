@@ -66,6 +66,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
       body: BlocListener<AuthBloc, AuthState>(
@@ -118,8 +119,8 @@ class _LoginPageState extends State<LoginPage> {
                     'Welcome to nookly',
                     style: TextStyle(
                       fontFamily: 'Nunito',
-                      fontSize: 20, // smaller
-                      fontWeight: FontWeight.bold,
+                      fontSize: (size.width * 0.05).clamp(16.0, 20.0),
+                      fontWeight: FontWeight.w500,
                       color: Colors.white,
                     ),
                     textAlign: TextAlign.center,
@@ -133,10 +134,10 @@ class _LoginPageState extends State<LoginPage> {
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 14), // smaller
-                        decoration: const InputDecoration(
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
+                        decoration: InputDecoration(
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 13),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(vertical: 8), // less height
@@ -162,10 +163,10 @@ class _LoginPageState extends State<LoginPage> {
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 14), // smaller
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 13),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
                           prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -222,9 +223,9 @@ class _LoginPageState extends State<LoginPage> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'Sign In',
-                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 14), // smaller
+                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
                           ),
                   ),
                   const SizedBox(height: 14),
@@ -244,7 +245,7 @@ class _LoginPageState extends State<LoginPage> {
                           style: TextStyle(
                             color: const Color(0xFFD6D9E6),
                             fontFamily: 'Nunito',
-                            fontSize: 12, // smaller
+                            fontSize: (size.width * 0.03).clamp(10.0, 12.0), // smaller
                           ),
                         ),
                       ),
@@ -292,9 +293,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                     label: Text(
                       _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
-                        fontSize: 14, // smaller
+                        fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -316,9 +317,9 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           );
                         },
-                        child: const Text(
+                        child: Text(
                           'Sign Up',
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],

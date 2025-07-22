@@ -19,11 +19,11 @@ class DisappearingTimeSelector extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
+          Text(
             'Message will disappear after:',
             style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 16.0),
+              fontWeight: FontWeight.w500,
               fontFamily: 'Nunito',
               color: Colors.white,
             ),
@@ -41,8 +41,8 @@ class DisappearingTimeSelector extends StatelessWidget {
                   style: TextStyle(
                     color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
                     fontFamily: 'Nunito',
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                    fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 selected: isSelected,

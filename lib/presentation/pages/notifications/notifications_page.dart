@@ -6,9 +6,18 @@ class NotificationsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Notifications'),
+        title: Text(
+          'Notifications',
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Nunito',
+            fontSize: (size.width * 0.04).clamp(13.0, 16.0),
+            color: Colors.black,
+          ),
+        ),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(AppConfig.defaultPadding),
@@ -46,6 +55,7 @@ class _NotificationItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
@@ -58,8 +68,11 @@ class _NotificationItem extends StatelessWidget {
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
+          style: TextStyle(
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Nunito',
+            fontSize: (size.width * 0.04).clamp(13.0, 16.0),
+            color: Colors.black,
           ),
         ),
         subtitle: Column(
@@ -70,7 +83,7 @@ class _NotificationItem extends StatelessWidget {
               time,
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 12,
+                fontSize: (size.width * 0.03).clamp(10.0, 13.0),
               ),
             ),
           ],

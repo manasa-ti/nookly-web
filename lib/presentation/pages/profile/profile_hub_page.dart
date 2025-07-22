@@ -38,6 +38,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
       color: const Color(0xFF234481),
       child: SafeArea(
@@ -57,10 +58,10 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                         const SizedBox(height: 16),
                         Text(
                           _user?.name ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Nunito',
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                            fontSize: (size.width * 0.05).clamp(16.0, 24.0),
+                            fontWeight: FontWeight.w500,
                             color: Colors.white,
                           ),
                         ),
@@ -92,7 +93,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                               _loadUser();
                             }
                           },
-                          child: const Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+                          child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
                         ),
                       ],
                     ),
@@ -107,7 +108,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                          Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 20.0), fontWeight: FontWeight.w500, color: Colors.white)),
                           SizedBox(height: 12),
                           Text('Your purchased features will appear here.', style: TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
                         ],
@@ -121,7 +122,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: ListTile(
                       leading: const Icon(Icons.notifications, color: Colors.white),
-                      title: const Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.bold)),
+                      title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500, fontSize: (size.width * 0.04).clamp(13.0, 16.0))),
                       trailing: const Icon(Icons.chevron_right, color: Colors.white),
                       onTap: () {
                         // Navigate to notifications page
@@ -171,9 +172,10 @@ class _SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return ListTile(
       leading: Icon(icon, color: Colors.white),
-      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+      title: Text(title, style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500, fontSize: (size.width * 0.04).clamp(13.0, 16.0))),
       trailing: const Icon(Icons.chevron_right, color: Colors.white),
       onTap: onTap,
     );

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/widgets/profile_card.dart';
-import 'package:nookly/presentation/widgets/profile_detail_dialog.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});
@@ -84,6 +83,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Container(
       color: const Color(0xFF234481),
       child: BlocConsumer<RecommendedProfilesBloc, RecommendedProfilesState>(
@@ -137,8 +137,8 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                     Text(
                       'No profiles found',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: (size.width * 0.05).clamp(16.0, 20.0),
+                        fontWeight: FontWeight.w500,
                         color: Colors.white,
                       ),
                     ),

@@ -319,6 +319,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     // Show fallback snackbars if needed
     if (_usedFallbackInterests) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -350,7 +351,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        title: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18)),
+        title: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.045).clamp(14.0, 18.0), fontWeight: FontWeight.w500)),
         backgroundColor: const Color(0xFF234481),
         elevation: 0,
       ),
@@ -431,9 +432,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Interests',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: Colors.white),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -447,7 +448,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             style: TextStyle(
                               color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
                               fontFamily: 'Nunito',
-                              fontSize: 14,
+                              fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -475,9 +476,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Objectives',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: Colors.white),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -491,7 +492,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             style: TextStyle(
                               color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
                               fontFamily: 'Nunito',
-                              fontSize: 14,
+                              fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -519,9 +520,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       }).toList(),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'Preferred Age Range',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: Colors.white),
                     ),
                                           SliderTheme(
                         data: SliderTheme.of(context).copyWith(
@@ -555,11 +556,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('${_ageRange.start.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
-                        Text('${_ageRange.end.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+                        Text('${_ageRange.start.round()} years', style: TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: (size.width * 0.032).clamp(11.0, 14.0))),
+                        Text('${_ageRange.end.round()} years', style: TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: (size.width * 0.032).clamp(11.0, 14.0))),
                       ],
                     ),
                     const SizedBox(height: 16),
+                    Text(
+                      'Preferred Distance Radius',
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: Colors.white),
+                    ),
                     DistanceRadiusSlider(
                       value: _distanceRadius,
                       onChanged: (value) {
@@ -584,7 +589,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                         child: Text(
                           'Save Changes',
-                          style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16),
+                          style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ),

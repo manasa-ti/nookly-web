@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/received_likes/received_likes_bloc.dart';
-import 'package:nookly/presentation/widgets/profile_detail_dialog.dart';
+
 import 'package:nookly/presentation/widgets/profile_card.dart';
 
 class ReceivedLikesPage extends StatefulWidget {
@@ -57,9 +57,10 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
                     Text(
                       'No likes yet',
                       style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                        fontSize: (MediaQuery.of(context).size.width * 0.05).clamp(18.0, 22.0),
+                        fontWeight: FontWeight.w500,
                         color: Colors.white,
+                        fontFamily: 'Nunito',
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -103,21 +104,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
                     );
                   },
                   onTap: () {
-                    showDialog(
-                      context: context,
-                      builder: (context) => ProfileDetailDialog(
-                        profile: {
-                          'id': like.id,
-                          'name': like.name,
-                          'age': like.age,
-                          'gender': like.gender,
-                          'distance': like.distance,
-                          'bio': like.bio,
-                          'interests': like.interests,
-                          'profilePicture': like.profilePicture,
-                        },
-                      ),
-                    );
+                    // Profile detail dialog removed - functionality can be added back if needed
                   },
                 );
               },

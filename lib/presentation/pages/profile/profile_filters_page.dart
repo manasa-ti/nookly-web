@@ -167,6 +167,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
         title: Text('Profile Filters', style: TextStyle(fontSize: 18)),
@@ -198,7 +199,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Adjust your preferences to find better matches',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: (size.width * 0.035).clamp(12.0, 14.0),
                             color: Colors.white70,
                           ),
                         ),
@@ -208,8 +209,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Age Range',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -248,6 +249,11 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         const SizedBox(height: 16),
 
                         // Distance Radius
+                        Text(
+                          'Preferred Distance Radius',
+                          style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: Colors.white),
+                        ),
+                        const SizedBox(height: 6),
                         DistanceRadiusSlider(
                           value: _distanceRadius,
                           onChanged: _onDistanceRadiusChanged,
@@ -258,8 +264,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Interests',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -271,11 +277,11 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         const SizedBox(height: 16),
 
                         // Objectives
-                        const Text(
+                        Text(
                           'Objectives',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 6),

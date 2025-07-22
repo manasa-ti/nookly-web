@@ -279,7 +279,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                                 Text(
                                                   '${time}s',
                                                   style: TextStyle(
-                                                    fontSize: 12,
+                                                    fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
                                                     fontFamily: 'Nunito',
                                                     color: widget.isMe ? Colors.white : Colors.white70,
                                                   ),
@@ -300,7 +300,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                             Text(
                                               '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
                                                 fontFamily: 'Nunito',
                                                 color: widget.isMe ? Colors.white : Colors.white70,
                                               ),
@@ -334,7 +334,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                               style: TextStyle(
                                 color: widget.isMe ? Colors.white : Colors.white,
                                 fontFamily: 'Nunito',
-                                fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(13.0, 15.0),
+                                fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
                                 fontWeight: FontWeight.w500,
                               ),
                               softWrap: true,
@@ -354,7 +354,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                 child: Text(
                   widget.timestamp!,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: (MediaQuery.of(context).size.width * 0.03).clamp(10.0, 12.0),
                     fontFamily: 'Nunito',
                     color: Colors.white60,
                   ),

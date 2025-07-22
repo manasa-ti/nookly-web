@@ -59,8 +59,8 @@ class _InterestChipsState extends State<InterestChips> {
             style: TextStyle(
               color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
               fontFamily: 'Nunito',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
+              fontWeight: FontWeight.w500,
             ),
           ),
           selected: isSelected,

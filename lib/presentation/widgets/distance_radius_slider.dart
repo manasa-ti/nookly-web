@@ -21,15 +21,6 @@ class DistanceRadiusSlider extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Preferred Distance Radius',
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
         const SizedBox(height: 6),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
@@ -56,15 +47,15 @@ class DistanceRadiusSlider extends StatelessWidget {
           children: [
             Text(
               '${min.round()} km',
-              style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 16),
+              style: TextStyle(fontFamily: 'Nunito', color: const Color(0xFFD6D9E6), fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(12.0, 14.0)),
             ),
             Text(
               '${value.round()} km',
-              style: const TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16),
+              style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(12.0, 14.0)),
             ),
             Text(
               '${max.round()} km',
-              style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 16),
+              style: TextStyle(fontFamily: 'Nunito', color: const Color(0xFFD6D9E6), fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(12.0, 14.0)),
             ),
           ],
         ),

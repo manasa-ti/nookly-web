@@ -59,9 +59,13 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Enter your email address to reset your password.',
-                    style: TextStyle(fontSize: 16),
+                    style: TextStyle(
+                      fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 16.0),
+                      fontFamily: 'Nunito',
+                      color: Colors.white,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   TextFormField(
