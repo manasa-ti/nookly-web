@@ -1539,9 +1539,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               children: [
                   Text(
                     widget.participantName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0),
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Nunito',
                     ),
@@ -1872,60 +1872,73 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildMessageInput() {
+    final size = MediaQuery.of(context).size;
+    final buttonSize = (size.width * 0.08).clamp(32.0, 36.0); // Smaller, more compact buttons
+    final inputPadding = (size.width * 0.015).clamp(6.0, 12.0); // Reduced padding
+    
     return SafeArea(
       child: Container(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(inputPadding),
         decoration: BoxDecoration(
           color: const Color(0xFF234481),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 4,
+              offset: const Offset(0, -1),
             ),
           ],
         ),
-        child: Row(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.add, color: Colors.white),
-                onPressed: _showOptionsMenu,
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 0.5,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                    width: 1,
-                  ),
+          ),
+          child: Row(
+            children: [
+              // Plus button - smaller and more subtle
+              IconButton(
+                icon: Icon(
+                  Icons.add, 
+                  color: Colors.white.withOpacity(0.8),
+                  size: 20,
                 ),
-                child: TextField(
-                  controller: _messageController,
-                  decoration: const InputDecoration(
-                    hintText: 'Type a message...',
-                    hintStyle: TextStyle(
-                      color: Colors.white70,
-                      fontFamily: 'Nunito',
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                  style: const TextStyle(
-                    fontFamily: 'Nunito',
-                    fontSize: 16,
-                    color: Colors.white,
-                  ),
-                  maxLines: null,
-                  textCapitalization: TextCapitalization.sentences,
+                onPressed: _showOptionsMenu,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
+              ),
+                                // Text input - takes most space
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      decoration: const InputDecoration(
+                        hintText: 'Message',
+                        hintStyle: TextStyle(
+                          color: Colors.white60,
+                          fontFamily: 'Nunito',
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 12,
+                        ),
+                      ),
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 16,
+                        color: Colors.white,
+                      ),
+                      maxLines: null, // Allow unlimited lines
+                      minLines: 1, // Start with single line
+                      textCapitalization: TextCapitalization.sentences,
                   onChanged: (text) {
                     if (!_isTyping && text.isNotEmpty) {
                       setState(() => _isTyping = true);
@@ -1941,19 +1954,22 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   },
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: IconButton(
-                icon: const Icon(Icons.send, color: Color(0xFF234481)),
+              // Send button - smaller and more subtle
+              IconButton(
+                icon: Icon(
+                  Icons.send, 
+                  color: Colors.white.withOpacity(0.8),
+                  size: 20,
+                ),
                 onPressed: _sendTextMessage,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(
+                  minWidth: 32,
+                  minHeight: 32,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -2176,9 +2192,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Widget _buildAvatar() {
+    final size = MediaQuery.of(context).size;
+    final avatarSize = (size.width * 0.08).clamp(32.0, 40.0); // Smaller avatar
+    
     return CustomAvatar(
       name: widget.participantName,
-      size: 56,
+      size: avatarSize,
       isOnline: widget.isOnline,
     );
   }

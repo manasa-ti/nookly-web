@@ -392,7 +392,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   Widget _buildAvatar(Conversation conversation) {
     return CustomAvatar(
       name: conversation.participantName,
-      size: 56,
+      size: 46,
       isOnline: conversation.isOnline,
     );
   }
@@ -499,14 +499,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                     final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.first : null;
                     final isMe = lastMessage?.sender == _currentUser?.id;
 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
-                      child: Card(
-                        color: const Color(0xFF35548B),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListTile(
+                    return Column(
+                      children: [
+                        ListTile(
                         onTap: () => _onConversationTap(conversation),
                         leading: _buildAvatar(conversation),
                         title: Text(
@@ -543,9 +538,17 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                             fontWeight: hasUnread ? FontWeight.bold : FontWeight.normal,
                           ),
                         ),
-                      ),
-                    ),
-                  );
+                        ),
+                        // Add separator between conversations
+                        if (index < state.conversations.length - 1)
+                          Divider(
+                            height: 1,
+                            thickness: 0.5,
+                            color: Colors.white.withOpacity(0.1),
+                            indent: 80, // Align with avatar
+                          ),
+                      ],
+                    );
                   },
                 ),
               );

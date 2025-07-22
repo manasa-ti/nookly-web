@@ -272,11 +272,11 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Create Profile',
           style: TextStyle(
             fontFamily: 'Nunito',
-            fontSize: 22,
+            fontSize: (MediaQuery.of(context).size.width * 0.055).clamp(18.0, 24.0),
             fontWeight: FontWeight.w700,
             color: Colors.white,
           ),
@@ -333,9 +333,9 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                   backgroundColor: const Color(0xFF35548b),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   'Previous',
-                                  style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                                  style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ),
@@ -358,7 +358,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                     )
                                   : Text(
                                       _currentStep == 3 ? 'Save Profile' : 'Next',
-                                      style: const TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+                                      style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
                                     ),
                             ),
                           ),
@@ -368,7 +368,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                   },
                   steps: [
                     Step(
-                      title: const Text('Basic Info', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: Text('Basic Info', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
                       content: Column(
                         children: [
                           Card(
@@ -389,10 +389,10 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                           const SizedBox(height: 8),
                           Container(
                             width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
                               color: const Color(0xFF4C5C8A).withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(6),
                               border: Border.all(color: const Color(0xFF4C5C8A), width: 1),
                             ),
                             child: Row(
@@ -400,16 +400,16 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                 const Icon(
                                   Icons.info_outline,
                                   color: Color(0xFFD6D9E6),
-                                  size: 16,
+                                  size: 14,
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 4),
                                 Expanded(
                                   child: const Text(
-                                    'Must be 18+ to use Nookly',
+                                    'Must be 18+',
                                     style: TextStyle(
                                       fontFamily: 'Nunito',
                                       color: Color(0xFFD6D9E6),
-                                      fontSize: 12,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
@@ -502,7 +502,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 0,
                     ),
                     Step(
-                      title: const Text('Location & Age', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: Text('Location & Age', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
                       content: Column(
                         children: [
                           TextFormField(
@@ -597,7 +597,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 1,
                     ),
                     Step(
-                      title: const Text('Profile Details', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: Text('Profile Details', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
                       content: Column(
                         children: [
                           TextFormField(

@@ -334,7 +334,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                               style: TextStyle(
                                 color: widget.isMe ? Colors.white : Colors.white,
                                 fontFamily: 'Nunito',
-                                fontSize: 16,
+                                fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(13.0, 15.0),
                                 fontWeight: FontWeight.w500,
                               ),
                               softWrap: true,

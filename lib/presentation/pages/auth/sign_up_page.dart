@@ -80,31 +80,32 @@ class _SignUpPageState extends State<SignUpPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
+                  Text(
                     'Create Account',
                     style: TextStyle(
                       fontFamily: 'Nunito',
-                      fontSize: 24,
+                      fontSize: 20, // smaller
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                   Card(
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 14), // smaller
                         decoration: const InputDecoration(
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
-                          prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6)),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 13),
+                          prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 8), // less height
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -118,24 +119,25 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Card(
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 14), // smaller
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
-                          prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6)),
+                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 13),
+                          prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
                               color: const Color(0xFFD6D9E6),
+                              size: 20,
                             ),
                             onPressed: () {
                               setState(() {
@@ -144,6 +146,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8), // less height
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -157,24 +160,25 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
                   Card(
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
                       child: TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
-                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                        style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 14), // smaller
                         decoration: InputDecoration(
                           labelText: 'Confirm Password',
-                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
-                          prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6)),
+                          labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 13),
+                          prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isConfirmPasswordVisible ? Icons.visibility_off : Icons.visibility,
                               color: const Color(0xFFD6D9E6),
+                              size: 20,
                             ),
                             onPressed: () {
                               setState(() {
@@ -183,6 +187,7 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8), // less height
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

@@ -76,7 +76,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
             }
             
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04), // 4% padding
               itemCount: state.likes.length,
               itemBuilder: (context, index) {
                 final like = state.likes[index];

@@ -350,14 +350,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
-        title: const Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+        title: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18)),
         backgroundColor: const Color(0xFF234481),
         elevation: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(AppConfig.defaultPadding),
+              padding: const EdgeInsets.all(12),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -369,31 +369,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         children: [
                           CustomAvatar(
                             name: _nameController.text.isNotEmpty ? _nameController.text : _currentUser.name,
-                            size: 120,
+                            size: 80,
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF4C5C8A),
-                                shape: BoxShape.circle,
-                              ),
-                              child: IconButton(
-                                icon: const Icon(Icons.camera_alt, color: Colors.white),
-                                onPressed: () => _showImagePicker(),
-                              ),
-                            ),
-                          ),
+                          // Profile picture upload disabled for now
+                          // Positioned(
+                          //   bottom: 0,
+                          //   right: 0,
+                          //   child: Container(
+                          //     decoration: const BoxDecoration(
+                          //       color: Color(0xFF4C5C8A),
+                          //       shape: BoxShape.circle,
+                          //     ),
+                          //     child: IconButton(
+                          //       icon: const Icon(Icons.camera_alt, color: Colors.white),
+                          //       onPressed: () => _showImagePicker(),
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 12),
                     Card(
                       color: const Color(0xFF35548b),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: TextFormField(
                           controller: _nameController,
                           style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
@@ -411,12 +412,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
                     Card(
                       color: const Color(0xFF35548b),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: TextFormField(
                           controller: _bioController,
                           maxLines: 3,
@@ -429,12 +430,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     const Text(
                       'Interests',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -446,8 +447,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             style: TextStyle(
                               color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
                               fontFamily: 'Nunito',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           selected: isSelected,
@@ -473,12 +474,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     const Text(
                       'Objectives',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
@@ -490,8 +491,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             style: TextStyle(
                               color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
                               fontFamily: 'Nunito',
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                           selected: isSelected,
@@ -517,24 +518,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         );
                       }).toList(),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
                     const Text(
                       'Preferred Age Range',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
                     ),
-                    SliderTheme(
-                      data: SliderTheme.of(context).copyWith(
-                        trackHeight: 3.0, // Reduced from default 4.0
-                        activeTrackColor: Colors.white,
-                        inactiveTrackColor: const Color(0xFF4C5C8A),
-                        thumbColor: Colors.white,
-                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
-                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
-                        rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
-                        rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
-                        valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
-                        valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
-                      ),
+                                          SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 2.0, // Thinner track for more subtle appearance
+                          activeTrackColor: Colors.white,
+                          inactiveTrackColor: const Color(0xFF4C5C8A),
+                          thumbColor: Colors.white,
+                          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), // Smaller thumb to match thinner track
+                          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), // Smaller overlay
+                          rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 6.0), // Smaller range thumb
+                          rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
+                          valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
+                          valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
+                        ),
                       child: RangeSlider(
                         values: _ageRange,
                         min: 18,
@@ -558,11 +559,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         Text('${_ageRange.end.round()} years', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'Distance Radius',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
+                    const SizedBox(height: 16),
                     DistanceRadiusSlider(
                       value: _distanceRadius,
                       onChanged: (value) {
@@ -571,17 +568,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         });
                       },
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _isFormValid() ? _updateProfile : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFf4656f),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          disabledBackgroundColor: const Color(0xFFf4656f).withOpacity(0.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          elevation: 1,
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white.withOpacity(0.7),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Save Changes',
                           style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16),
                         ),

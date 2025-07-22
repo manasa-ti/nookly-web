@@ -57,6 +57,7 @@ class ContentModerationService {
     for (final keyword in _prohibitedKeywords) {
       if (lowerText.contains(keyword.toLowerCase())) {
         AppLogger.warning('Content moderation: Prohibited keyword detected: $keyword');
+        AppLogger.warning('Content moderation: Text that triggered: "$text"');
         return true;
       }
     }
@@ -66,6 +67,7 @@ class ContentModerationService {
       final regex = RegExp(pattern, caseSensitive: false);
       if (regex.hasMatch(text)) {
         AppLogger.warning('Content moderation: Suspicious pattern detected: $pattern');
+        AppLogger.warning('Content moderation: Text that triggered: "$text"');
         return true;
       }
     }
@@ -137,7 +139,7 @@ class ContentModerationService {
     final spamPatterns = [
       r'\b(hi|hello|hey)\s+(hi|hello|hey)\s+(hi|hello|hey)\b', // Repeated greetings
       r'\b(.)\1{10,}\b', // Repeated characters
-      r'\b\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+\w+\s+\w+\b', // Very long words
+      r'\b\w{50,}\b', // Very long single words (50+ characters)
     ];
     
     for (final pattern in spamPatterns) {

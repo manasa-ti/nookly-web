@@ -169,7 +169,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile Filters'),
+        title: Text('Profile Filters', style: TextStyle(fontSize: 18)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context, false),
@@ -189,39 +189,39 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                   ),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12),
                   child: Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Adjust your preferences to find better matches',
                           style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white,
+                            fontSize: 14,
+                            color: Colors.white70,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
                         // Age Range
-                        const Text(
+                        Text(
                           'Age Range',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
-                            trackHeight: 3.0, // Reduced from default 4.0
+                            trackHeight: 2.0, // Thinner track for more subtle appearance
                             activeTrackColor: Colors.white,
                             inactiveTrackColor: const Color(0xFF4C5C8A),
                             thumbColor: Colors.white,
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
-                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
-                            rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
+                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), // Smaller thumb to match thinner track
+                            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), // Smaller overlay
+                            rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 6.0), // Smaller range thumb
                             rangeTrackShape: const RoundedRectRangeSliderTrackShape(),
                             valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
                             valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
@@ -245,46 +245,46 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                             Text('${_ageRange.end.round()} years'),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
                         // Distance Radius
                         DistanceRadiusSlider(
                           value: _distanceRadius,
                           onChanged: _onDistanceRadiusChanged,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
                         // Interests
-                        const Text(
+                        Text(
                           'Interests',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         InterestChips(
                           selectedInterests: _selectedInterests,
                           onInterestsChanged: _onInterestsChanged,
                           authRepository: GetIt.instance<AuthRepository>(),
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 16),
 
                         // Objectives
                         const Text(
                           'Objectives',
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
                         ObjectiveChips(
                           availableObjectives: _availableObjectives,
                           selectedObjectives: _selectedObjectives,
                           onObjectivesChanged: _onObjectivesChanged,
                         ),
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 20),
 
                         // Update Button
                         SizedBox(
@@ -292,14 +292,15 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _updateFilters,
                             style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               backgroundColor: const Color(0xFFf4656f),
                               foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
                             child: _isLoading
                                 ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
+                                    height: 18,
+                                    width: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -308,8 +309,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                                 : const Text(
                                     'Update Filters',
                                     style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                           ),

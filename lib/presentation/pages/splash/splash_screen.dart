@@ -142,34 +142,33 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           _buildLogo(),
                           const SizedBox(height: 30),
                           
-                                                          // Title
-                                const Text(
-                                  'nookly',
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    fontSize: 48,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                    letterSpacing: 3,
-                                    shadows: [
-                                      Shadow(
-                                        color: Color.fromRGBO(0, 0, 0, 0.3),
-                                        blurRadius: 15,
-                                        offset: Offset(0, 3),
-                                      ),
-                                    ],
-                                  ),
+                          // Title
+                          Text(
+                            'nookly',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: (MediaQuery.of(context).size.width * 0.09).clamp(24.0, 36.0), // smaller
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 3,
+                              shadows: const [
+                                Shadow(
+                                  color: Color.fromRGBO(0, 0, 0, 0.3),
+                                  blurRadius: 15,
+                                  offset: Offset(0, 3),
                                 ),
-                          const SizedBox(height: 10),
-                          
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: (MediaQuery.of(context).size.height * 0.01).clamp(8.0, 16.0)),
                           // Tagline
                           Opacity(
                             opacity: 0.9,
-                            child: const Text(
+                            child: Text(
                               'Never be lonely',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
-                                fontSize: 18,
+                                fontSize: (MediaQuery.of(context).size.width * 0.032).clamp(11.0, 15.0), // smaller
                                 fontWeight: FontWeight.w500,
                                 color: Colors.white,
                               ),
@@ -193,9 +192,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Widget _buildLogo() {
+    final size = MediaQuery.of(context).size;
+    final logoSize = (size.width * 0.25).clamp(80.0, 120.0);
     return Container(
-      width: 100,
-      height: 100,
+      width: logoSize,
+      height: logoSize,
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -221,16 +222,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       child: Stack(
         children: [
           // Main "N" letter
-          const Center(
+          Center(
             child: Text(
               'N',
               style: TextStyle(
                 fontFamily: 'Nunito',
-                fontSize: 48,
+                fontSize: (logoSize * 0.48).clamp(32.0, 48.0),
                 fontWeight: FontWeight.w600,
                 color: Colors.white,
                 letterSpacing: 2,
-                shadows: [
+                shadows: const [
                   Shadow(
                     color: Color.fromRGBO(0, 0, 0, 0.4),
                     blurRadius: 12,

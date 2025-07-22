@@ -76,8 +76,8 @@ class CustomAvatar extends StatelessWidget {
               _getInitial(),
               style: TextStyle(
                 color: Colors.white,
-                fontSize: size * 0.4,
-                fontWeight: FontWeight.w500, // Changed from w600 to w500 for more elegant look
+                fontSize: size * 0.32, // Reduced from 0.4 to 0.32 for smaller letter
+                fontWeight: FontWeight.w500,
                 fontFamily: 'Nunito',
               ),
             ),

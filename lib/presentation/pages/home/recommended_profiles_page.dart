@@ -114,7 +114,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           }
         },
         builder: (context, state) {
-          if (state is RecommendedProfilesLoading) {
+          if (state is RecommendedProfilesLoading || _isInitialLoad) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -158,7 +158,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             print('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isLoadingMore: $_isLoadingMore');
             return ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04), // 4% padding
               itemCount: state.profiles.length + (_isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == state.profiles.length) {

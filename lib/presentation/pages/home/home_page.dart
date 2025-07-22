@@ -85,20 +85,20 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         backgroundColor: const Color(0xFF234481),
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(100),
+          preferredSize: Size.fromHeight(MediaQuery.of(context).size.height * 0.12), // 12% of screen height
           child: SafeArea(
             top: true, // Exclude status bar from colored background
             bottom: false,
             child: Container(
               color: const Color(0xFF35548b).withOpacity(0.7), // Match bottom nav bar color and opacity
               child: SizedBox(
-                height: 100,
+                height: MediaQuery.of(context).size.height * 0.12, // 12% of screen height
                 child: Stack(
                   children: [
                     Align(
                       alignment: Alignment.topCenter,
                       child: Padding(
-                        padding: const EdgeInsets.only(top: 18),
+                        padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.02), // 2% top padding
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -109,16 +109,16 @@ class _HomePageState extends State<HomePage> {
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                     letterSpacing: 1.2,
-                                    fontSize: 28,
+                                    fontSize: MediaQuery.of(context).size.width * 0.07, // 7% of screen width
                                   ),
                             ),
-                            const SizedBox(height: 4),
-                            const Text(
+                            SizedBox(height: MediaQuery.of(context).size.height * 0.005), // 0.5% spacing
+                            Text(
                               'Never be lonely',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
-                                fontSize: 14,
-                                color: Color(0xFFD6D9E6),
+                                fontSize: MediaQuery.of(context).size.width * 0.035, // 3.5% of screen width
+                                color: const Color(0xFFD6D9E6),
                                 fontWeight: FontWeight.w400,
                               ),
                             ),
@@ -128,13 +128,17 @@ class _HomePageState extends State<HomePage> {
                     ),
                     if (_currentIndex == 0)
                       Positioned(
-                        top: 18,
-                        right: 12,
+                        top: MediaQuery.of(context).size.height * 0.02, // 2% top
+                        right: MediaQuery.of(context).size.width * 0.03, // 3% right
                         child: IconButton(
-                          icon: const Icon(Icons.filter_list, color: Colors.white, size: 32),
+                          icon: Icon(
+                            Icons.filter_list, 
+                            color: Colors.white, 
+                            size: MediaQuery.of(context).size.width * 0.08, // 8% of screen width
+                          ),
                           onPressed: _onFiltersPressed,
                           tooltip: 'Filters',
-                          iconSize: 32,
+                          iconSize: MediaQuery.of(context).size.width * 0.08, // 8% of screen width
                           padding: EdgeInsets.zero,
                           constraints: BoxConstraints(),
                         ),
@@ -169,10 +173,10 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.01), // 1% bottom padding
                 child: NavigationBar(
                   backgroundColor: Colors.transparent,
-                  height: 72,
+                  height: MediaQuery.of(context).size.height * 0.08, // 8% of screen height
                   selectedIndex: _currentIndex,
                   onDestinationSelected: (index) {
                     setState(() {
@@ -184,55 +188,55 @@ class _HomePageState extends State<HomePage> {
                 destinations: [
                   NavigationDestination(
                     icon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.discoverIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002), // 0.2% vertical padding
+                      child: SvgIcons.discoverIcon(size: MediaQuery.of(context).size.width * 0.1), // 10% of screen width
                     ),
                     selectedIcon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.discoverIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002), // 0.2% vertical padding
+                      child: SvgIcons.discoverIcon(size: MediaQuery.of(context).size.width * 0.1), // 10% of screen width
                     ),
                     label: 'Discover',
                   ),
                   NavigationDestination(
                     icon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.likesIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
+                      child: SvgIcons.likesIcon(size: MediaQuery.of(context).size.width * 0.1),
                     ),
                     selectedIcon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.likesIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
+                      child: SvgIcons.likesIcon(size: MediaQuery.of(context).size.width * 0.1),
                     ),
                     label: 'Likes',
                   ),
                   NavigationDestination(
                     icon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.chatsIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
+                      child: SvgIcons.chatsIcon(size: MediaQuery.of(context).size.width * 0.1),
                     ),
                     selectedIcon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.chatsIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
+                      child: SvgIcons.chatsIcon(size: MediaQuery.of(context).size.width * 0.1),
                     ),
                     label: 'Chat',
                   ),
                   NavigationDestination(
                     icon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.profileIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
+                      child: SvgIcons.profileIcon(size: MediaQuery.of(context).size.width * 0.1),
                     ),
                     selectedIcon: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: SvgIcons.profileIcon(size: 42),
+                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
+                      child: SvgIcons.profileIcon(size: MediaQuery.of(context).size.width * 0.1),
                     ),
                     label: 'Profile',
                   ),
                 ],
-                labelTextStyle: const MaterialStatePropertyAll(
+                labelTextStyle: MaterialStatePropertyAll(
                   TextStyle(
                     fontFamily: 'Nunito',
                     color: Colors.white,
                     fontWeight: FontWeight.w600,
-                    fontSize: 14,
+                    fontSize: MediaQuery.of(context).size.width * 0.03, // 3% of screen width
                     height: 1.2,
                   ),
                 ),

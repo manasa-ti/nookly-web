@@ -52,7 +52,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                       children: [
                         CustomAvatar(
                           name: _user?.name,
-                          size: 100,
+                          size: 60,
                         ),
                         const SizedBox(height: 16),
                         Text(

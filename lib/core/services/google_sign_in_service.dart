@@ -37,7 +37,7 @@ class GoogleSignInService {
       } else if (Platform.isAndroid) {
         // Android configuration - using Android client ID
         _googleSignIn = GoogleSignIn(
-          clientId: '957642975258-k802ombsbqdc6a0qvgubvkoa6s6ensnp.apps.googleusercontent.com', // Android client ID
+          clientId: '957642975258-39lt5kotqdbuvcqg9uic4pplpdq29c1o.apps.googleusercontent.com', // Web client ID
           scopes: [
             'email',
             'profile',

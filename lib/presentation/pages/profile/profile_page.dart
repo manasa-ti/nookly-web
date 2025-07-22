@@ -60,7 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 : _user == null
                     ? const Center(child: Text('No profile data available', style: TextStyle(color: Colors.white)))
                     : ListView(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.all(12),
                         children: [
                           // Profile Info
                           Center(
@@ -68,27 +68,28 @@ class _ProfilePageState extends State<ProfilePage> {
                               children: [
                                 CustomAvatar(
                                   name: _user!.name,
-                                  size: 100,
+                                  size: 60,
                                 ),
-                                const SizedBox(height: 16),
+                                const SizedBox(height: 12),
                                 Text(
                                   _user!.name ?? '',
                                   style: const TextStyle(
                                     fontFamily: 'Nunito',
-                                    fontSize: 24,
+                                    fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                                 Text(
                                   _user!.email,
                                   style: const TextStyle(
                                     fontFamily: 'Nunito',
+                                    fontSize: 14,
                                     color: Color(0xFFD6D9E6),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                                 ElevatedButton(
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: const Color(0xFF4C5C8A),
@@ -104,18 +105,18 @@ class _ProfilePageState extends State<ProfilePage> {
                               ],
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 20),
                           // Purchased Features Section
                           Card(
                             color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Padding(
-                              padding: const EdgeInsets.all(16),
+                              padding: const EdgeInsets.all(12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                                  const SizedBox(height: 12),
+                                  const Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+                                  const SizedBox(height: 8),
                                   _buildFeatureTile('See Who Likes You', 'Find out who has liked your profile before you match', Icons.favorite, true),
                                   _buildFeatureTile('Unlimited Likes', 'No daily limit on the number of profiles you can like', Icons.all_inclusive, true),
                                   _buildFeatureTile('Advanced Filters', 'Filter by education, height, and more', Icons.filter_list, false),
@@ -125,25 +126,26 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 32),
+                          const SizedBox(height: 20),
                           // Notifications Section
                           Card(
                             color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
-                              leading: const Icon(Icons.notifications, color: Colors.white),
-                              title: const Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.bold)),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              leading: const Icon(Icons.notifications, color: Colors.white, size: 20),
+                              title: const Text('Notifications', style: TextStyle(fontFamily: 'Nunito', fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold)),
+                              trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
                               onTap: () {
                                 // Navigate to notifications page
                               },
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           // Settings Section
                           Card(
                             color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Column(
                               children: [
                                 _buildSettingsTile(Icons.privacy_tip, 'Privacy', () {}),
@@ -161,25 +163,27 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildFeatureTile(String title, String description, IconData icon, bool isActive) {
     return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: isActive ? const Color(0xFF4C5C8A) : Colors.grey.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 24),
+        child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 18),
       ),
-      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.bold)),
-      subtitle: Text(description, style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
-      trailing: isActive ? const Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito')), backgroundColor: Color(0xFF4C5C8A)) : null,
+      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', fontSize: 15, color: Colors.white, fontWeight: FontWeight.bold)),
+      subtitle: Text(description, style: const TextStyle(fontFamily: 'Nunito', fontSize: 13, color: Color(0xFFD6D9E6))),
+      trailing: isActive ? const Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 12)), backgroundColor: Color(0xFF4C5C8A)) : null,
     );
   }
 
   Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white),
-      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', color: Colors.white)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      leading: Icon(icon, color: Colors.white, size: 20),
+      title: Text(title, style: const TextStyle(fontFamily: 'Nunito', fontSize: 15, color: Colors.white)),
+      trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
       onTap: onTap,
     );
   }

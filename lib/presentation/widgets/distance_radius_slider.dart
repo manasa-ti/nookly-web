@@ -25,20 +25,20 @@ class DistanceRadiusSlider extends StatelessWidget {
           'Preferred Distance Radius',
           style: TextStyle(
             fontFamily: 'Nunito',
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            trackHeight: 3.0, // Reduced from default 4.0
+            trackHeight: 2.0, // Thinner track for more subtle appearance
             activeTrackColor: Colors.white,
             inactiveTrackColor: const Color(0xFF4C5C8A),
             thumbColor: Colors.white,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), // Smaller thumb to match thinner track
+            overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), // Smaller overlay
             valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
             valueIndicatorShape: const PaddleSliderValueIndicatorShape(), // Same shape as age range slider
           ),

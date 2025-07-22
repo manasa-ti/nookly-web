@@ -144,7 +144,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                   style: const TextStyle(
                                     fontFamily: 'Nunito',
                                     fontSize: 18.0,
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w600,
                                     color: Colors.white,
                                   ),
                                 ),
@@ -173,7 +173,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                               ],
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          //const SizedBox(width: 8),
                           // Connect button at the end of the row with size constraint
                           SizedBox(
                             width: 60,
@@ -378,10 +378,12 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
                     elevation: 4,
                     shadowColor: Colors.black26,
                   ),
-                  child: Icon(
-                    _isFilled ? Icons.favorite : Icons.favorite_border,
-                    color: _isFilled ? Colors.white : const Color(0xFFFF4B6A),
-                    size: 24,
+                  child: Center(
+                    child: Icon(
+                      _isFilled ? Icons.favorite : Icons.favorite_border,
+                      color: _isFilled ? const Color.fromARGB(255, 149, 3, 3) : const Color(0xFFFF4B6A),
+                      size: 24,
+                    ),
                   ),
                 ),
               );
