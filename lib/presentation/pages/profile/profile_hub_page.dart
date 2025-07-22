@@ -5,7 +5,6 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -103,14 +102,14 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   Card(
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 20.0), fontWeight: FontWeight.w500, color: Colors.white)),
-                          SizedBox(height: 12),
-                          Text('Your purchased features will appear here.', style: TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+                          const SizedBox(height: 12),
+                          Text('Your purchased features will appear here.', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
                         ],
                       ),
                     ),

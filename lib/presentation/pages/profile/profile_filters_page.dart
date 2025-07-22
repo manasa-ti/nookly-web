@@ -170,7 +170,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
     final size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        title: Text('Profile Filters', style: TextStyle(fontSize: 18)),
+        title: Text('Profile Filters', style: TextStyle(fontSize: (size.width * 0.045).clamp(16.0, 18.0), fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context, false),
@@ -312,11 +312,12 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                     ),
                                   )
-                                : const Text(
+                                : Text(
                                     'Update Filters',
                                     style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w600,
+                                      fontSize: (size.width * 0.04).clamp(13.0, 15.0),
+                                      fontWeight: FontWeight.w500,
+                                      fontFamily: 'Nunito',
                                     ),
                                   ),
                           ),

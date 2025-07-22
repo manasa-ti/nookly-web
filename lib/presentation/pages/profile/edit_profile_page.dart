@@ -222,10 +222,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         SnackBar(
           content: Text(
             'Bio contains inappropriate content. Please revise your bio.',
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 16.0),
+              fontWeight: FontWeight.w500,
               fontFamily: 'Nunito',
             ),
           ),
