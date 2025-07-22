@@ -375,46 +375,40 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                             color: const Color(0xFF35548b),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
-                              title: const Text('Birthdate', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
-                              subtitle: Text(
-                                _selectedDate != null
-                                    ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
-                                    : 'Select your birthdate',
-                                style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 16, fontWeight: FontWeight.w500),
+                              title: const Text('Birthdate', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    _selectedDate != null
+                                        ? DateFormat('MMM dd, yyyy').format(_selectedDate!)
+                                        : 'Tap to select',
+                                    style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6), fontSize: 15, fontWeight: FontWeight.w500),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  const Icon(Icons.calendar_today, color: Color(0xFFD6D9E6)),
+                                ],
                               ),
-                              trailing: const Icon(Icons.calendar_today, color: Color(0xFFD6D9E6)),
                               onTap: () => _selectDate(context),
+                              dense: true, // More compact
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4C5C8A).withValues(alpha: 0.3),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: const Color(0xFF4C5C8A), width: 1),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.info_outline,
-                                  color: Color(0xFFD6D9E6),
-                                  size: 14,
+                          const SizedBox(height: 4), // Reduce space after birthdate
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                'Must be 18+',
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  color: Color(0xFFB0B3C7), // subtle, lighter color
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: const Text(
-                                    'Must be 18+',
-                                    style: TextStyle(
-                                      fontFamily: 'Nunito',
-                                      color: Color(0xFFD6D9E6),
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                                textAlign: TextAlign.left,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -422,7 +416,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                             color: const Color(0xFF35548b),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                               child: DropdownButtonFormField<String>(
                                 value: _selectedSex,
                                 style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
@@ -431,7 +425,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                   labelText: 'I am',
                                   labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(vertical: 4), // Reduce vertical padding
                                 ),
                                 items: _sexOptions.map((String value) {
                                   return DropdownMenuItem<String>(
@@ -456,12 +450,12 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 4), // Reduce space after gender
                           Card(
                             color: const Color(0xFF35548b),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                               child: DropdownButtonFormField<String>(
                                 value: _selectedWishToFind,
                                 style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
@@ -470,7 +464,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                   labelText: 'I want to find',
                                   labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
                                   border: InputBorder.none,
-                                  contentPadding: EdgeInsets.symmetric(vertical: 8),
+                                  contentPadding: EdgeInsets.symmetric(vertical: 4), // Reduce vertical padding
                                 ),
                                 items: _wishToFindOptions.map((String value) {
                                   return DropdownMenuItem<String>(
@@ -497,6 +491,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               ),
                             ),
                           ),
+                          const SizedBox(height: 4), // Reduce space after seeking gender
                         ],
                       ),
                       isActive: _currentStep >= 0,

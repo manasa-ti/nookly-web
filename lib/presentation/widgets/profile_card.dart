@@ -2,6 +2,40 @@ import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:developer' as developer;
+import 'package:nookly/presentation/widgets/interest_chips.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/data/models/auth/auth_response_model.dart';
+import 'package:nookly/data/models/auth/login_request_model.dart';
+import 'package:nookly/data/models/auth/register_request_model.dart';
+
+// Custom compact chip for profile card
+class ProfileInterestChip extends StatelessWidget {
+  final String label;
+  const ProfileInterestChip({Key? key, required this.label}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.only(right: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF35548b),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Color(0xFF8FA3C8), width: 1),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Color(0xFFD6D9E6),
+          fontFamily: 'Nunito',
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
 
 class ProfileCard extends StatefulWidget {
   final Map<String, dynamic> profile;
@@ -104,7 +138,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: const Color(0xFF3A4A7A),
                     borderRadius: BorderRadius.circular(24),
@@ -121,7 +155,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                     children: [
                       // Profile Info Row
                       Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           // Circular Profile Image
                           Container(
@@ -143,7 +177,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                   '${widget.profile['name']}, ${widget.profile['age']}',
                                   style: TextStyle(
                                     fontFamily: 'Nunito',
-                                    fontSize: (size.width * 0.045).clamp(15.0, 20.0),
+                                    fontSize: (size.width * 0.045).clamp(13.0, 17.0),
                                     fontWeight: FontWeight.w500,
                                     color: Colors.white,
                                   ),
@@ -173,11 +207,10 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                               ],
                             ),
                           ),
-                          //const SizedBox(width: 8),
                           // Connect button at the end of the row with size constraint
                           SizedBox(
-                            width: 60,
-                            height: 60,
+                            width: 44,
+                            height: 44,
                             child: AnimatedConnectButton(
                               key: ValueKey('connect_${widget.profile['id']}'), // Add unique key based on profile ID
                               onTap: widget.onSwipeRight,
@@ -198,37 +231,17 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      // Interests (remove SizedBox, use ListView with shrinkWrap and smaller chips)
+                      // Interests (use custom compact ProfileInterestChip for display)
                       Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: SizedBox(
-                          height: 32,
+                          height: 28,
                           child: ListView(
                             scrollDirection: Axis.horizontal,
                             shrinkWrap: true,
-                            children: (widget.profile['interests'] as List<String>)
-                                .map(
-                                  (interest) => Padding(
-                                    padding: const EdgeInsets.only(right: 6),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF35548b),
-                                        borderRadius: BorderRadius.circular(16),
-                                        border: Border.all(color: Color(0xFF8FA3C8), width: 1), // Subtle border
-                                      ),
-                                      child: Text(
-                                        interest,
-                                        style: TextStyle(
-                                          color: Color(0xFFD6D9E6),
-                                          fontFamily: 'Nunito',
-                                          fontSize: (size.width * 0.04).clamp(13.0, 16.0),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                )
+                            children: (widget.profile['interests'] as List<String>? ?? [])
+                                .take(5)
+                                .map((interest) => ProfileInterestChip(label: interest))
                                 .toList(),
                           ),
                         ),
@@ -373,7 +386,7 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
                   onPressed: _onPressed,
                   style: ElevatedButton.styleFrom(
                     shape: const CircleBorder(),
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(4),
                     backgroundColor: _colorAnim.value ?? Colors.transparent,
                     elevation: 4,
                     shadowColor: Colors.black26,
@@ -382,7 +395,7 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
                     child: Icon(
                       _isFilled ? Icons.favorite : Icons.favorite_border,
                       color: _isFilled ? const Color.fromARGB(255, 149, 3, 3) : const Color(0xFFFF4B6A),
-                      size: 24,
+                      size: 20,
                     ),
                   ),
                 ),
@@ -459,4 +472,39 @@ class _FloatingHeartState extends State<_FloatingHeart> with SingleTickerProvide
       },
     );
   }
+} 
+
+// Add a dummy AuthRepository implementation for display-only usage
+class DummyAuthRepository implements AuthRepository {
+  @override
+  Future<List<String>> getPredefinedInterests() async => List<String>.from([]);
+
+  @override
+  Future<User> signInWithEmailAndPassword(String email, String password) => throw UnimplementedError();
+  @override
+  Future<User> signUpWithEmailAndPassword(String email, String password) => throw UnimplementedError();
+  @override
+  Future<User> signInWithGoogle() => throw UnimplementedError();
+  @override
+  Future<void> resetPassword(String email) => throw UnimplementedError();
+  @override
+  Future<void> signOut() => throw UnimplementedError();
+  @override
+  Future<User?> getCurrentUser() => throw UnimplementedError();
+  @override
+  Future<void> updateUserProfile(User user) => throw UnimplementedError();
+  @override
+  Future<void> deleteAccount() => throw UnimplementedError();
+  @override
+  Future<AuthResponseModel> login(LoginRequestModel request) => throw UnimplementedError();
+  @override
+  Future<AuthResponseModel> register(RegisterRequestModel request) => throw UnimplementedError();
+  @override
+  Future<void> logout() => throw UnimplementedError();
+  @override
+  Future<bool> isLoggedIn() => throw UnimplementedError();
+  @override
+  Future<String?> getToken() => throw UnimplementedError();
+  @override
+  Future<List<String>> getPredefinedObjectives() async => List<String>.from([]);
 } 
