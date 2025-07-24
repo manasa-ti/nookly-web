@@ -8,6 +8,8 @@ import 'package:nookly/core/services/google_sign_in_service.dart';
 import 'package:nookly/data/models/auth/auth_response_model.dart';
 import 'package:nookly/data/models/auth/login_request_model.dart';
 import 'package:nookly/data/models/auth/register_request_model.dart';
+import 'package:nookly/data/models/auth/otp_response_model.dart';
+import 'package:nookly/data/models/auth/verify_otp_response_model.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 
@@ -26,9 +28,11 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       final authResponse = AuthResponseModel.fromJson(response.data);
-      await _saveToken(authResponse.token);
-      await _saveUserId(authResponse.user.id);
-      NetworkService.setAuthToken(authResponse.token);
+      if (authResponse.token != null) {
+        await _saveToken(authResponse.token!);
+        await _saveUserId(authResponse.user.id);
+        NetworkService.setAuthToken(authResponse.token!);
+      }
       AppLogger.info('Login successful for user: ${request.email}');
       return authResponse;
     } on DioException catch (e) {
@@ -51,9 +55,11 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       final authResponse = AuthResponseModel.fromJson(response.data);
-      await _saveToken(authResponse.token);
-      await _saveUserId(authResponse.user.id);
-      NetworkService.setAuthToken(authResponse.token);
+      if (authResponse.token != null) {
+        await _saveToken(authResponse.token!);
+        await _saveUserId(authResponse.user.id);
+        NetworkService.setAuthToken(authResponse.token!);
+      }
       AppLogger.info('Registration successful for user: ${request.email}');
       return authResponse;
     } on DioException catch (e) {
@@ -97,14 +103,13 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<User> signInWithEmailAndPassword(String email, String password) async {
+  Future<AuthResponseModel> signInWithEmailAndPassword(String email, String password) async {
     final request = LoginRequestModel(email: email, password: password);
-    final response = await login(request);
-    return _mapUserModelToEntity(response.user);
+    return await login(request);
   }
 
   @override
-  Future<User> signUpWithEmailAndPassword(String email, String password) async {
+  Future<AuthResponseModel> signUpWithEmailAndPassword(String email, String password) async {
     try {
       final response = await NetworkService.dio.post(
         '/users/register',
@@ -115,10 +120,15 @@ class AuthRepositoryImpl implements AuthRepository {
       );
 
       final authResponse = AuthResponseModel.fromJson(response.data);
-      await _saveToken(authResponse.token);
-      await _saveUserId(authResponse.user.id);
-      NetworkService.setAuthToken(authResponse.token);
-      return _mapUserModelToEntity(authResponse.user);
+      
+      // Only save token and set auth if email verification is not required
+      if (authResponse.token != null && authResponse.emailVerificationRequired != true) {
+        await _saveToken(authResponse.token!);
+        await _saveUserId(authResponse.user.id);
+        NetworkService.setAuthToken(authResponse.token!);
+      }
+      
+      return authResponse;
     } on DioException catch (e) {
       throw Exception('Failed to register: ${e.response?.data ?? e.message}');
     }
@@ -176,12 +186,14 @@ class AuthRepositoryImpl implements AuthRepository {
       AppLogger.info('=======================');
       
       final authResponse = AuthResponseModel.fromJson(response.data);
-      await _saveToken(authResponse.token);
-      await _saveUserId(authResponse.user.id);
-      NetworkService.setAuthToken(authResponse.token);
+      if (authResponse.token != null) {
+        await _saveToken(authResponse.token!);
+        await _saveUserId(authResponse.user.id);
+        NetworkService.setAuthToken(authResponse.token!);
+      }
       
       AppLogger.info('Google Sign-In successful for user: ${authData['email']}');
-      AppLogger.info('JWT Token received: ${authResponse.token.substring(0, 20)}...');
+      AppLogger.info('JWT Token received: ${authResponse.token?.substring(0, 20) ?? 'null'}...');
       AppLogger.info('User ID: ${authResponse.user.id}');
       return _mapUserModelToEntity(authResponse.user);
     } on DioException catch (e) {
@@ -392,5 +404,96 @@ class AuthRepositoryImpl implements AuthRepository {
       seekingGender: model.seekingGender,
       objectives: model.objectives,
     );
+  }
+
+  // OTP Methods Implementation
+  @override
+  Future<OtpResponseModel> sendOtp(String email) async {
+    try {
+      AppLogger.info('Sending OTP to email: $email');
+      final response = await NetworkService.dio.post(
+        '/users/send-otp',
+        data: {'email': email},
+      );
+
+      final otpResponse = OtpResponseModel.fromJson(response.data);
+      AppLogger.info('OTP sent successfully to: $email');
+      return otpResponse;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to send OTP',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Failed to send OTP: ${e.response?.data?['message'] ?? e.message}');
+    }
+  }
+
+  @override
+  Future<VerifyOtpResponseModel> verifyOtp(String email, String otp) async {
+    try {
+      AppLogger.info('Verifying OTP for email: $email');
+      final response = await NetworkService.dio.post(
+        '/users/verify-otp',
+        data: {
+          'email': email,
+          'otp': otp,
+        },
+      );
+
+      AppLogger.info('OTP verification response data: ${response.data}');
+      
+      try {
+        final verifyResponse = VerifyOtpResponseModel.fromJson(response.data);
+        
+        // Save token and user ID after successful verification
+        await _saveToken(verifyResponse.token);
+        await _saveUserId(verifyResponse.user.id);
+        NetworkService.setAuthToken(verifyResponse.token);
+        
+        AppLogger.info('OTP verified successfully for: $email');
+        return verifyResponse;
+      } catch (parseError) {
+        AppLogger.error('Failed to parse OTP verification response: $parseError');
+        AppLogger.error('Response data structure: ${response.data.runtimeType}');
+        if (response.data is Map) {
+          AppLogger.error('Response data keys: ${(response.data as Map).keys.toList()}');
+          if ((response.data as Map).containsKey('user')) {
+            final userData = (response.data as Map)['user'];
+            AppLogger.error('User data keys: ${userData is Map ? (userData as Map).keys.toList() : 'Not a Map'}');
+          }
+        }
+        throw Exception('Failed to parse OTP verification response: $parseError');
+      }
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to verify OTP',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Failed to verify OTP: ${e.response?.data?['message'] ?? e.message}');
+    }
+  }
+
+  @override
+  Future<OtpResponseModel> resendOtp(String email) async {
+    try {
+      AppLogger.info('Resending OTP to email: $email');
+      final response = await NetworkService.dio.post(
+        '/users/resend-otp',
+        data: {'email': email},
+      );
+
+      final otpResponse = OtpResponseModel.fromJson(response.data);
+      AppLogger.info('OTP resent successfully to: $email');
+      return otpResponse;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to resend OTP',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Failed to resend OTP: ${e.response?.data?['message'] ?? e.message}');
+    }
   }
 } 

@@ -9,6 +9,7 @@ import 'package:nookly/presentation/pages/auth/forgot_password_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
+import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -64,6 +65,8 @@ class _LoginPageState extends State<LoginPage> {
     context.read<AuthBloc>().add(SignInWithGoogle());
   }
 
+
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -95,6 +98,21 @@ class _LoginPageState extends State<LoginPage> {
                 (route) => false, // Remove all previous routes
               );
             }
+          } else if (state is EmailVerificationRequired) {
+            setState(() {
+              _isEmailLoading = false;
+              _isGoogleLoading = false;
+            });
+            // Navigate to email verification page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EmailVerificationPage(
+                  email: state.email,
+                  fromRegistration: false,
+                ),
+              ),
+            );
           } else if (state is AuthError) {
             setState(() {
               _isEmailLoading = false;
@@ -130,17 +148,17 @@ class _LoginPageState extends State<LoginPage> {
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
                         decoration: InputDecoration(
                           labelText: 'Email',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8), // less height
+                          contentPadding: EdgeInsets.symmetric(vertical: 8),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -159,11 +177,11 @@ class _LoginPageState extends State<LoginPage> {
                     color: const Color(0xFF35548b),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // less padding
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)), // smaller
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
@@ -181,7 +199,7 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8), // less height
+                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -195,7 +213,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4), // Reduced from 8
+                  const SizedBox(height: 4),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -206,13 +224,13 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16), // Reduced from 24
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _isEmailLoading ? null : _onSignInPressed,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFf4656f),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      padding: const EdgeInsets.symmetric(vertical: 12), // less padding
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     child: _isEmailLoading
                         ? const SizedBox(

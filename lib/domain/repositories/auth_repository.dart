@@ -2,10 +2,12 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/data/models/auth/auth_response_model.dart';
 import 'package:nookly/data/models/auth/login_request_model.dart';
 import 'package:nookly/data/models/auth/register_request_model.dart';
+import 'package:nookly/data/models/auth/otp_response_model.dart';
+import 'package:nookly/data/models/auth/verify_otp_response_model.dart';
 
 abstract class AuthRepository {
-  Future<User> signInWithEmailAndPassword(String email, String password);
-  Future<User> signUpWithEmailAndPassword(String email, String password);
+  Future<AuthResponseModel> signInWithEmailAndPassword(String email, String password);
+  Future<AuthResponseModel> signUpWithEmailAndPassword(String email, String password);
   Future<User> signInWithGoogle();
   Future<void> resetPassword(String email);
   Future<void> signOut();
@@ -19,4 +21,9 @@ abstract class AuthRepository {
   Future<String?> getToken();
   Future<List<String>> getPredefinedInterests();
   Future<List<String>> getPredefinedObjectives();
+  
+  // OTP Methods
+  Future<OtpResponseModel> sendOtp(String email);
+  Future<VerifyOtpResponseModel> verifyOtp(String email, String otp);
+  Future<OtpResponseModel> resendOtp(String email);
 } 

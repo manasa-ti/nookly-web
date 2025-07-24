@@ -1,13 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:developer' as developer;
-import 'package:nookly/presentation/widgets/interest_chips.dart';
-import 'package:nookly/domain/repositories/auth_repository.dart';
-import 'package:nookly/domain/entities/user.dart';
-import 'package:nookly/data/models/auth/auth_response_model.dart';
-import 'package:nookly/data/models/auth/login_request_model.dart';
-import 'package:nookly/data/models/auth/register_request_model.dart';
 
 // Custom compact chip for profile card
 class ProfileInterestChip extends StatelessWidget {
@@ -472,39 +464,4 @@ class _FloatingHeartState extends State<_FloatingHeart> with SingleTickerProvide
       },
     );
   }
-} 
-
-// Add a dummy AuthRepository implementation for display-only usage
-class DummyAuthRepository implements AuthRepository {
-  @override
-  Future<List<String>> getPredefinedInterests() async => List<String>.from([]);
-
-  @override
-  Future<User> signInWithEmailAndPassword(String email, String password) => throw UnimplementedError();
-  @override
-  Future<User> signUpWithEmailAndPassword(String email, String password) => throw UnimplementedError();
-  @override
-  Future<User> signInWithGoogle() => throw UnimplementedError();
-  @override
-  Future<void> resetPassword(String email) => throw UnimplementedError();
-  @override
-  Future<void> signOut() => throw UnimplementedError();
-  @override
-  Future<User?> getCurrentUser() => throw UnimplementedError();
-  @override
-  Future<void> updateUserProfile(User user) => throw UnimplementedError();
-  @override
-  Future<void> deleteAccount() => throw UnimplementedError();
-  @override
-  Future<AuthResponseModel> login(LoginRequestModel request) => throw UnimplementedError();
-  @override
-  Future<AuthResponseModel> register(RegisterRequestModel request) => throw UnimplementedError();
-  @override
-  Future<void> logout() => throw UnimplementedError();
-  @override
-  Future<bool> isLoggedIn() => throw UnimplementedError();
-  @override
-  Future<String?> getToken() => throw UnimplementedError();
-  @override
-  Future<List<String>> getPredefinedObjectives() async => List<String>.from([]);
 } 

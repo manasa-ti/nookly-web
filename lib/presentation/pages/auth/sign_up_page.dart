@@ -6,6 +6,7 @@ import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
+import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -79,6 +80,21 @@ class _SignUpPageState extends State<SignUpPage> {
                 builder: (context) => const ProfileCreationPage(),
               ),
               (route) => false, // Remove all previous routes
+            );
+          } else if (state is EmailVerificationRequired) {
+            setState(() {
+              _isEmailLoading = false;
+              _isGoogleLoading = false;
+            });
+            // Navigate to email verification page
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => EmailVerificationPage(
+                  email: state.email,
+                  fromRegistration: true,
+                ),
+              ),
             );
           } else if (state is AuthError) {
             setState(() {
