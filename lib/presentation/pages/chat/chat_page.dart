@@ -63,6 +63,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   final ScrollController _scrollController = ScrollController();
   bool _isAttachingFile = false;
   bool _isLoadingMore = false;
+  bool _isUploadingImage = false;
+  String _uploadStatus = '';
   static const int _pageSize = 20;
   
   // Animation controller for the side menu
@@ -704,6 +706,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Future<void> _sendImageMessage(String imagePath, {bool isDisappearing = true, int disappearingTime = 5}) async {
     if (_socketService != null && _currentUserId != null) {
       try {
+        // Show upload status
+        setState(() {
+          _isUploadingImage = true;
+          _uploadStatus = 'Uploading image...';
+        });
         final extension = imagePath.split('.').last.toLowerCase();
         final contentType = switch (extension) {
           'jpg' || 'jpeg' => 'image/jpeg',
@@ -732,6 +739,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ),
         );
         if (response.statusCode == 200) {
+          // Update status to sending message
+          setState(() {
+            _uploadStatus = 'Sending message...';
+          });
+          
           final imageUrl = response.data['imageUrl'];
           final imageKey = response.data['imageKey'] ?? response.data['key'] ?? response.data['s3Key'];
           final imageSize = response.data['imageSize'] ?? response.data['size'] ?? response.data['fileSize'];
@@ -835,17 +847,38 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _scrollToBottom();
           });
-              } else {
+          
+          // Clear upload status on success
+          setState(() {
+            _isUploadingImage = false;
+            _uploadStatus = '';
+          });
+        } else {
+          // Clear upload status on failure
+          setState(() {
+            _isUploadingImage = false;
+            _uploadStatus = '';
+          });
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to send image. Please try again.')),
           );
         }
       } catch (e) {
+        // Clear upload status on error
+        setState(() {
+          _isUploadingImage = false;
+          _uploadStatus = '';
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send image. Please try again.')),
         );
       }
     } else {
+      // Clear upload status on connection error
+      setState(() {
+        _isUploadingImage = false;
+        _uploadStatus = '';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connection error. Please try again.')),
       );
@@ -1613,44 +1646,86 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     final inputPadding = (size.width * 0.015).clamp(6.0, 12.0); // Reduced padding
     
     return SafeArea(
-      child: Container(
-        padding: EdgeInsets.all(inputPadding),
-        decoration: BoxDecoration(
-          color: const Color(0xFF234481),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4,
-              offset: const Offset(0, -1),
-            ),
-          ],
-        ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.white.withOpacity(0.2),
-              width: 0.5,
-            ),
-          ),
-          child: Row(
-            children: [
-              // Plus button - smaller and more subtle
-              IconButton(
-                icon: Icon(
-                  Icons.add, 
-                  color: Colors.white.withOpacity(0.8),
-                  size: 20,
-                ),
-                onPressed: _showOptionsMenu,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Upload status indicator
+          if (_isUploadingImage)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 0.5,
                 ),
               ),
-                                // Text input - takes most space
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _uploadStatus,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          // Main input container
+          Container(
+            padding: EdgeInsets.all(inputPadding),
+            decoration: BoxDecoration(
+              color: const Color(0xFF234481),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, -1),
+                ),
+              ],
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 0.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  // Plus button - smaller and more subtle
+                  IconButton(
+                    icon: Icon(
+                      Icons.add, 
+                      color: Colors.white.withOpacity(0.8),
+                      size: 20,
+                    ),
+                    onPressed: _showOptionsMenu,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                  // Text input - takes most space
                   Expanded(
                     child: TextField(
                       controller: _messageController,
@@ -1675,38 +1750,40 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       maxLines: null, // Allow unlimited lines
                       minLines: 1, // Start with single line
                       textCapitalization: TextCapitalization.sentences,
-                  onChanged: (text) {
-                    if (!_isTyping && text.isNotEmpty) {
-                      setState(() => _isTyping = true);
-                      _socketService?.emit('typing', {'to': widget.conversationId});
-                    } else if (_isTyping && text.isEmpty) {
-                      setState(() => _isTyping = false);
-                      _socketService?.emit('stop_typing', {'to': widget.conversationId});
-                    }
-                  },
-                  onEditingComplete: () {
-                    setState(() => _isTyping = false);
-                    _socketService?.emit('stop_typing', {'to': widget.conversationId});
-                  },
-                ),
+                      onChanged: (text) {
+                        if (!_isTyping && text.isNotEmpty) {
+                          setState(() => _isTyping = true);
+                          _socketService?.emit('typing', {'to': widget.conversationId});
+                        } else if (_isTyping && text.isEmpty) {
+                          setState(() => _isTyping = false);
+                          _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                        }
+                      },
+                      onEditingComplete: () {
+                        setState(() => _isTyping = false);
+                        _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                      },
+                    ),
+                  ),
+                  // Send button - smaller and more subtle
+                  IconButton(
+                    icon: Icon(
+                      Icons.send, 
+                      color: Colors.white.withOpacity(0.8),
+                      size: 20,
+                    ),
+                    onPressed: _sendTextMessage,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
+                    ),
+                  ),
+                ],
               ),
-              // Send button - smaller and more subtle
-              IconButton(
-                icon: Icon(
-                  Icons.send, 
-                  color: Colors.white.withOpacity(0.8),
-                  size: 20,
-                ),
-                onPressed: _sendTextMessage,
-                padding: const EdgeInsets.all(8),
-                constraints: const BoxConstraints(
-                  minWidth: 32,
-                  minHeight: 32,
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
