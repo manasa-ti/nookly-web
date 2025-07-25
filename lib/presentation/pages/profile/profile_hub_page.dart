@@ -5,6 +5,7 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -31,6 +32,56 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       _user = user;
       _isLoading = false;
     });
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    print('🔵 Privacy button tapped!'); // Debug log
+    
+    // Show immediate feedback that button was tapped
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening privacy policy...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+    
+    const url = 'https://privacy-policy.nookly.app/';
+    try {
+      print('🔵 Attempting to open URL: $url'); // Debug log
+      final uri = Uri.parse(url);
+      print('🔵 Parsed URI: $uri'); // Debug log
+      
+      final canLaunch = await canLaunchUrl(uri);
+      print('🔵 Can launch URL: $canLaunch'); // Debug log
+      
+      if (canLaunch) {
+        print('🔵 Launching URL...'); // Debug log
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('🔵 URL launched successfully'); // Debug log
+      } else {
+        print('🔵 Cannot launch URL'); // Debug log
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open privacy policy'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('🔵 Error opening privacy policy: $e'); // Debug log
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening privacy policy: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
 
@@ -135,7 +186,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Column(
                       children: [
-                        _SettingsTile(icon: Icons.privacy_tip, title: 'Privacy', onTap: () {}),
+                        _SettingsTile(icon: Icons.privacy_tip, title: 'Privacy', onTap: _openPrivacyPolicy),
                         _SettingsTile(icon: Icons.help, title: 'Help & Support', onTap: () {}),
                         _SettingsTile(icon: Icons.info, title: 'About', onTap: () {}),
                         _SettingsTile(
@@ -172,11 +223,30 @@ class _SettingsTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return ListTile(
-      leading: Icon(icon, color: Colors.white),
-      title: Text(title, style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500, fontSize: (size.width * 0.04).clamp(13.0, 16.0))),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white),
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title, 
+                style: TextStyle(
+                  fontFamily: 'Nunito', 
+                  color: Colors.white, 
+                  fontWeight: FontWeight.w500, 
+                  fontSize: (size.width * 0.04).clamp(13.0, 16.0)
+                )
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
+      ),
     );
   }
 } 

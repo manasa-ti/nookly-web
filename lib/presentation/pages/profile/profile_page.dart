@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:nookly/core/config/app_config.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:get_it/get_it.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -43,6 +42,56 @@ class _ProfilePageState extends State<ProfilePage> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _openPrivacyPolicy() async {
+    print('🔵 Privacy button tapped!'); // Debug log
+    
+    // Show immediate feedback that button was tapped
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening privacy policy...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+    
+    const url = 'https://privacy-policy.nookly.app/';
+    try {
+      print('🔵 Attempting to open URL: $url'); // Debug log
+      final uri = Uri.parse(url);
+      print('🔵 Parsed URI: $uri'); // Debug log
+      
+      final canLaunch = await canLaunchUrl(uri);
+      print('🔵 Can launch URL: $canLaunch'); // Debug log
+      
+      if (canLaunch) {
+        print('🔵 Launching URL...'); // Debug log
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('🔵 URL launched successfully'); // Debug log
+      } else {
+        print('🔵 Cannot launch URL'); // Debug log
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open privacy policy'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('🔵 Error opening privacy policy: $e'); // Debug log
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening privacy policy: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -149,7 +198,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Column(
                               children: [
-                                _buildSettingsTile(Icons.privacy_tip, 'Privacy', () {}, size),
+                                _buildSettingsTile(Icons.privacy_tip, 'Privacy', _openPrivacyPolicy, size),
                                 _buildSettingsTile(Icons.help, 'Help & Support', () {}, size),
                                 _buildSettingsTile(Icons.info, 'About', () {}, size),
                                 _buildSettingsTile(Icons.logout, 'Logout', () {}, size),
@@ -180,12 +229,30 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap, Size size) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      leading: Icon(icon, color: Colors.white, size: 20),
-      title: Text(title, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
-      trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+    return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                title, 
+                style: TextStyle(
+                  fontFamily: 'Nunito', 
+                  fontSize: (size.width * 0.04).clamp(13.0, 16.0), 
+                  color: Colors.white, 
+                  fontWeight: FontWeight.w500
+                )
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+          ],
+        ),
+      ),
     );
   }
 } 
