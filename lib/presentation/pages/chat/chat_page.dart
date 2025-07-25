@@ -1721,103 +1721,125 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               },
               child: Column(
                 children: [
-                  // Message List - Only rebuilds when messages change
+                  // Message List with Loading Overlay - Only rebuilds when messages change
                   Expanded(
-                    child: BlocSelector<ConversationBloc, ConversationState, List<Message>>(
-                      selector: (state) => state is ConversationLoaded ? state.messages : [],
-                      builder: (context, messages) {
-                        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Rendering messages list. Total messages: ${messages.length}');
-                        
-                        return NotificationListener<ScrollNotification>(
-                          onNotification: (notification) {
-                            if (notification is ScrollEndNotification) {
-                              AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Scroll ended at position: ${_scrollController.position.pixels}');
-                            }
-                            return false;
-                          },
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            reverse: true,
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                            itemCount: messages.length + (_isLoadingMore ? 1 : 0),
-                            itemBuilder: (context, index) {
-                              if (index == messages.length) {
-                                if (_isLoadingMore) {
-                                  return const Center(
-                                    child: Padding(
-                                      padding: EdgeInsets.all(8.0),
-                                      child: CircularProgressIndicator(
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                      ),
+                    child: Stack(
+                      children: [
+                        // Existing BlocSelector (unchanged for performance)
+                        BlocSelector<ConversationBloc, ConversationState, List<Message>>(
+                          selector: (state) => state is ConversationLoaded ? state.messages : [],
+                          builder: (context, messages) {
+                            AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Rendering messages list. Total messages: ${messages.length}');
+                            
+                            return NotificationListener<ScrollNotification>(
+                              onNotification: (notification) {
+                                if (notification is ScrollEndNotification) {
+                                  AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Scroll ended at position: ${_scrollController.position.pixels}');
+                                }
+                                return false;
+                              },
+                              child: ListView.builder(
+                                controller: _scrollController,
+                                reverse: true,
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                                itemCount: messages.length + (_isLoadingMore ? 1 : 0),
+                                itemBuilder: (context, index) {
+                                  if (index == messages.length) {
+                                    if (_isLoadingMore) {
+                                      return const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(8.0),
+                                          child: CircularProgressIndicator(
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  final message = messages[index];
+                                  final isMe = message.sender == _currentUserId;
+                                  
+                                  // Emit message_read when message is visible and from other user
+                                  if (!isMe && 
+                                      message.status == 'delivered' && 
+                                      _socketService != null &&
+                                      !_processedMessageIds.contains('${message.id}_read')) {
+                                    AppLogger.info('🔵 Emitting message_read for message: ${message.id}');
+                                    try {
+                                      _socketService!.emit('message_read', {
+                                        'messageId': message.id,
+                                        'conversationId': widget.conversationId,
+                                        'timestamp': DateTime.now().toIso8601String(),
+                                        'readBy': _currentUserId,
+                                      });
+                                      _processedMessageIds.add('${message.id}_read');
+                                      AppLogger.info('✅ Successfully emitted message_read event');
+                                    } catch (e) {
+                                      AppLogger.error('❌ Failed to emit message status events: $e');
+                                    }
+                                  }
+                                  
+                                  // Only pass timer parameters for disappearing image messages
+                                  final timerState = _disappearingImageManager.getTimerState(message.id);
+                                  final shouldShowTimer = message.isDisappearing && 
+                                                       message.disappearingTime != null && 
+                                                       message.type == MessageType.image;
+                                  
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 4),
+                                    child: MessageBubble(
+                                      key: ValueKey(message.id),
+                                      message: message,
+                                      isMe: isMe,
+                                      showAvatar: false,
+                                      avatarUrl: widget.participantAvatar,
+                                      statusWidget: isMe ? _buildMessageStatus(message) : null,
+                                      timestamp: _formatMessageTimestamp(message),
+                                      onImageTap: () {
+                                        if (message.type == MessageType.image) {
+                                          AppLogger.info('🔵 MessageBubble requested full screen image');
+                                          AppLogger.info('🔵 Message content: ${message.content}');
+                                          _showFullScreenImage(message.content, isMe);
+                                        }
+                                      },
+                                      disappearingTime: shouldShowTimer ? timerState?.remainingTime : null,
+                                      timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,
+                                      onImageUrlRefreshed: (messageId, newImageUrl, newExpirationTime, additionalData) {
+                                        AppLogger.info('🔵 MessageBubble requested image URL refresh for message: $messageId');
+                                        context.read<ConversationBloc>().add(UpdateMessageImageData(
+                                          messageId: messageId,
+                                          newImageUrl: newImageUrl,
+                                          newExpirationTime: newExpirationTime,
+                                          additionalData: additionalData,
+                                        ));
+                                      },
                                     ),
                                   );
-                                }
-                                return const SizedBox.shrink();
-                              }
-                              
-                              final message = messages[index];
-                              final isMe = message.sender == _currentUserId;
-                              
-                              // Emit message_read when message is visible and from other user
-                              if (!isMe && 
-                                  message.status == 'delivered' && 
-                                  _socketService != null &&
-                                  !_processedMessageIds.contains('${message.id}_read')) {
-                                AppLogger.info('🔵 Emitting message_read for message: ${message.id}');
-                                try {
-                                  _socketService!.emit('message_read', {
-                                    'messageId': message.id,
-                                    'conversationId': widget.conversationId,
-                                    'timestamp': DateTime.now().toIso8601String(),
-                                    'readBy': _currentUserId,
-                                  });
-                                  _processedMessageIds.add('${message.id}_read');
-                                  AppLogger.info('✅ Successfully emitted message_read event');
-                                } catch (e) {
-                                  AppLogger.error('❌ Failed to emit message status events: $e');
-                                }
-                              }
-                              
-                              // Only pass timer parameters for disappearing image messages
-                              final timerState = _disappearingImageManager.getTimerState(message.id);
-                              final shouldShowTimer = message.isDisappearing && 
-                                                   message.disappearingTime != null && 
-                                                   message.type == MessageType.image;
-                              
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 4),
-                                child: MessageBubble(
-                                  key: ValueKey(message.id),
-                                  message: message,
-                                  isMe: isMe,
-                                  showAvatar: false,
-                                  avatarUrl: widget.participantAvatar,
-                                  statusWidget: isMe ? _buildMessageStatus(message) : null,
-                                  timestamp: _formatMessageTimestamp(message),
-                                  onImageTap: () {
-                                    if (message.type == MessageType.image) {
-                                      AppLogger.info('🔵 MessageBubble requested full screen image');
-                                      AppLogger.info('🔵 Message content: ${message.content}');
-                                      _showFullScreenImage(message.content, isMe);
-                                    }
-                                  },
-                                  disappearingTime: shouldShowTimer ? timerState?.remainingTime : null,
-                                  timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,
-                                  onImageUrlRefreshed: (messageId, newImageUrl, newExpirationTime, additionalData) {
-                                    AppLogger.info('🔵 MessageBubble requested image URL refresh for message: $messageId');
-                                    context.read<ConversationBloc>().add(UpdateMessageImageData(
-                                      messageId: messageId,
-                                      newImageUrl: newImageUrl,
-                                      newExpirationTime: newExpirationTime,
-                                      additionalData: additionalData,
-                                    ));
-                                  },
+                                },
+                              ),
+                            );
+                          },
+                        ),
+                        
+                        // Loading indicator overlay
+                        BlocSelector<ConversationBloc, ConversationState, bool>(
+                          selector: (state) => state is ConversationLoading,
+                          builder: (context, isLoading) {
+                            if (!isLoading) return const SizedBox.shrink();
+                            
+                            return Container(
+                              color: const Color(0xFF234481).withOpacity(0.8),
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                 ),
-                              );
-                            },
-                          ),
-                        );
-                      },
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                   ),
                   
