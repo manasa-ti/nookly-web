@@ -204,36 +204,23 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   void _handleImageExpired(String messageId) {
     if (!mounted) return;
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Handling disappearing image expired for message: $messageId');
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Currently open image ID: $_currentlyOpenImageId');
     
     // Update message state
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Sending MessageExpired event to bloc for message: $messageId');
     context.read<ConversationBloc>().add(MessageExpired(messageId));
     
     // Close full screen if open and it's the same image
     if (_currentlyOpenImageId == messageId) {
-      AppLogger.info('🔵 DEBUGGING Disappearing Image: Closing full screen image dialog for image: $messageId');
       Navigator.of(context).pop();
       _currentlyOpenImageId = null;
-    } else {
-      AppLogger.info('🔵 DEBUGGING Disappearing Image: Not closing full screen - expired image ($messageId) is not the currently open image ($_currentlyOpenImageId)');
     }
   }
 
   Future<void> _initSocketAndUser() async {
-    AppLogger.info('🔵 Initializing socket and user for chat page');
-    AppLogger.info('🔵 Other user ID: ${widget.conversationId}');
-    
     final authRepository = sl<AuthRepository>();
     final user = await authRepository.getCurrentUser();
     final token = await authRepository.getToken();
     
-    AppLogger.info('🔵 User data: ${user?.toJson()}');
-    AppLogger.info('🔵 Token available: ${token != null}');
-    
     if (user != null && token != null) {
-      AppLogger.info('✅ User authenticated, initializing socket connection');
       _currentUserId = user.id;
       _jwtToken = token;
       _socketService = sl<SocketService>();
@@ -242,10 +229,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       if (mounted) {
         context.read<ConversationBloc>().add(UpdateCurrentUserId(user.id));
       }
-      
-      AppLogger.info('🔵 Connecting to socket with URL: ${SocketService.socketUrl}');
-      AppLogger.info('🔵 User ID: $_currentUserId');
-      AppLogger.info('🔵 Token: ${token.substring(0, 10)}...');
       
       _socketService!.connect(
         serverUrl: SocketService.socketUrl, 
@@ -257,61 +240,42 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       await Future.delayed(const Duration(milliseconds: 500));
       
       if (_socketService!.isConnected) {
-        AppLogger.info('✅ Socket connected successfully');
-        AppLogger.info('🔵 Joining private chat room with user: ${widget.conversationId}');
         // Join the private chat room
         _socketService!.joinPrivateChat(widget.conversationId);
-      } else {
-        AppLogger.error('❌ Socket failed to connect');
       }
       
       _registerSocketListeners();
-    } else {
-      AppLogger.error('❌ Failed to initialize socket: User or token is null');
-      AppLogger.error('❌ User: ${user?.toJson()}');
-      AppLogger.error('❌ Token available: ${token != null}');
     }
   }
 
   void _registerSocketListeners() {
     if (_socketService == null) {
-      AppLogger.error('❌ Cannot register socket listeners: SocketService is null');
       return;
     }
-
-    AppLogger.info('🔵 Registering socket listeners for chat page');
     
     // Add listener for all events
     _socketService!.on('connect', (data) {
-      AppLogger.info('✅ Socket connected');
-      AppLogger.info('🔵 Socket ID: ${_socketService!.socketId}');
-      AppLogger.info('🔵 Current user ID: $_currentUserId');
-      AppLogger.info('🔵 Conversation ID: ${widget.conversationId}');
+      // Socket connected
     });
     
     _socketService!.on('disconnect', (data) {
-      AppLogger.warning('⚠️ Socket disconnected');
-      AppLogger.warning('⚠️ Disconnect reason: $data');
+      // Socket disconnected
     });
     
     _socketService!.on('error', (data) {
-      AppLogger.error('❌ Socket error: $data');
+      // Socket error
     });
 
     // Add listener for conversation removal (unmatch)
     _socketService!.on('conversation_removed', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 Conversation removed event received in chat page: $data');
       
       // Extract user IDs from the event
       final sender = data['sender'] as String?;
       final receiver = data['receiver'] as String?;
       
-      AppLogger.info('🔵 Unmatch event in chat - Sender: $sender, Receiver: $receiver, Current user: $_currentUserId');
-      
       // Only navigate if current user is the receiver (not the sender)
       if (_currentUserId == receiver) {
-        AppLogger.info('🔵 Current user is receiver, navigating back');
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -319,17 +283,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             duration: Duration(seconds: 3),
           ),
         );
-      } else {
-        AppLogger.info('🔵 Current user is sender, skipping navigation (already handled by bloc)');
       }
     });
 
     // Modify image_viewed event handler
     _socketService!.on('image_viewed', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 Received image_viewed event: $data');
-      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Processing image_viewed event');
-      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Raw event data: $data');
       
       try {
         final messageId = data['messageId'];
@@ -339,31 +298,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final disappearingTime = data['disappearingTime'];
         final isDisappearing = data['isDisappearing'] ?? false;
         
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Parsed event data:');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Received messageId: $messageId');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Viewed at: $viewedAt');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: $disappearingTime');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Is disappearing: $isDisappearing');
-        
-        // Debug: Check if message exists in state when image_viewed is received
+        // Check if message exists in state when image_viewed is received
         final state = context.read<ConversationBloc>().state;
         if (state is ConversationLoaded) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current state has ${state.messages.length} messages');
-          
-          // Log all messages in state for debugging
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: All messages in state:');
-          for (final msg in state.messages) {
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${msg.id}, Type: ${msg.type}, Content: ${msg.content.substring(0, msg.content.length > 50 ? 50 : msg.content.length)}...');
-          }
-          
           final messageExists = state.messages.any((msg) => msg.id == messageId);
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message exists in state when image_viewed received: $messageExists');
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Looking for message with ID: $messageId');
           
           if (!messageExists) {
-            AppLogger.warning('⚠️ DEBUGGING MESSAGE ID: Message not found in state when image_viewed received!');
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Available message IDs: ${state.messages.map((m) => m.id).join(', ')}');
-            
             // Try to find the message by content (image URL) instead of ID
             final messageByContent = state.messages.where((msg) => 
                 msg.type == MessageType.image && 
@@ -371,33 +311,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 msg.disappearingTime == disappearingTime
             ).toList();
             
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found ${messageByContent.length} messages by content matching criteria');
-            for (final msg in messageByContent) {
-              AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Potential match: ID=${msg.id}, Content=${msg.content}');
-            }
-            
             if (messageByContent.isNotEmpty) {
               final localMessage = messageByContent.first;
-              AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message by content with local ID: ${localMessage.id}');
-              AppLogger.info('🔵 DEBUGGING MESSAGE ID: Updating message ID from ${localMessage.id} to $messageId');
               
               // Update the message ID in the state
               context.read<ConversationBloc>().add(UpdateMessageId(
                 oldMessageId: localMessage.id,
                 newMessageId: messageId,
               ));
-            } else {
-              AppLogger.error('🔵 DEBUGGING MESSAGE ID: No matching message found by content either!');
             }
-          } else {
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message found successfully in state');
           }
-        } else {
-          AppLogger.error('🔵 DEBUGGING MESSAGE ID: State is not ConversationLoaded: ${state.runtimeType}');
         }
         
         // Update the message state with viewed timestamp
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Dispatching MessageViewed event with ID: $messageId');
         context.read<ConversationBloc>().add(MessageViewed(
           messageId,
           viewedAt,
@@ -405,74 +331,59 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
         // Start the disappearing timer (for sender only)
         if (isDisappearing && disappearingTime != null) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Starting sender timer for message: $messageId');
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Sender disappearing time: $disappearingTime seconds');
           _startDisappearingImageTimer(messageId, disappearingTime);
         }
-        
-        AppLogger.info('✅ Successfully processed image_viewed event');
-        AppLogger.info('🔵 MessageBubble widgets will handle their own timers based on viewedAt metadata');
       } catch (e) {
-        AppLogger.error('❌ Error processing image_viewed event: $e');
-        AppLogger.error('🔵 DEBUGGING MESSAGE ID: Exception details: $e');
+        // Error processing image_viewed event
       }
     });
 
     // Add listener for room joining confirmation
     _socketService!.on('joined_room', (data) {
-      AppLogger.info('✅ Joined room: $data');
-      AppLogger.info('🔵 Room details: ${data.toString()}');
+      // Joined room
     });
 
     // Add listener for room joining error
     _socketService!.on('join_error', (data) {
-      AppLogger.error('❌ Failed to join room: $data');
+      // Failed to join room
     });
 
     // Add bulk message status listeners
     _socketService!.on('bulk_message_delivered', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received bulk_message_delivered event: $data');
       try {
         final messageIds = List<String>.from(data['messageIds'] ?? []);
         final deliveredAt = data['timestamp'] != null 
             ? DateTime.parse(data['timestamp']) 
             : DateTime.now();
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Delivered at: $deliveredAt');
         
         if (messageIds.isNotEmpty) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding BulkMessageDelivered event to bloc');
           context.read<ConversationBloc>().add(BulkMessageDelivered(
             messageIds: messageIds,
             deliveredAt: deliveredAt,
           ));
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed bulk_message_delivered event');
         }
       } catch (e) {
-        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing bulk_message_delivered event: $e');
+        // Error processing bulk_message_delivered event
       }
     });
 
     _socketService!.on('bulk_message_read', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received bulk_message_read event: $data');
       try {
         final messageIds = List<String>.from(data['messageIds'] ?? []);
         final readAt = data['timestamp'] != null 
             ? DateTime.parse(data['timestamp']) 
             : DateTime.now();
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Read at: $readAt');
         
         if (messageIds.isNotEmpty) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding BulkMessageRead event to bloc');
           context.read<ConversationBloc>().add(BulkMessageRead(
             messageIds: messageIds,
             readAt: readAt,
           ));
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed bulk_message_read event');
         }
       } catch (e) {
-        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing message_read event: $e');
+        // Error processing bulk_message_read event
       }
     });
 
@@ -481,18 +392,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     _socketService!.on('private_message', (data) {
       if (!mounted) return;
-      AppLogger.info('debug disappearing: Received private_message event');
-      AppLogger.info('debug disappearing: Message data: ${data.toString()}');
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: Full socket data received: $data');
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: Socket data type: ${data.runtimeType}');
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: Socket data keys: ${(data as Map<String, dynamic>).keys.toList()}');
       try {
         // Store the server's message ID
         final serverMessageId = data['_id']?.toString() ?? data['id']?.toString();
-        AppLogger.info('debug disappearing: Server message ID: $serverMessageId');
         // Parse the server's timestamp
         final serverTimestamp = data['createdAt']?.toString() ?? data['timestamp']?.toString();
-        AppLogger.info('debug disappearing: Server timestamp: $serverTimestamp');
         // Convert dynamic map to Map<String, dynamic>
         final Map<String, dynamic> messageData = {
           '_id': serverMessageId,
@@ -517,38 +421,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             messageData['metadata'] = Map<String, dynamic>.from(data['metadata']);
           } else {
             // If metadata is not a Map, try to convert it
-            AppLogger.warning('🔵 DEBUGGING SOCKET MESSAGE: Metadata is not a Map, type: ${data['metadata'].runtimeType}');
             messageData['metadata'] = {'raw': data['metadata'].toString()};
           }
         }
-        AppLogger.info('debug disappearing: Constructed messageData: $messageData');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: Raw socket data structure');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw isDisappearing: ${data['isDisappearing']}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw disappearingTime: ${data['disappearingTime']}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Raw metadata: ${data['metadata']}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Metadata type: ${data['metadata']?.runtimeType}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Metadata keys: ${(data['metadata'] as Map<String, dynamic>?)?.keys.toList()}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - expiresAt in metadata: ${data['metadata']?['expiresAt']}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Final messageData metadata: ${messageData['metadata']}');
-        AppLogger.info('🔵 DEBUGGING SOCKET MESSAGE: - Final messageData metadata type: ${messageData['metadata']?.runtimeType}');
         
         final msg = Message.fromJson(messageData);
-        AppLogger.info('debug disappearing: Parsed message: id=${msg.id}, sender=${msg.sender}, content=${msg.content}, status=${msg.status}, timestamp=${msg.timestamp}, isDisappearing=${msg.isDisappearing}, disappearingTime=${msg.disappearingTime}');
-        
-        // Debug: Log if this is a disappearing image message
-        if (msg.type == MessageType.image && msg.isDisappearing) {
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Received disappearing image message from server');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Server message ID: ${msg.id}');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Message sender: ${msg.sender}');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Current user ID: $_currentUserId');
-        }
         
         // Only process messages from the other participant
         if (msg.sender == widget.conversationId) {
-          if (msg.isDisappearing) {
-            AppLogger.info('debug disappearing: This is a disappearing message with time: ${msg.disappearingTime}');
-          }
-          AppLogger.info('debug disappearing: Adding MessageReceived and ConversationUpdated events to bloc');
           context.read<ConversationBloc>().add(MessageReceived(msg));
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
@@ -556,9 +436,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             updatedAt: DateTime.now(),
           ));
           // Mark message as delivered immediately after receiving
-          AppLogger.info('debug disappearing: on_private_message processedIds contains? ${_processedMessageIds.contains(msg.id)}');
           if (_socketService != null && !_processedMessageIds.contains(msg.id)) {
-            AppLogger.info('debug disappearing: Marking message as delivered: $serverMessageId');
             _socketService!.emit('message_delivered', {
               'messageId': serverMessageId,
               'conversationId': widget.conversationId,
@@ -574,13 +452,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOut,
               );
-              AppLogger.info('debug disappearing: Scrolled to bottom after receiving message');
             }
           });
         }
       } catch (e) {
-        AppLogger.error('debug disappearing: Error processing received message: $e');
-        AppLogger.error('debug disappearing: Message data: $data');
+        // Error processing received message
       }
     });
 
@@ -626,46 +502,35 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Add individual message status listeners for backward compatibility
     _socketService!.on('message_delivered', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received message_delivered event: $data');
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current socket ID: ${_socketService!.socketId}');
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current user ID: $_currentUserId');
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Conversation ID: ${widget.conversationId}');
       try {
         final messageId = data['messageId'];
         final deliveredAt = data['deliveredAt'] != null 
             ? DateTime.parse(data['deliveredAt']) 
             : DateTime.now();
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Delivered at: $deliveredAt');
         
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding MessageDelivered event to bloc');
         context.read<ConversationBloc>().add(MessageDelivered(
           messageId,
           deliveredAt,
         ));
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed message_delivered event');
       } catch (e) {
-        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing message_delivered event: $e');
+        // Error processing message_delivered event
       }
     });
 
     _socketService!.on('message_read', (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Received message_read event: $data');
       try {
         final messageId = data['messageId'];
         final readAt = data['timestamp'] != null 
             ? DateTime.parse(data['timestamp']) 
             : DateTime.now();
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Read at: $readAt');
         
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Adding MessageRead event to bloc');
         context.read<ConversationBloc>().add(MessageRead(
           messageId,
           readAt,
         ));
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Successfully processed message_read event');
       } catch (e) {
-        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Error processing message_read event: $e');
+        // Error processing message_read event
       }
     });
 
@@ -673,7 +538,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   void _showImagePicker() {
-    AppLogger.info('debug disappearing: Opening image picker modal');
     showModalBottomSheet(
         context: context,
         backgroundColor: const Color(0xFF234481),
@@ -682,7 +546,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         ),
       builder: (context) {
         int selectedTime = 5; // Default disappearing time
-        AppLogger.info('debug disappearing: Default disappearing time set to 5 seconds');
         return StatefulBuilder(
           builder: (context, setState) {
             return Container(
@@ -703,7 +566,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   DisappearingTimeSelector(
                     selectedTime: selectedTime,
                     onTimeSelected: (time) {
-                      AppLogger.info('debug disappearing: Disappearing time selected: $time seconds');
                       setState(() {
                         selectedTime = time;
                       });
@@ -717,7 +579,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         child: ElevatedButton(
                           onPressed: () async {
                             try {
-                              AppLogger.info('debug disappearing: Gallery button pressed');
                               final picker = ImagePicker();
                               final image = await picker.pickImage(
                                 source: ImageSource.gallery,
@@ -727,16 +588,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               );
                               
                               if (image != null) {
-                                AppLogger.info('debug disappearing: Image selected from gallery: ${image.path}');
-                                AppLogger.info('debug disappearing: Image name: ${image.name}');
-                                AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
-                                
                                 // Verify file exists and check format
                                 final file = File(image.path);
                                 if (await file.exists()) {
-                                  AppLogger.info('debug disappearing: File exists and is readable');
                                   final fileSize = await file.length();
-                                  AppLogger.info('debug disappearing: File size: $fileSize bytes');
                                   
                                   // Check file extension
                                   final extension = image.path.split('.').last.toLowerCase();
@@ -751,14 +606,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                     disappearingTime: selectedTime,
                                   );
                                 } else {
-                                  AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
                                   throw Exception('Selected image file does not exist');
                                 }
-                              } else {
-                                AppLogger.info('debug disappearing: No image selected from gallery');
                               }
                             } catch (e) {
-                              AppLogger.error('debug disappearing: Error picking image: $e');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Error selecting image: $e')),
                               );
@@ -786,7 +637,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         child: ElevatedButton(
                           onPressed: () async {
                             try {
-                              AppLogger.info('debug disappearing: Camera button pressed');
                               final picker = ImagePicker();
                               final image = await picker.pickImage(
                                 source: ImageSource.camera,
@@ -796,16 +646,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               );
                               
                               if (image != null) {
-                                AppLogger.info('debug disappearing: Image captured from camera: ${image.path}');
-                                AppLogger.info('debug disappearing: Image name: ${image.name}');
-                                AppLogger.info('debug disappearing: Image size: ${image.length} bytes');
-                                
                                 // Verify file exists and check format
                                 final file = File(image.path);
                                 if (await file.exists()) {
-                                  AppLogger.info('debug disappearing: File exists and is readable');
                                   final fileSize = await file.length();
-                                  AppLogger.info('debug disappearing: File size: $fileSize bytes');
                                   
                                   // Check file extension
                                   final extension = image.path.split('.').last.toLowerCase();
@@ -820,14 +664,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                     disappearingTime: selectedTime,
                                   );
                                 } else {
-                                  AppLogger.error('debug disappearing: File does not exist at path: ${image.path}');
                                   throw Exception('Captured image file does not exist');
                                 }
-                              } else {
-                                AppLogger.info('debug disappearing: No image captured from camera');
                               }
                             } catch (e) {
-                              AppLogger.error('debug disappearing: Error capturing image: $e');
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('Error capturing image: $e')),
                               );
@@ -862,10 +702,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _sendImageMessage(String imagePath, {bool isDisappearing = true, int disappearingTime = 5}) async {
-    AppLogger.info('debug disappearing: Starting _sendImageMessage with imagePath: $imagePath, isDisappearing: $isDisappearing, disappearingTime: $disappearingTime');
     if (_socketService != null && _currentUserId != null) {
       try {
-        AppLogger.info('debug disappearing: Preparing to upload image');
         final extension = imagePath.split('.').last.toLowerCase();
         final contentType = switch (extension) {
           'jpg' || 'jpeg' => 'image/jpeg',
@@ -883,7 +721,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'isDisappearing': isDisappearing,
           'disappearingTime': disappearingTime,
         });
-        AppLogger.info('debug disappearing: Sending POST request to /messages/upload-image');
         final response = await NetworkService.dio.post(
           '/messages/upload-image',
           data: formData,
@@ -894,24 +731,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             validateStatus: (status) => true, // Accept all status codes for debugging
           ),
         );
-        AppLogger.info('debug disappearing: Received response from upload-image: statusCode=${response.statusCode}, data=${response.data}');
         if (response.statusCode == 200) {
-          // Log the complete response structure to understand what fields are available
-          AppLogger.info('debug disappearing: Upload response data structure:');
-          AppLogger.info('debug disappearing: - Response data type: ${response.data.runtimeType}');
-          AppLogger.info('debug disappearing: - Response data keys: ${response.data.keys.toList()}');
-          AppLogger.info('debug disappearing: - Full response data: ${response.data}');
-          
           final imageUrl = response.data['imageUrl'];
           final imageKey = response.data['imageKey'] ?? response.data['key'] ?? response.data['s3Key'];
           final imageSize = response.data['imageSize'] ?? response.data['size'] ?? response.data['fileSize'];
           final imageType = response.data['imageType'] ?? response.data['type'] ?? response.data['mimeType'] ?? response.data['contentType'];
-          
-          AppLogger.info('debug disappearing: Extracted values:');
-          AppLogger.info('debug disappearing: - imageUrl: $imageUrl');
-          AppLogger.info('debug disappearing: - imageKey: $imageKey');
-          AppLogger.info('debug disappearing: - imageSize: $imageSize');
-          AppLogger.info('debug disappearing: - imageType: $imageType');
           
           // Validate that we have the required values
           if (imageUrl == null) {
@@ -923,14 +747,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           final finalImageSize = imageSize ?? await _getFileSize(imagePath);
           final finalImageType = imageType ?? _getMimeTypeFromExtension(imagePath);
           
-          AppLogger.info('debug disappearing: Final values for POST /messages:');
-          AppLogger.info('debug disappearing: - imageUrl: $imageUrl');
-          AppLogger.info('debug disappearing: - imageKey: $finalImageKey');
-          AppLogger.info('debug disappearing: - imageSize: $finalImageSize');
-          AppLogger.info('debug disappearing: - imageType: $finalImageType');
-          
           // Make POST /api/messages call with complete payload
-          AppLogger.info('debug disappearing: Making POST /api/messages call');
           final messageResponse = await NetworkService.dio.post(
             '/messages',
             data: {
@@ -949,32 +766,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ),
           );
           
-          AppLogger.info('debug disappearing: POST /api/messages response: statusCode=${messageResponse.statusCode}, data=${messageResponse.data}');
-          
           // Extract expiresAt from API response metadata
           String? expiresAt;
           if (messageResponse.statusCode == 200 || messageResponse.statusCode == 201) {
             final responseData = messageResponse.data;
-            AppLogger.info('🔵 DEBUGGING EXPIRATION: Full API response data: $responseData');
-            AppLogger.info('🔵 DEBUGGING EXPIRATION: Response data type: ${responseData.runtimeType}');
-            AppLogger.info('🔵 DEBUGGING EXPIRATION: Response data keys: ${responseData.keys.toList()}');
             
             if (responseData['metadata'] != null) {
-              AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata exists: ${responseData['metadata']}');
-              AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata type: ${responseData['metadata'].runtimeType}');
-              AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata keys: ${responseData['metadata'].keys.toList()}');
-              
               if (responseData['metadata']['expiresAt'] != null) {
                 expiresAt = responseData['metadata']['expiresAt'] as String;
-                AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully extracted expiresAt: $expiresAt');
-              } else {
-                AppLogger.warning('🔵 DEBUGGING EXPIRATION: expiresAt is null in metadata');
               }
-            } else {
-              AppLogger.warning('🔵 DEBUGGING EXPIRATION: No metadata in API response');
             }
-          } else {
-            AppLogger.warning('🔵 DEBUGGING EXPIRATION: API call failed, status code: ${messageResponse.statusCode}');
           }
           
           // Fallback: Extract expiration time from S3 URL if not provided by API
@@ -986,22 +787,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 final expiresSeconds = int.parse(expiresParam);
                 final expirationTime = DateTime.now().add(Duration(seconds: expiresSeconds));
                 expiresAt = expirationTime.toIso8601String();
-                AppLogger.info('🔵 DEBUGGING EXPIRATION: Extracted expiration from S3 URL: $expiresAt (${expiresSeconds}s from now)');
               }
             } catch (e) {
-              AppLogger.error('🔵 DEBUGGING EXPIRATION: Failed to extract expiration from S3 URL: $e');
+              // Failed to extract expiration from S3 URL
             }
           }
           
           if (messageResponse.statusCode != 200 && messageResponse.statusCode != 201) {
-            AppLogger.error('debug disappearing: Failed to create message record: ${messageResponse.statusCode}');
-            AppLogger.error('debug disappearing: Error response data: ${messageResponse.data}');
-            AppLogger.error('debug disappearing: Request payload was: ${messageResponse.requestOptions.data}');
-            
             // Continue with socket event even if API call fails
-            AppLogger.info('debug disappearing: Continuing with socket event despite API failure');
-          } else {
-            AppLogger.info('debug disappearing: Message record created successfully');
           }
           
           // Get the message ID from the response if available, otherwise use local ID
@@ -1021,13 +814,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'disappearingTime': disappearingTime,
             'metadata': expiresAt != null ? {'expiresAt': expiresAt} : null,
           };
-          AppLogger.info('debug disappearing: Constructed messageData: $messageData');
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: MessageData metadata: ${messageData['metadata']}');
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: expiresAt value: $expiresAt');
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Full socket payload being sent: $messageData');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender sending image with server ID: ${messageData['_id']}');
           _socketService!.emit('private_message', messageData);
-          AppLogger.info('debug disappearing: Emitted private_message event via socket');
           
           // Create message for local state with metadata
           final messageJson = {
@@ -1042,36 +829,23 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'disappearingTime': disappearingTime,
             'metadata': messageData['metadata'], // Include metadata in Message.fromJson
           };
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message JSON for fromJson: $messageJson');
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message JSON metadata: ${messageJson['metadata']}');
           
           final msg = Message.fromJson(messageJson);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Created Message object');
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message urlExpirationTime: ${msg.urlExpirationTime}');
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Message metadata: ${msg.metadata}');
-          AppLogger.info('debug disappearing: Created Message object for local state: id=${msg.id}, content=${msg.content}');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Sender adding message to local state with ID: ${msg.id}');
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Message ID consistency check - Socket ID: ${messageData['_id']}, Local ID: ${msg.id}');
           context.read<ConversationBloc>().add(MessageSent(msg));
-          AppLogger.info('debug disappearing: Added message to local state via ConversationBloc');
           WidgetsBinding.instance.addPostFrameCallback((_) {
-        _scrollToBottom();
-            AppLogger.info('debug disappearing: Scrolled to bottom after sending image message');
+            _scrollToBottom();
           });
-      } else {
-          AppLogger.error('debug disappearing: Failed to upload image, statusCode: ${response.statusCode}, data: ${response.data}');
+              } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Failed to send image. Please try again.')),
           );
         }
       } catch (e) {
-        AppLogger.error('debug disappearing: Exception occurred while sending image message: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send image. Please try again.')),
         );
       }
     } else {
-      AppLogger.error('debug disappearing: Cannot send image message: SocketService or currentUserId is null');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connection error. Please try again.')),
       );
@@ -1089,7 +863,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       }
       return pathSegments.last;
     } catch (e) {
-      AppLogger.warning('debug disappearing: Failed to extract image key from URL: $e');
       return 'unknown';
     }
   }
@@ -1103,7 +876,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       }
       return 0;
     } catch (e) {
-      AppLogger.warning('debug disappearing: Failed to get file size: $e');
       return 0;
     }
   }
@@ -1177,24 +949,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             children: [
               ListTile(
                 leading: const Icon(Icons.photo),
-                title: const Text('Send Image'),
+                title: const Text('Image'),
                 onTap: () {
-                  AppLogger.info('🔵 Send Image option tapped');
+                  AppLogger.info('🔵 Image option tapped');
                   Navigator.pop(context);
                   _showImagePicker();
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.attach_file),
-                title: const Text('Send File'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickFile();
-                },
-              ),
-              ListTile(
                 leading: const Icon(Icons.mic),
-                title: const Text('Record Voice Message'),
+                title: const Text('Voice Message'),
                 onTap: () {
                   Navigator.pop(context);
                   _recordVoiceMessage();
@@ -1227,31 +991,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       final state = context.read<ConversationBloc>().state;
       Message? message;
       if (state is ConversationLoaded) {
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current state has ${state.messages.length} messages');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Looking for message with content: $imageUrl');
-        
-        // Log all image messages in state for debugging
-        final imageMessages = state.messages.where((msg) => msg.type == MessageType.image).toList();
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found ${imageMessages.length} image messages in state:');
-        for (final imgMsg in imageMessages) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${imgMsg.id}, Content: ${imgMsg.content}, IsDisappearing: ${imgMsg.isDisappearing}');
-        }
-        
         // First try to find by exact content match
         try {
           message = state.messages.firstWhere(
             (msg) => msg.content == imageUrl && msg.type == MessageType.image,
             orElse: () => throw Exception('Exact content match not found'),
           );
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message by exact content match: ${message.id}');
         } catch (e) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Exact content match failed, trying pattern matching');
           // Fallback: try to find by image key pattern if exact match fails
           final uri = Uri.parse(imageUrl);
           final pathSegments = uri.path.split('/');
           if (pathSegments.length >= 2) {
             final imageKey = pathSegments.sublist(pathSegments.length - 2).join('/');
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Looking for message with image key pattern: $imageKey');
             
             final matchingMessages = state.messages.where((msg) => 
                 msg.type == MessageType.image && 
@@ -1261,7 +1012,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             if (matchingMessages.isNotEmpty) {
               // If multiple matches, prefer the most recent one
               message = matchingMessages.first;
-              AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message by pattern match: ${message.id}');
             } else {
               throw Exception('No message found with image key pattern: $imageKey');
             }
@@ -1270,28 +1020,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           }
         }
 
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message to open:');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Message ID: ${message.id}');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Content: ${message.content}');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Is disappearing: ${message.isDisappearing}');
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: ${message.disappearingTime}');
-
         // Emit image_viewed event
         if (_socketService != null && !isSender) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Emitting image_viewed event');
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Message ID to emit: ${message.id}');
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Conversation ID: ${widget.conversationId}');
           _socketService!.sendImageViewed(message.id, widget.conversationId);
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: image_viewed event emitted successfully');
-        } else {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Not emitting image_viewed event (isSender: $isSender, socketService: ${_socketService != null})');
         }
-      } else {
-        AppLogger.error('🔵 DEBUGGING MESSAGE ID: State is not ConversationLoaded: ${state.runtimeType}');
       }
       
       // Use the original URL directly - refresh will be called only if we get 403 error
-      AppLogger.info('🔵 Using original image URL for full-screen: $imageUrl');
       _showFullScreenImageWithUrl(imageUrl, isSender, message);
     } catch (e) {
       AppLogger.error('❌ Failed to show full screen image: $e');
@@ -1309,7 +1044,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     if (message == null) {
       final state = context.read<ConversationBloc>().state;
       if (state is ConversationLoaded) {
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: Message not provided, searching in state');
         // Try to find by the original content URL pattern
         try {
           message = state.messages.firstWhere(
@@ -1317,14 +1051,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                      (msg.content.contains('messages/') || imageUrl.contains('messages/')),
             orElse: () => throw Exception('Pattern match not found'),
           );
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message by pattern match: ${message.id}');
         } catch (e) {
-          AppLogger.error('🔵 DEBUGGING MESSAGE ID: Failed to find message by pattern: $e');
           // Last resort: try to find any image message
           final imageMessages = state.messages.where((msg) => msg.type == MessageType.image).toList();
           if (imageMessages.isNotEmpty) {
             message = imageMessages.first;
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Using first available image message: ${message.id}');
           } else {
             throw Exception('No image messages found in state');
           }
@@ -1341,12 +1072,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
     // Emit image_viewed event for receiver when opening full screen
     if (!isSender && message.isDisappearing && message.disappearingTime != null) {
-      AppLogger.info('🔵 DEBUGGING Disappearing Image: Receiver opening image, emitting image_viewed event');
       _socketService?.sendImageViewed(message.id, widget.conversationId);
     }
 
     _currentlyOpenImageId = message.id; // Set which image is currently open in full-screen
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Opening full-screen for image ID: ${message.id}');
 
     showDialog(
       context: context,
@@ -1356,7 +1085,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           return WillPopScope(
             onWillPop: () async {
               _currentlyOpenImageId = null; // Reset when closing
-              AppLogger.info('🔵 DEBUGGING Disappearing Image: Full-screen closed via back button');
               return true;
             },
             child: Scaffold(
@@ -1481,8 +1209,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: () {
                         _currentlyOpenImageId = null; // Reset when closing
-                        AppLogger.info('🔵 DEBUGGING Disappearing Image: Full-screen closed via close button');
-                        Navigator.of(context).pop();
+                                          Navigator.of(context).pop();
                       },
                     ),
                   ),
@@ -1496,12 +1223,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   void _startDisappearingImageTimer(String messageId, int disappearingTime) {
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Starting timer for message: $messageId');
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: $disappearingTime seconds');
-    
     // Validate message ID
     if (messageId.isEmpty) {
-      AppLogger.error('🔵 DEBUGGING Disappearing Image: Cannot start timer with empty message ID');
       return;
     }
     
@@ -1517,8 +1240,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    AppLogger.info('🔵 Building ChatPage');
-    AppLogger.info('🔵 Current state: ${context.read<ConversationBloc>().state}');
     
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
@@ -1588,17 +1309,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     _scrollToBottom();
                   });
 
-                  // Debug: Log message count changes
-                  AppLogger.info('🔵 DEBUGGING Disappearing Image: State updated, message count: ${state.messages.length}');
-
                   // Initialize display timers for disappearing image messages
                   for (final message in state.messages) {
                     if (message.isDisappearing && 
                         message.disappearingTime != null && 
                         message.type == MessageType.image &&
                         !_disappearingImageManager.hasTimer(message.id)) {
-                      AppLogger.info('🔵 DEBUGGING Disappearing Image: Initializing display timer for message: ${message.id}');
-                      AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: ${message.disappearingTime} seconds');
                       _disappearingImageManager.initializeDisplayTimer(message.id, message.disappearingTime!);
                     }
                   }
@@ -1729,13 +1445,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         BlocSelector<ConversationBloc, ConversationState, List<Message>>(
                           selector: (state) => state is ConversationLoaded ? state.messages : [],
                           builder: (context, messages) {
-                            AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Rendering messages list. Total messages: ${messages.length}');
-                            
                             return NotificationListener<ScrollNotification>(
                               onNotification: (notification) {
-                                if (notification is ScrollEndNotification) {
-                                  AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Scroll ended at position: ${_scrollController.position.pixels}');
-                                }
                                 return false;
                               },
                               child: ListView.builder(
@@ -1761,7 +1472,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   final message = messages[index];
                                   final isMe = message.sender == _currentUserId;
                                   
+                                  // TODO: Temporarily commented out message read processing
                                   // Emit message_read when message is visible and from other user
+                                  /*
                                   if (!isMe && 
                                       message.status == 'delivered' && 
                                       _socketService != null &&
@@ -1780,6 +1493,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                       AppLogger.error('❌ Failed to emit message status events: $e');
                                     }
                                   }
+                                  */
                                   
                                   // Only pass timer parameters for disappearing image messages
                                   final timerState = _disappearingImageManager.getTimerState(message.id);
@@ -2179,11 +1893,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildMessageStatus(Message message) {
     if (message.sender != _currentUserId) return const SizedBox.shrink();
     
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Building message status for message: ${message.id}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message status: ${message.status}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message deliveredAt: ${message.deliveredAt}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message readAt: ${message.readAt}');
-    
     Widget statusIcon;
     
     // Properly handle status progression - only show status icons, not timestamps
@@ -2205,7 +1914,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       );
     }
     
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Selected status icon: ${message.status}');
+
     
     return Padding(
       padding: const EdgeInsets.only(left: 4),
@@ -2291,13 +2000,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Use filtered content if any filtering was applied
     final finalContent = moderationResult.filteredText;
     
-    AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Starting to send text message: $finalContent');
     _messageController.clear();
 
     if (_socketService != null && _currentUserId != null) {
       try {
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current user ID: $_currentUserId');
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Recipient ID: ${widget.conversationId}');
         
         // Create message data with initial 'sent' status
         final messageData = {
@@ -2310,7 +2016,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'createdAt': DateTime.now().toIso8601String(),
         };
 
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitting private_message with data: $messageData');
         // Send message through socket
         _socketService!.emit('private_message', messageData);
         
@@ -2325,8 +2030,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'status': 'sent', // Start with 'sent' status
           'timestamp': DateTime.now(), // Add timestamp for sent status
         });
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Added message to local state: ${msg.content}');
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Message status in local state: ${msg.status}');
         context.read<ConversationBloc>().add(MessageSent(msg));
         
         // Scroll to bottom after sending message
@@ -2334,13 +2037,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _scrollToBottom();
         });
       } catch (e) {
-        AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Failed to send message: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send message. Please try again.')),
         );
       }
     } else {
-      AppLogger.error('❌ DEBUGGING MESSAGE DELIVERY: Cannot send message: SocketService or currentUserId is null');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connection error. Please try again.')),
       );

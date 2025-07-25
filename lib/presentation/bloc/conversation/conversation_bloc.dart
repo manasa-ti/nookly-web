@@ -88,15 +88,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       AppLogger.info('🔵 Loaded ${messages.length} messages from API');
       for (final message in messages) {
         AppLogger.info('🔵 - Message ID: ${message.id}, Type: ${message.type}, Content: ${message.content.substring(0, message.content.length > 50 ? 50 : message.content.length)}...');
-        
-        // Add specific logging for disappearing image messages
-        if (message.type == MessageType.image && message.isDisappearing) {
-          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Found disappearing image in API response');
-          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message ID: ${message.id}');
-          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Disappearing time: ${message.disappearingTime} seconds');
-          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Has viewedAt metadata: ${message.metadata?.containsKey('viewedAt')}');
-          AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - ViewedAt value: ${message.metadata?['viewedAt']}');
-        }
       }
 
       // Filter out expired disappearing images
@@ -405,12 +396,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       
       final updatedMessages = [event.message, ...currentState.messages];
       
-      // Debug: Log disappearing image messages
-      if (event.message.type == MessageType.image && event.message.isDisappearing) {
-        AppLogger.info('🔵 DEBUGGING Disappearing Image: Adding disappearing image message to state');
-        AppLogger.info('🔵 DEBUGGING Disappearing Image: Message ID: ${event.message.id}');
-        AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: ${event.message.disappearingTime} seconds');
-      }
+
       
       emit(ConversationLoaded(
         conversation: currentState.conversation.copyWith(
@@ -430,14 +416,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   void _onMessageDelivered(MessageDelivered event, Emitter<ConversationState> emit) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updating message status to delivered in bloc: ${event.messageId}');
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Current messages before update: ${currentState.messages.map((m) => '${m.id}: ${m.status}').join(', ')}');
       
       final updatedMessages = currentState.messages.map((msg) {
         if (msg.id == event.messageId) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Found message to update: ${msg.id}');
           final deliveredAt = event.deliveredAt ?? DateTime.now();
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Setting deliveredAt to: $deliveredAt');
           return msg.copyWith(
             status: 'delivered',
             deliveredAt: deliveredAt,
@@ -446,8 +428,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         return msg;
       }).toList();
       
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (deliveredAt: ${m.deliveredAt})').join(', ')}');
-      
       // Update both the messages list and the lastMessage in the conversation
       final updatedLastMessage = currentState.conversation.lastMessage?.id == event.messageId
           ? currentState.conversation.lastMessage?.copyWith(
@@ -455,8 +435,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
               deliveredAt: event.deliveredAt ?? DateTime.now(),
             )
           : currentState.conversation.lastMessage;
-      
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updated last message: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (deliveredAt: ${updatedLastMessage?.deliveredAt})');
       
       // Create a new state to force UI rebuild
       emit(ConversationLoaded(
@@ -472,20 +450,16 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
       ));
-      
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state with updated message status');
     }
   }
 
   void _onBulkMessageDelivered(BulkMessageDelivered event, Emitter<ConversationState> emit) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updating bulk message status to delivered in bloc: ${event.messageIds.join(', ')}');
       
       final deliveredAt = DateTime.now();
       final updatedMessages = currentState.messages.map((msg) {
         if (event.messageIds.contains(msg.id)) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Found message to update: ${msg.id}');
           return msg.copyWith(
             status: 'delivered',
             deliveredAt: deliveredAt,
@@ -494,8 +468,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         return msg;
       }).toList();
       
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Messages after bulk update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (deliveredAt: ${m.deliveredAt})').join(', ')}');
-      
       // Update lastMessage if it's in the bulk update
       final updatedLastMessage = event.messageIds.contains(currentState.conversation.lastMessage?.id)
           ? currentState.conversation.lastMessage?.copyWith(
@@ -503,8 +475,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
               deliveredAt: deliveredAt,
             )
           : currentState.conversation.lastMessage;
-      
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updated last message in bulk update: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (deliveredAt: ${updatedLastMessage?.deliveredAt})');
       
       emit(ConversationLoaded(
         conversation: currentState.conversation.copyWith(
@@ -519,8 +489,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
       ));
-      
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state with bulk updated message status');
     }
   }
 
@@ -659,12 +627,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       
       final updatedMessages = [event.message, ...currentState.messages];
       
-      // Debug: Log disappearing image messages
-      if (event.message.type == MessageType.image && event.message.isDisappearing) {
-        AppLogger.info('🔵 DEBUGGING Disappearing Image: Adding sent disappearing image message to state');
-        AppLogger.info('🔵 DEBUGGING Disappearing Image: Message ID: ${event.message.id}');
-        AppLogger.info('🔵 DEBUGGING Disappearing Image: Disappearing time: ${event.message.disappearingTime} seconds');
-      }
+
       
       emit(ConversationLoaded(
         conversation: currentState.conversation.copyWith(
@@ -687,17 +650,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
-      AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Processing conversation update event');
       
       // If we have a lastMessage, update its status in the messages list
       if (event.lastMessage != null) {
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Updating message status from conversation update');
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Last message: id=${event.lastMessage!.id}, status=${event.lastMessage!.status}');
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Last message timestamps: deliveredAt=${event.lastMessage!.deliveredAt}, readAt=${event.lastMessage!.readAt}');
-        
         final updatedMessages = currentState.messages.map((msg) {
           if (msg.id == event.lastMessage!.id) {
-            AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Found message to update: ${msg.id}');
             return msg.copyWith(
               status: event.lastMessage!.status,
               deliveredAt: event.lastMessage!.deliveredAt,
@@ -706,8 +663,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           }
           return msg;
         }).toList();
-        
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (deliveredAt: ${m.deliveredAt}, readAt: ${m.readAt})').join(', ')}');
         
         emit(ConversationLoaded(
           conversation: currentState.conversation.copyWith(
@@ -723,8 +678,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           participantAvatar: currentState.participantAvatar,
           isOnline: currentState.isOnline,
         ));
-        
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state from conversation update');
       } else {
         // If no lastMessage, just update the conversation
         emit(ConversationLoaded(
@@ -740,8 +693,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           participantAvatar: currentState.participantAvatar,
           isOnline: currentState.isOnline,
         ));
-        
-        AppLogger.info('🔵 DEBUGGING MESSAGE DELIVERY: Emitted new state without message update');
       }
     }
   }
@@ -802,28 +753,13 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   }
 
   void _onMessageViewed(MessageViewed event, Emitter<ConversationState> emit) {
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: Processing MessageViewed event');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Message ID: ${event.messageId}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Viewed at: ${event.viewedAt}');
-    
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
-      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current state has ${currentState.messages.length} messages');
-      
-      // Log all messages before update
-      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Messages before update:');
-      for (final msg in currentState.messages) {
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${msg.id}, Type: ${msg.type}, IsDisappearing: ${msg.isDisappearing}');
-      }
       
       final updatedMessages = currentState.messages.map((message) {
         if (message.id == event.messageId) {
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Found message to update: ${message.id}');
-          AppLogger.info('🔵 DEBUGGING MESSAGE ID: Current metadata: ${message.metadata}');
-          
           // If this is a disappearing image message, start the timer
           if (message.type == MessageType.image && message.isDisappearing) {
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Adding viewedAt metadata to disappearing image message');
             // Create a new message with the viewed timestamp and start the timer
             final updatedMessage = message.copyWith(
               metadata: {
@@ -831,18 +767,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
                 'viewedAt': event.viewedAt.toIso8601String(),
               },
             );
-            AppLogger.info('🔵 DEBUGGING MESSAGE ID: Updated metadata: ${updatedMessage.metadata}');
             return updatedMessage;
           }
           return message;
         }
         return message;
       }).toList();
-      
-      AppLogger.info('🔵 DEBUGGING MESSAGE ID: Messages after update:');
-      for (final msg in updatedMessages) {
-        AppLogger.info('🔵 DEBUGGING MESSAGE ID: - ID: ${msg.id}, Type: ${msg.type}, Metadata: ${msg.metadata}');
-      }
 
       emit(ConversationLoaded(
         conversation: currentState.conversation,
@@ -852,30 +782,21 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
       ));
-      
-      AppLogger.info('🔵 DEBUGGING MESSAGE ID: MessageViewed event processed successfully');
-    } else {
-      AppLogger.error('🔵 DEBUGGING MESSAGE ID: Cannot process MessageViewed: state is not ConversationLoaded');
     }
   }
 
   void _onUpdateMessageId(UpdateMessageId event, Emitter<ConversationState> emit) {
-    AppLogger.info('🔵 DEBUGGING Disappearing Image: Updating message ID from ${event.oldMessageId} to ${event.newMessageId}');
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
-      AppLogger.info('🔵 DEBUGGING Disappearing Image: Current state has ${currentState.messages.length} messages');
       
       // Find and update the message with the new ID
       final updatedMessages = currentState.messages.map((message) {
         if (message.id == event.oldMessageId) {
-          AppLogger.info('🔵 DEBUGGING Disappearing Image: Found message to update ID: ${message.id}');
           return message.copyWith(id: event.newMessageId);
         }
         return message;
       }).toList();
       
-      AppLogger.info('🔵 DEBUGGING Disappearing Image: Updated message ID, new message count: ${updatedMessages.length}');
-      
       emit(ConversationLoaded(
         conversation: currentState.conversation,
         messages: updatedMessages,
@@ -884,8 +805,6 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
       ));
-    } else {
-      AppLogger.warning('⚠️ DEBUGGING Disappearing Image: Cannot update message ID: state is not ConversationLoaded');
     }
   }
 
