@@ -48,6 +48,7 @@ dependencies:
   logger: ^2.0.2+1
   url_launcher: ^6.2.2
   geolocator: ^10.1.0
+  app_links: ^3.4.5
   
   # OTP Input Widget
   pin_code_fields: ^8.0.1

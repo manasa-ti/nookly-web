@@ -46,13 +46,26 @@ class ForceLogout extends AuthEvent {
   List<Object?> get props => [reason];
 }
 
-class ResetPassword extends AuthEvent {
+class ForgotPassword extends AuthEvent {
   final String email;
 
-  const ResetPassword({required this.email});
+  const ForgotPassword({required this.email});
 
   @override
   List<Object?> get props => [email];
+}
+
+class ResetPassword extends AuthEvent {
+  final String token;
+  final String newPassword;
+
+  const ResetPassword({
+    required this.token,
+    required this.newPassword,
+  });
+
+  @override
+  List<Object?> get props => [token, newPassword];
 }
 
 class CheckAuthStatus extends AuthEvent {}

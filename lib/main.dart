@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
 import 'package:nookly/core/services/call_service.dart';
 import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/services/deep_link_service.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
@@ -51,12 +52,19 @@ void main() async {
   // Initialize Agora
   await CallService().initialize();
   
+  // Initialize Deep Link Service
+  DeepLinkService().initialize();
+  
   runApp(const MyApp());
   logger.i('Application started');
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
+  // Global ScaffoldMessenger key for consistent SnackBar display
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = 
+      GlobalKey<ScaffoldMessengerState>();
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +102,7 @@ class MyApp extends StatelessWidget {
         child: MaterialApp(
           title: 'nookly',
           navigatorKey: AuthHandler.navigatorKey, // Add global navigator key
+          scaffoldMessengerKey: scaffoldMessengerKey, // Add global scaffold messenger key
           theme: ThemeData(
             colorScheme: const ColorScheme.dark(
               primary: Color(0xFF4C5C8A),

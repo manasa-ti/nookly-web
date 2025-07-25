@@ -118,8 +118,23 @@ class _LoginPageState extends State<LoginPage> {
               _isEmailLoading = false;
               _isGoogleLoading = false;
             });
+            
+            // Provide user-friendly error messages for common issues
+            String userMessage = state.message;
+            if (state.message.contains('timed out') || state.message.contains('buffering')) {
+              userMessage = 'Server is temporarily unavailable. Please try again in a moment.';
+            } else if (state.message.contains('network') || state.message.contains('connection')) {
+              userMessage = 'Network connection issue. Please check your internet connection.';
+            } else if (state.message.contains('Invalid credentials') || state.message.contains('401')) {
+              userMessage = 'Invalid email or password. Please try again.';
+            }
+            
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
+              SnackBar(
+                content: Text(userMessage),
+                backgroundColor: Colors.red,
+                duration: const Duration(seconds: 4),
+              ),
             );
           }
         },

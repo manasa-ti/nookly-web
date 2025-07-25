@@ -86,4 +86,26 @@ class EmailVerificationRequired extends AuthState {
 
   @override
   List<Object?> get props => [email, message];
+}
+
+class ForgotPasswordSent extends AuthState {
+  final String message;
+  final int? expiresIn;
+
+  const ForgotPasswordSent({
+    required this.message,
+    this.expiresIn,
+  });
+
+  @override
+  List<Object?> get props => [message, expiresIn];
+}
+
+class PasswordResetSuccess extends AuthState {
+  final String message;
+
+  const PasswordResetSuccess({required this.message});
+
+  @override
+  List<Object?> get props => [message];
 } 

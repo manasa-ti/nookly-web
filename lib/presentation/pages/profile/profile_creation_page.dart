@@ -12,6 +12,7 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
+import 'package:nookly/main.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -171,9 +172,11 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           _currentStep++;
         });
       } else {
+        print('ProfileCreationPage: Validation failed for step $_currentStep');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_currentStep == 3 ? 'Please select at least one objective' : 'Please fill in all required fields'),
+            backgroundColor: Colors.orange,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -286,7 +289,10 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       ),
       body: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
+          print('ProfileCreationPage: Received state: ${state.runtimeType}');
+          
           if (state is ProfileSaved) {
+            print('ProfileCreationPage: Profile saved successfully');
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const HomePage(),
@@ -294,9 +300,42 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
               (route) => false, // Remove all previous routes
             );
           } else if (state is ProfileError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
+            print('ProfileCreationPage: Profile error: ${state.message}');
+            // Use a more explicit approach to ensure the SnackBar shows
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                print('ProfileCreationPage: Showing error SnackBar');
+                try {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                } catch (e) {
+                  print('ProfileCreationPage: Error showing SnackBar with context: $e');
+                  // Fallback to global ScaffoldMessenger
+                  MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
+                    SnackBar(
+                      content: Text(state.message),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  );
+                }
+              } else {
+                print('ProfileCreationPage: Widget not mounted, cannot show SnackBar');
+                // Fallback to global ScaffoldMessenger
+                MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
+                  SnackBar(
+                    content: Text(state.message),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 4),
+                  ),
+                );
+              }
+            });
           }
         },
         child: BlocBuilder<ProfileBloc, ProfileState>(

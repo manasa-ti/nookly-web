@@ -51,6 +51,7 @@
 <string>Need microphone access for calls</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 <string>This app needs access to photos to select images for chat messages</string>
+
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -61,6 +62,15 @@
 				<string>com.googleusercontent.apps.957642975258-256528neeadp0ieai104f80idjnmlngm</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.nookly.app.deep-link</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>nookly</string>
+			</array>
+		</dict>
+
 	</array>
 </dict>
 </plist>

@@ -69,34 +69,35 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
     super.dispose();
   }
 
-  void _onDragStart(DragStartDetails details) {
-    setState(() {
-      _isDragging = true;
-    });
-  }
+  // TEMPORARILY DISABLED: Swipe functionality commented out for future use
+  // void _onDragStart(DragStartDetails details) {
+  //   setState(() {
+  //     _isDragging = true;
+  //   });
+  // }
 
-  void _onDragUpdate(DragUpdateDetails details) {
-    setState(() {
-      _dragOffset += details.delta.dx;
-    });
-  }
+  // void _onDragUpdate(DragUpdateDetails details) {
+  //   setState(() {
+  //     _dragOffset += details.delta.dx;
+  //   });
+  // }
 
-  void _onDragEnd(DragEndDetails details) {
-    setState(() {
-      _isDragging = false;
-    });
+  // void _onDragEnd(DragEndDetails details) {
+  //   setState(() {
+  //     _isDragging = false;
+  //   });
 
-    if (_dragOffset.abs() > MediaQuery.of(context).size.width * 0.3) {
-      if (_dragOffset > 0) {
-        widget.onSwipeRight();
-      } else {
-        widget.onSwipeLeft();
-      }
-    } else {
-      _controller.forward(from: 0);
-    }
-    _dragOffset = 0;
-  }
+  //   if (_dragOffset.abs() > MediaQuery.of(context).size.width * 0.3) {
+  //     if (_dragOffset > 0) {
+  //       widget.onSwipeRight();
+  //     } else {
+  //       widget.onSwipeLeft();
+  //     }
+  //   } else {
+  //     _controller.forward(from: 0);
+  //   }
+  //   _dragOffset = 0;
+  // }
 
   Widget _buildAvatar() {
     final name = widget.profile['name'] as String?;
@@ -117,15 +118,18 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
     final cardWidth = size.width * 0.9;
 
     return GestureDetector(
-      onHorizontalDragStart: _onDragStart,
-      onHorizontalDragUpdate: _onDragUpdate,
-      onHorizontalDragEnd: _onDragEnd,
+      // TEMPORARILY DISABLED: Swipe gesture handlers commented out for future use
+      // onHorizontalDragStart: _onDragStart,
+      // onHorizontalDragUpdate: _onDragUpdate,
+      // onHorizontalDragEnd: _onDragEnd,
       onTap: widget.onTap,
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, child) {
           return Transform.translate(
-            offset: Offset(_dragOffset, 0),
+            // TEMPORARILY DISABLED: Swipe offset commented out for future use
+            // offset: Offset(_dragOffset, 0),
+            offset: Offset.zero, // No movement since swipe is disabled
             child: Stack(
               children: [
                 Container(

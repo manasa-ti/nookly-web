@@ -15,6 +15,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignInWithGoogle>(_onSignInWithGoogle);
     on<SignOut>(_onSignOut);
     on<ForceLogout>(_onForceLogout);
+    on<ForgotPassword>(_onForgotPassword);
     on<ResetPassword>(_onResetPassword);
     on<CheckAuthStatus>(_onCheckAuthStatus);
     
@@ -117,14 +118,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  Future<void> _onForgotPassword(
+    ForgotPassword event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final response = await _authRepository.forgotPassword(event.email);
+      emit(ForgotPasswordSent(
+        message: response.message,
+        expiresIn: response.expiresIn,
+      ));
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
   Future<void> _onResetPassword(
     ResetPassword event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
     try {
-      await _authRepository.resetPassword(event.email);
-      emit(Unauthenticated());
+      final response = await _authRepository.resetPassword(event.token, event.newPassword);
+      emit(PasswordResetSuccess(message: response.message));
     } catch (e) {
       emit(AuthError(e.toString()));
     }

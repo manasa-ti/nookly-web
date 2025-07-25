@@ -10,6 +10,10 @@ import 'package:nookly/data/models/auth/login_request_model.dart';
 import 'package:nookly/data/models/auth/register_request_model.dart';
 import 'package:nookly/data/models/auth/otp_response_model.dart';
 import 'package:nookly/data/models/auth/verify_otp_response_model.dart';
+import 'package:nookly/data/models/auth/forgot_password_request_model.dart';
+import 'package:nookly/data/models/auth/forgot_password_response_model.dart';
+import 'package:nookly/data/models/auth/reset_password_request_model.dart';
+import 'package:nookly/data/models/auth/reset_password_response_model.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 
@@ -218,13 +222,50 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> resetPassword(String email) async {
+  Future<ForgotPasswordResponseModel> forgotPassword(String email) async {
     try {
-      await NetworkService.dio.post(
-        '/users/reset-password',
-        data: {'email': email},
+      AppLogger.info('Requesting password reset for email: $email');
+      final request = ForgotPasswordRequestModel(email: email);
+      final response = await NetworkService.dio.post(
+        '/users/forgot-password',
+        data: request.toJson(),
       );
+
+      final forgotPasswordResponse = ForgotPasswordResponseModel.fromJson(response.data);
+      AppLogger.info('Password reset email sent successfully to: $email');
+      return forgotPasswordResponse;
     } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to send password reset email',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Failed to send password reset email: ${e.response?.data ?? e.message}');
+    }
+  }
+
+  @override
+  Future<ResetPasswordResponseModel> resetPassword(String token, String newPassword) async {
+    try {
+      AppLogger.info('Resetting password with token');
+      final request = ResetPasswordRequestModel(
+        token: token,
+        newPassword: newPassword,
+      );
+      final response = await NetworkService.dio.post(
+        '/users/reset-password',
+        data: request.toJson(),
+      );
+
+      final resetPasswordResponse = ResetPasswordResponseModel.fromJson(response.data);
+      AppLogger.info('Password reset successful');
+      return resetPasswordResponse;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to reset password',
+        e,
+        StackTrace.current,
+      );
       throw Exception('Failed to reset password: ${e.response?.data ?? e.message}');
     }
   }
