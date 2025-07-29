@@ -1847,57 +1847,57 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       ],
                     ),
                   ),
-                  const Divider(color: Colors.white24),
-                  ListTile(
-                    leading: const Icon(Icons.card_giftcard, color: Colors.white),
-                    title: const Text(
-                      'Buy Gift',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-                    ),
-                    onTap: () {
-                      // Handle buy gift
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.games, color: Colors.white),
-                    title: const Text(
-                      'Start Ice Breaker Game',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-                    ),
-                    onTap: () {
-                      // Handle start game
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.casino, color: Colors.white),
-                    title: const Text(
-                      'Start Fantasy Game',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-                    ),
-                    onTap: () {
-                      // Handle start fantasy game
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.calendar_today, color: Colors.white),
-                    title: const Text(
-                      'Plan a Date',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-                    ),
-                    onTap: () {
-                      // Handle plan date
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.psychology, color: Colors.white),
-                    title: const Text(
-                      'Get Inference',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-                    ),
-                    onTap: () {
-                      // Handle get inference
-                    },
-                  ),
+                  // TODO: Uncomment these features when implemented
+                  // ListTile(
+                  //   leading: const Icon(Icons.card_giftcard, color: Colors.white),
+                  //   title: const Text(
+                  //     'Buy Gift',
+                  //     style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                  //   ),
+                  //   onTap: () {
+                  //     // Handle buy gift
+                  //   },
+                  // ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.games, color: Colors.white),
+                  //   title: const Text(
+                  //     'Start Ice Breaker Game',
+                  //     style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                  //   ),
+                  //   onTap: () {
+                  //     // Handle start game
+                  //   },
+                  // ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.casino, color: Colors.white),
+                  //   title: const Text(
+                  //     'Start Fantasy Game',
+                  //     style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                  //   ),
+                  //   onTap: () {
+                  //     // Handle start fantasy game
+                  //   },
+                  // ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.calendar_today, color: Colors.white),
+                  //   title: const Text(
+                  //     'Plan a Date',
+                  //     style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                  //   ),
+                  //   onTap: () {
+                  //     // Handle plan date
+                  //   },
+                  // ),
+                  // ListTile(
+                  //   leading: const Icon(Icons.psychology, color: Colors.white),
+                  //   title: const Text(
+                  //     'Get Inference',
+                  //     style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                  //   ),
+                  //   onTap: () {
+                  //     // Handle get inference
+                  //   },
+                  // ),
                   const Divider(color: Colors.white24),
                   ListTile(
                     leading: const Icon(Icons.block, color: Colors.white),

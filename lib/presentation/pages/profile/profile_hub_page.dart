@@ -4,6 +4,7 @@ import 'package:get_it/get_it.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,11 +28,21 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
 
   Future<void> _loadUser() async {
     setState(() => _isLoading = true);
-    final user = await _authRepository.getCurrentUser();
-    setState(() {
-      _user = user;
-      _isLoading = false;
-    });
+    try {
+      final user = await _authRepository.getCurrentUser();
+      print('🔵 ProfileHub: Loaded user: ${user?.name} | ${user?.email}');
+      print('🔵 ProfileHub: User object: $user');
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('🔵 ProfileHub: Error loading user: $e');
+      setState(() {
+        _user = null;
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _openPrivacyPolicy() async {
@@ -84,6 +95,137 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
     }
   }
 
+  Future<void> _openTermsOfUse() async {
+    const url = 'http://terms-of-use.nookly.app/';
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open terms of use'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening terms of use: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF234481),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'About Nookly',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Version 1.0.0',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontFamily: 'Nunito',
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Nookly is a comprehensive dating application designed to help you find meaningful connections.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '© 2024 Nookly. All rights reserved.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontFamily: 'Nunito',
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _openPrivacyPolicy();
+                        },
+                        child: const Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _openTermsOfUse();
+                        },
+                        child: const Text(
+                          'Terms of Use',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
 
   @override
@@ -94,9 +236,57 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       child: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-            : ListView(
-                padding: const EdgeInsets.all(20),
-                children: [
+            : _user == null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Profile Setup Required',
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Please complete your profile setup',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileCreationPage(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4C5C8A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          child: const Text(
+                            'Complete Profile',
+                            style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _loadUser,
+                          child: const Text(
+                            'Retry Loading',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
                   // Profile Info
                   Center(
                     child: Column(
@@ -148,37 +338,39 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  // Purchased Features Section (Placeholder)
-                  Card(
-                    color: const Color(0xFF35548b),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 20.0), fontWeight: FontWeight.w500, color: Colors.white)),
-                          const SizedBox(height: 12),
-                          Text('Your purchased features will appear here.', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Notifications Section
-                  Card(
-                    color: const Color(0xFF35548b),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                    child: ListTile(
-                      leading: const Icon(Icons.notifications, color: Colors.white),
-                      title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500, fontSize: (size.width * 0.04).clamp(13.0, 16.0))),
-                      trailing: const Icon(Icons.chevron_right, color: Colors.white),
-                      onTap: () {
-                        // Navigate to notifications page
-                      },
-                    ),
-                  ),
+                  // TODO: Uncomment Premium Features section when implemented
+                  // const SizedBox(height: 32),
+                  // // Purchased Features Section (Placeholder)
+                  // Card(
+                  //   color: const Color(0xFF35548b),
+                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  //   child: Padding(
+                  //     padding: const EdgeInsets.all(16),
+                  //     child: Column(
+                  //       crossAxisAlignment: CrossAxisAlignment.start,
+                  //       children: [
+                  //         Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 20.0), fontWeight: FontWeight.w500, color: Colors.white)),
+                  //         const SizedBox(height: 12),
+                  //         Text('Your purchased features will appear here.', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
+                  // TODO: Uncomment Notifications section when implemented
+                  // const SizedBox(height: 32),
+                  // // Notifications Section
+                  // Card(
+                  //   color: const Color(0xFF35548b),
+                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  //   child: ListTile(
+                  //     leading: const Icon(Icons.notifications, color: Colors.white),
+                  //     title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500, fontSize: (size.width * 0.04).clamp(13.0, 16.0))),
+                  //     trailing: const Icon(Icons.chevron_right, color: Colors.white),
+                  //     onTap: () {
+                  //       // Navigate to notifications page
+                  //     },
+                  //   ),
+                  // ),
                   const SizedBox(height: 16),
                   // Settings Section
                   Card(
@@ -187,8 +379,9 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                     child: Column(
                       children: [
                         _SettingsTile(icon: Icons.privacy_tip, title: 'Privacy', onTap: _openPrivacyPolicy),
-                        _SettingsTile(icon: Icons.help, title: 'Help & Support', onTap: () {}),
-                        _SettingsTile(icon: Icons.info, title: 'About', onTap: () {}),
+                        // TODO: Uncomment when Help & Support page is implemented
+                        // _SettingsTile(icon: Icons.help, title: 'Help & Support', onTap: () {}),
+                        _SettingsTile(icon: Icons.info, title: 'About', onTap: _showAboutDialog),
                         _SettingsTile(
                           icon: Icons.logout,
                           title: 'Logout',

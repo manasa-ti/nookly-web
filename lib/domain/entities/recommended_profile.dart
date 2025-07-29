@@ -12,6 +12,7 @@ class RecommendedProfile {
   final double distance;
   final List<String> commonInterests;
   final List<String> commonObjectives;
+  final DateTime? likedAt; // Add timestamp for when this profile liked the current user
 
   RecommendedProfile({
     required this.id,
@@ -27,6 +28,7 @@ class RecommendedProfile {
     required this.distance,
     required this.commonInterests,
     required this.commonObjectives,
+    this.likedAt, // Add to constructor
   });
 
   factory RecommendedProfile.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class RecommendedProfile {
       distance: json['distance'].toDouble(),
       commonInterests: List<String>.from(json['common_interests']),
       commonObjectives: List<String>.from(json['common_objectives']),
+      likedAt: json['liked_at'] != null ? DateTime.parse(json['liked_at']) : null, // Parse liked_at timestamp
     );
   }
 
@@ -62,6 +65,7 @@ class RecommendedProfile {
       'distance': distance,
       'common_interests': commonInterests,
       'common_objectives': commonObjectives,
+      'liked_at': likedAt?.toIso8601String(), // Include liked_at in JSON
     };
   }
 } 

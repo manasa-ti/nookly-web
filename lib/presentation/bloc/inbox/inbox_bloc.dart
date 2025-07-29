@@ -67,11 +67,11 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
             participantAvatar: match.profilePicUrl,
             messages: currentConversation?.messages ?? [],
             lastMessage: currentConversation?.lastMessage,
-            lastMessageTime: currentConversation?.lastMessageTime ?? DateTime.fromMillisecondsSinceEpoch(0),
+            lastMessageTime: currentConversation?.lastMessageTime ?? DateTime.now(), // Use current time for new matches
             isOnline: false,
             unreadCount: currentConversation?.unreadCount ?? 0,
             userId: _currentUserId,
-            updatedAt: currentConversation?.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+            updatedAt: currentConversation?.updatedAt ?? DateTime.now(), // Use current time for new matches
           );
           mergedConversations.add(newConversation);
         }

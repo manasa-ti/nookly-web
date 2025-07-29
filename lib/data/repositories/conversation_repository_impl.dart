@@ -79,9 +79,9 @@ class ConversationRepositoryImpl implements ConversationRepository {
               }
             }
             
-            lastMessageTime = lastMessage?.timestamp ?? DateTime.fromMillisecondsSinceEpoch(0);
+            lastMessageTime = lastMessage?.timestamp ?? DateTime.now();
           } else {
-            lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
+            lastMessageTime = DateTime.now();
           }
           
           final participantIdFromJson = userJson['_id'] as String;
@@ -180,7 +180,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
         filteredMessages.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
-        DateTime lastMessageTime = DateTime.fromMillisecondsSinceEpoch(0);
+        DateTime lastMessageTime = DateTime.now();
         if (filteredMessages.isNotEmpty) {
           lastMessageTime = filteredMessages.last.timestamp;
         }

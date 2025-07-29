@@ -25,7 +25,7 @@ class ReceivedLikesRepositoryImpl implements ReceivedLikesRepository {
         bio: profile.bio,
         interests: profile.interests,
         profilePicture: profile.profilePic ?? '',
-        likedAt: DateTime.now(), // TODO: Get actual timestamp from API
+        likedAt: profile.likedAt ?? DateTime.now(), // Use actual API timestamp, fallback to current time
       )).toList();
 
       AppLogger.info('Successfully fetched ${likes.length} received likes');
