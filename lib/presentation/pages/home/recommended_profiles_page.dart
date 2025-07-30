@@ -156,9 +156,14 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             }
             
             print('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isLoadingMore: $_isLoadingMore');
+            
+            // Adaptive padding for different screen sizes
+            final isTablet = MediaQuery.of(context).size.width > 600;
+            final listPadding = isTablet ? EdgeInsets.all(32.0) : EdgeInsets.all(MediaQuery.of(context).size.width * 0.04);
+            
             return ListView.builder(
               controller: _scrollController,
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04), // 4% padding
+              padding: listPadding,
               itemCount: state.profiles.length + (_isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == state.profiles.length) {

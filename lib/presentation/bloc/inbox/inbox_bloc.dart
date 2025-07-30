@@ -116,14 +116,6 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
       
       mergedConversations.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
 
-      // Log conversation details
-      for (var conversation in mergedConversations) {
-        AppLogger.info('🔵 Conversation ${conversation.participantName}:');
-        AppLogger.info('  - Unread count: ${conversation.unreadCount}');
-        AppLogger.info('  - Last message: ${conversation.lastMessage?.content}');
-        AppLogger.info('  - Last message time: ${conversation.lastMessageTime}');
-      }
-
       emit(InboxLoaded(mergedConversations));
 
     } catch (e) {

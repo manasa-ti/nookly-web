@@ -485,13 +485,18 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                   ),
                 );
               }
+              
+              // Adaptive padding for different screen sizes
+              final isTablet = MediaQuery.of(context).size.width > 600;
+              final listPadding = isTablet ? const EdgeInsets.only(top: 16.0, left: 32.0, right: 32.0) : const EdgeInsets.only(top: 16.0);
+              
               return RefreshIndicator(
                 onRefresh: () async {
                   AppLogger.info('🔵 Pull to refresh triggered');
                   _inboxBloc?.add(RefreshInbox());
                 },
                 child: ListView.builder(
-                  padding: const EdgeInsets.only(top: 16.0),
+                  padding: listPadding,
                   itemCount: state.conversations.length,
                   itemBuilder: (context, index) {
                     final conversation = state.conversations[index];
@@ -509,6 +514,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w600,
+                            fontSize: isTablet ? 18.0 : null,
                           ),
                         ),
                         subtitle: conversation.isTyping == true
@@ -517,6 +523,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                                 style: TextStyle(
                                   fontStyle: FontStyle.italic,
                                   color: Colors.grey[400],
+                                  fontSize: isTablet ? 16.0 : null,
                                 ),
                               )
                             : lastMessage != null
@@ -524,17 +531,23 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                                     _getMessageDisplayText(lastMessage!, isMe),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(color: Colors.white),
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: isTablet ? 16.0 : null,
+                                    ),
                                   )
                                 : Text(
                                     'No messages yet',
-                                    style: TextStyle(color: Colors.grey[400]),
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
+                                      fontSize: isTablet ? 16.0 : null,
+                                    ),
                                   ),
                         trailing: Text(
                           _formatTimestamp(conversation.lastMessageTime),
                           style: TextStyle(
                             color: hasUnread ? Colors.white : Colors.grey[400],
-                            fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
+                            fontSize: isTablet ? 14.0 : (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
                             fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
                             fontFamily: 'Nunito',
                           ),

@@ -76,8 +76,12 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
               );
             }
             
+            // Adaptive padding for different screen sizes
+            final isTablet = MediaQuery.of(context).size.width > 600;
+            final listPadding = isTablet ? EdgeInsets.all(32.0) : EdgeInsets.all(MediaQuery.of(context).size.width * 0.04);
+            
             return ListView.builder(
-              padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.04), // 4% padding
+              padding: listPadding,
               itemCount: state.likes.length,
               itemBuilder: (context, index) {
                 final like = state.likes[index];

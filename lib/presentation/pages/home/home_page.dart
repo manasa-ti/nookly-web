@@ -30,6 +30,17 @@ class _HomePageState extends State<HomePage> {
     const ProfileHubPage(),
   ];
 
+  // Helper method to determine if device is tablet
+  bool _isTablet(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return size.width > 600; // Consider devices wider than 600dp as tablets
+  }
+
+  // Helper method to get adaptive sizing
+  double _getAdaptiveSize(BuildContext context, double mobileSize, double tabletSize) {
+    return _isTablet(context) ? tabletSize : mobileSize;
+  }
+
   void _onProfilePressed() {
     Navigator.push(
       context,
@@ -77,6 +88,19 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isTablet = _isTablet(context);
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final safeArea = MediaQuery.of(context).padding;
+    
+    // Adaptive sizing for different screen sizes
+    final appBarHeight = isTablet ? 80.0 : screenHeight * 0.12;
+    final bottomNavHeight = isTablet ? 70.0 : screenHeight * 0.08;
+    final titleFontSize = isTablet ? 28.0 : screenWidth * 0.07;
+    final subtitleFontSize = isTablet ? 16.0 : screenWidth * 0.035;
+    final iconSize = isTablet ? 24.0 : screenWidth * 0.1;
+    final labelFontSize = isTablet ? 14.0 : screenWidth * 0.03;
+
     return WillPopScope(
       onWillPop: () async {
         // Allow app to exit when back button is pressed on home screen
@@ -85,20 +109,20 @@ class _HomePageState extends State<HomePage> {
       child: Scaffold(
         backgroundColor: const Color(0xFF234481),
         appBar: PreferredSize(
-          preferredSize: Size.fromHeight(MediaQuery.of(context).size.height * 0.12), // 12% of screen height
+          preferredSize: Size.fromHeight(appBarHeight),
           child: SafeArea(
             top: true, // Exclude status bar from colored background
             bottom: false,
             child: Container(
               color: const Color(0xFF35548b).withOpacity(0.7), // Match bottom nav bar color and opacity
               child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.12, // 12% of screen height
+                height: appBarHeight,
                 child: Stack(
                   children: [
                     Align(
                       alignment: Alignment.topCenter,
                       child: Padding(
-                        padding: EdgeInsets.only(top: MediaQuery.of(context).size.height * 0.02), // 2% top padding
+                        padding: EdgeInsets.only(top: isTablet ? 16.0 : screenHeight * 0.02),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -109,15 +133,15 @@ class _HomePageState extends State<HomePage> {
                                     fontWeight: FontWeight.bold,
                                     color: Colors.white,
                                     letterSpacing: 1.2,
-                                    fontSize: MediaQuery.of(context).size.width * 0.07, // 7% of screen width
+                                    fontSize: titleFontSize,
                                   ),
                             ),
-                            SizedBox(height: MediaQuery.of(context).size.height * 0.005), // 0.5% spacing
+                            SizedBox(height: isTablet ? 4.0 : screenHeight * 0.005),
                             Text(
                               'Never be lonely',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
-                                fontSize: MediaQuery.of(context).size.width * 0.035, // 3.5% of screen width
+                                fontSize: subtitleFontSize,
                                 color: const Color(0xFFD6D9E6),
                                 fontWeight: FontWeight.w400,
                               ),
@@ -128,17 +152,17 @@ class _HomePageState extends State<HomePage> {
                     ),
                     if (_currentIndex == 0)
                       Positioned(
-                        top: MediaQuery.of(context).size.height * 0.02, // 2% top
-                        right: MediaQuery.of(context).size.width * 0.03, // 3% right
+                        top: isTablet ? 16.0 : screenHeight * 0.02,
+                        right: isTablet ? 16.0 : screenWidth * 0.03,
                         child: IconButton(
                           icon: Icon(
                             Icons.filter_list, 
                             color: Colors.white, 
-                            size: MediaQuery.of(context).size.width * 0.08, // 8% of screen width
+                            size: iconSize,
                           ),
                           onPressed: _onFiltersPressed,
                           tooltip: 'Filters',
-                          iconSize: MediaQuery.of(context).size.width * 0.08, // 8% of screen width
+                          iconSize: iconSize,
                           padding: EdgeInsets.zero,
                           constraints: BoxConstraints(),
                         ),
@@ -150,98 +174,104 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         body: _pages[_currentIndex],
-        bottomNavigationBar: ClipRRect(
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(24),
-            topRight: Radius.circular(24),
-          ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: const Color(0xFF35548b).withOpacity(0.7),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x33000000),
-                    blurRadius: 16,
-                    offset: Offset(0, -4),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: EdgeInsets.only(bottom: MediaQuery.of(context).size.height * 0.01), // 1% bottom padding
-                child: NavigationBar(
-                  backgroundColor: Colors.transparent,
-                  height: MediaQuery.of(context).size.height * 0.08, // 8% of screen height
-                  selectedIndex: _currentIndex,
-                  onDestinationSelected: (index) {
-                    setState(() {
-                      _currentIndex = index;
-                    });
-                  },
-                  indicatorColor: const Color(0xFF516b99),
-                  labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                destinations: [
-                  NavigationDestination(
-                    icon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002), // 0.2% vertical padding
-                      child: SvgIcons.discoverIcon(size: MediaQuery.of(context).size.width * 0.1), // 10% of screen width
-                    ),
-                    selectedIcon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002), // 0.2% vertical padding
-                      child: SvgIcons.discoverIcon(size: MediaQuery.of(context).size.width * 0.1), // 10% of screen width
-                    ),
-                    label: 'Discover',
-                  ),
-                  NavigationDestination(
-                    icon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
-                      child: SvgIcons.likesIcon(size: MediaQuery.of(context).size.width * 0.1),
-                    ),
-                    selectedIcon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
-                      child: SvgIcons.likesIcon(size: MediaQuery.of(context).size.width * 0.1),
-                    ),
-                    label: 'Likes',
-                  ),
-                  NavigationDestination(
-                    icon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
-                      child: SvgIcons.chatsIcon(size: MediaQuery.of(context).size.width * 0.1),
-                    ),
-                    selectedIcon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
-                      child: SvgIcons.chatsIcon(size: MediaQuery.of(context).size.width * 0.1),
-                    ),
-                    label: 'Chat',
-                  ),
-                  NavigationDestination(
-                    icon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
-                      child: SvgIcons.profileIcon(size: MediaQuery.of(context).size.width * 0.1),
-                    ),
-                    selectedIcon: Padding(
-                      padding: EdgeInsets.symmetric(vertical: MediaQuery.of(context).size.height * 0.002),
-                      child: SvgIcons.profileIcon(size: MediaQuery.of(context).size.width * 0.1),
-                    ),
-                    label: 'Profile',
-                  ),
-                ],
-                labelTextStyle: MaterialStatePropertyAll(
-                  TextStyle(
-                    fontFamily: 'Nunito',
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: MediaQuery.of(context).size.width * 0.03, // 3% of screen width
-                    height: 1.2,
-                  ),
-                ),
-              ),
+        bottomNavigationBar: SafeArea(
+          bottom: true,
+          child: ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
             ),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF35548b).withOpacity(0.7),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x33000000),
+                      blurRadius: 16,
+                      offset: Offset(0, -4),
+                    ),
+                  ],
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: isTablet ? 8.0 : screenHeight * 0.01,
+                    top: isTablet ? 8.0 : 0,
+                  ),
+                  child: NavigationBar(
+                    backgroundColor: Colors.transparent,
+                    height: bottomNavHeight,
+                    selectedIndex: _currentIndex,
+                    onDestinationSelected: (index) {
+                      setState(() {
+                        _currentIndex = index;
+                      });
+                    },
+                    indicatorColor: const Color(0xFF516b99),
+                    labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+                  destinations: [
+                    NavigationDestination(
+                      icon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.discoverIcon(size: iconSize),
+                      ),
+                      selectedIcon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.discoverIcon(size: iconSize),
+                      ),
+                      label: 'Discover',
+                    ),
+                    NavigationDestination(
+                      icon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.likesIcon(size: iconSize),
+                      ),
+                      selectedIcon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.likesIcon(size: iconSize),
+                      ),
+                      label: 'Likes',
+                    ),
+                    NavigationDestination(
+                      icon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.chatsIcon(size: iconSize),
+                      ),
+                      selectedIcon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.chatsIcon(size: iconSize),
+                      ),
+                      label: 'Chat',
+                    ),
+                    NavigationDestination(
+                      icon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.profileIcon(size: iconSize),
+                      ),
+                      selectedIcon: Padding(
+                        padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
+                        child: SvgIcons.profileIcon(size: iconSize),
+                      ),
+                      label: 'Profile',
+                    ),
+                  ],
+                  labelTextStyle: MaterialStatePropertyAll(
+                    TextStyle(
+                      fontFamily: 'Nunito',
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: labelFontSize,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+              ),
+              ),
             ),
           ),
         ),
