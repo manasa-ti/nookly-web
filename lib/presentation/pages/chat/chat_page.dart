@@ -24,6 +24,7 @@ import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/disappearing_image_manager.dart';
 import 'package:nookly/presentation/pages/report/report_page.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
+import 'package:nookly/core/services/key_management_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -218,20 +219,27 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _initSocketAndUser() async {
+    AppLogger.info('🔵 Initializing socket and user');
     final authRepository = sl<AuthRepository>();
     final user = await authRepository.getCurrentUser();
     final token = await authRepository.getToken();
+    
+    AppLogger.info('🔵 User: ${user?.id}');
+    AppLogger.info('🔵 Token available: ${token != null}');
     
     if (user != null && token != null) {
       _currentUserId = user.id;
       _jwtToken = token;
       _socketService = sl<SocketService>();
       
+      AppLogger.info('🔵 Socket service created');
+      
       // Update the ConversationBloc with the current user ID
       if (mounted) {
         context.read<ConversationBloc>().add(UpdateCurrentUserId(user.id));
       }
       
+      AppLogger.info('🔵 Connecting to socket: ${SocketService.socketUrl}');
       _socketService!.connect(
         serverUrl: SocketService.socketUrl, 
         token: token,
@@ -239,14 +247,25 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       );
       
       // Add a small delay to ensure socket is connected
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 1000));
+      
+      AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');
+      AppLogger.info('🔵 Socket ID: ${_socketService!.socketId}');
       
       if (_socketService!.isConnected) {
         // Join the private chat room
+        AppLogger.info('🔵 Joining private chat room: ${widget.conversationId}');
         _socketService!.joinPrivateChat(widget.conversationId);
+      } else {
+        AppLogger.error('❌ Socket not connected after initialization');
       }
       
       _registerSocketListeners();
+      AppLogger.info('🔵 Socket listeners registered');
+    } else {
+      AppLogger.error('❌ User or token is null');
+      AppLogger.error('❌ User: $user');
+      AppLogger.error('❌ Token: ${token != null}');
     }
   }
 
@@ -392,38 +411,78 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Debounce timer for typing events
     Timer? _typingDebounce;
     
-    _socketService!.on('private_message', (data) {
+    _socketService!.on('private_message', (data) async {
       if (!mounted) return;
       try {
+        // Decrypt message if it's encrypted
+        Map<String, dynamic> decryptedData = data;
+        if (data['encryptedContent'] != null && data['encryptionMetadata'] != null) {
+          AppLogger.info('🔵 Attempting to decrypt encrypted message');
+          AppLogger.info('🔵 Message data: $data');
+          
+          try {
+            final senderId = data['sender']?.toString() ?? data['from']?.toString() ?? '';
+            AppLogger.info('🔵 Sender ID: $senderId');
+            AppLogger.info('🔵 Current user ID: $_currentUserId');
+            AppLogger.info('🔵 Conversation ID: ${widget.conversationId}');
+            
+            if (senderId.isNotEmpty) {
+              AppLogger.info('🔵 Calling decryptMessage with senderId: $senderId');
+              decryptedData = await _socketService!.decryptMessage(data, senderId);
+              AppLogger.info('✅ Successfully decrypted message');
+              AppLogger.info('🔵 Decrypted content: ${decryptedData['content']}');
+            } else {
+              AppLogger.error('❌ Sender ID is empty, cannot decrypt');
+            }
+          } catch (e) {
+            AppLogger.error('❌ Failed to decrypt message: $e');
+            AppLogger.error('❌ Error stack trace: ${StackTrace.current}');
+            // Continue with encrypted data, will show decryption error
+          }
+        } else {
+          AppLogger.info('🔵 Message is not encrypted, processing normally');
+        }
+        
         // Store the server's message ID
-        final serverMessageId = data['_id']?.toString() ?? data['id']?.toString();
+        final serverMessageId = decryptedData['_id']?.toString() ?? decryptedData['id']?.toString();
         // Parse the server's timestamp
-        final serverTimestamp = data['createdAt']?.toString() ?? data['timestamp']?.toString();
+        final serverTimestamp = decryptedData['createdAt']?.toString() ?? decryptedData['timestamp']?.toString();
         // Convert dynamic map to Map<String, dynamic>
         final Map<String, dynamic> messageData = {
           '_id': serverMessageId,
-          'sender': data['sender']?.toString() ?? data['from']?.toString(),
-          'receiver': data['receiver']?.toString() ?? data['to']?.toString(),
-          'content': data['content']?.toString() ?? '',
+          'sender': decryptedData['sender']?.toString() ?? decryptedData['from']?.toString(),
+          'receiver': decryptedData['receiver']?.toString() ?? decryptedData['to']?.toString(),
+          'content': decryptedData['content']?.toString() ?? '',
           'createdAt': serverTimestamp, // Use server's timestamp
-          'messageType': data['messageType']?.toString() ?? 'text',
-          'status': data['status']?.toString() ?? 'sent',
+          'messageType': decryptedData['messageType']?.toString() ?? 'text',
+          'status': decryptedData['status']?.toString() ?? 'sent',
         };
         
+        // Add encryption fields if present
+        if (data['encryptedContent'] != null) {
+          messageData['encryptedContent'] = data['encryptedContent'];
+        }
+        if (data['encryptionMetadata'] != null) {
+          messageData['encryptionMetadata'] = data['encryptionMetadata'];
+        }
+        if (decryptedData['decryptionError'] == true) {
+          messageData['decryptionError'] = true;
+        }
+        
         // Only set disappearing properties for image messages
-        final messageType = data['messageType']?.toString() ?? 'text';
+        final messageType = decryptedData['messageType']?.toString() ?? 'text';
         if (messageType == 'image') {
-          messageData['isDisappearing'] = data['isDisappearing'];
-          messageData['disappearingTime'] = data['disappearingTime'];
+          messageData['isDisappearing'] = decryptedData['isDisappearing'];
+          messageData['disappearingTime'] = decryptedData['disappearingTime'];
         }
         
         // Handle metadata conversion properly
-        if (data['metadata'] != null) {
-          if (data['metadata'] is Map) {
-            messageData['metadata'] = Map<String, dynamic>.from(data['metadata']);
+        if (decryptedData['metadata'] != null) {
+          if (decryptedData['metadata'] is Map) {
+            messageData['metadata'] = Map<String, dynamic>.from(decryptedData['metadata']);
           } else {
             // If metadata is not a Map, try to convert it
-            messageData['metadata'] = {'raw': data['metadata'].toString()};
+            messageData['metadata'] = {'raw': decryptedData['metadata'].toString()};
           }
         }
         
@@ -1755,10 +1814,32 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           setState(() => _isTyping = true);
                           _socketService?.emit('typing', {'to': widget.conversationId});
                         } else if (_isTyping && text.isEmpty) {
-                          setState(() => _isTyping = false);
-                          _socketService?.emit('stop_typing', {'to': widget.conversationId});
-                        }
-                      },
+                              setState(() => _isTyping = false);
+    _socketService?.emit('stop_typing', {'to': widget.conversationId});
+  }
+
+  // Test function to send a simple message without E2EE
+  void _sendTestMessage() {
+    if (_socketService != null && _currentUserId != null) {
+      AppLogger.info('🔵 Sending test message');
+      final messageData = {
+        '_id': DateTime.now().millisecondsSinceEpoch.toString(),
+        'from': _currentUserId,
+        'to': widget.conversationId,
+        'content': 'Test message ${DateTime.now()}',
+        'messageType': 'text',
+        'status': 'sent',
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+      
+      AppLogger.info('🔵 Test message data: ${messageData.toString()}');
+      _socketService!.emit('private_message', messageData);
+      AppLogger.info('✅ Test message emitted');
+    } else {
+      AppLogger.error('❌ Cannot send test message: Socket or user ID is null');
+    }
+  }
+},
                       onEditingComplete: () {
                         setState(() => _isTyping = false);
                         _socketService?.emit('stop_typing', {'to': widget.conversationId});
@@ -2081,31 +2162,62 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
     if (_socketService != null && _currentUserId != null) {
       try {
+        AppLogger.info('🔵 Attempting to send message to: ${widget.conversationId}');
+        AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');
+        AppLogger.info('🔵 Current user ID: $_currentUserId');
         
-        // Create message data with initial 'sent' status
+        // Try encrypted message first, fallback to regular message if it fails
+        bool encryptedSent = false;
+        try {
+          // Send encrypted message through socket
+          await _socketService!.sendEncryptedMessage(
+            widget.conversationId,
+            finalContent,
+            'text',
+          );
+          encryptedSent = true;
+          AppLogger.info('✅ Encrypted message sent successfully');
+        } catch (e) {
+          AppLogger.error('❌ Failed to send encrypted message: $e');
+          AppLogger.info('🔄 Falling back to regular message sending');
+          
+          // Fallback to regular message sending
+          final messageData = {
+            '_id': DateTime.now().millisecondsSinceEpoch.toString(),
+            'from': _currentUserId,
+            'to': widget.conversationId,
+            'content': finalContent,
+            'messageType': 'text',
+            'status': 'sent',
+            'createdAt': DateTime.now().toIso8601String(),
+          };
+          
+          AppLogger.info('🔵 Sending regular message: ${messageData.toString()}');
+          _socketService!.emit('private_message', messageData);
+          AppLogger.info('✅ Regular message sent successfully');
+        }
+        
+        // Create message data for local state
         final messageData = {
-          '_id': DateTime.now().millisecondsSinceEpoch.toString(),  // Use '_id' to match API response format
+          '_id': DateTime.now().millisecondsSinceEpoch.toString(),
           'from': _currentUserId,
           'to': widget.conversationId,
-          'content': finalContent, // Use filtered content
+          'content': finalContent,
           'messageType': 'text',
-          'status': 'sent', // Start with 'sent' status
+          'status': 'sent',
           'createdAt': DateTime.now().toIso8601String(),
         };
-
-        // Send message through socket
-        _socketService!.emit('private_message', messageData);
         
         // Add message to local state immediately with 'sent' status
         final msg = Message.fromJson({
-          '_id': messageData['_id'], // Fix: use '_id' instead of 'id'
+          '_id': messageData['_id'],
           'sender': messageData['from'],
           'receiver': messageData['to'],
           'content': messageData['content'],
           'createdAt': messageData['createdAt'],
           'messageType': messageData['messageType'],
-          'status': 'sent', // Start with 'sent' status
-          'timestamp': DateTime.now(), // Add timestamp for sent status
+          'status': 'sent',
+          'timestamp': DateTime.now(),
         });
         context.read<ConversationBloc>().add(MessageSent(msg));
         
@@ -2113,12 +2225,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToBottom();
         });
+        
+        AppLogger.info('✅ Message sent successfully (${encryptedSent ? 'encrypted' : 'regular'})');
       } catch (e) {
+        AppLogger.error('❌ Error sending message: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to send message. Please try again.')),
         );
       }
     } else {
+      AppLogger.error('❌ Cannot send message: Socket or user ID is null');
+      AppLogger.error('❌ Socket service: ${_socketService != null}');
+      AppLogger.error('❌ Current user ID: $_currentUserId');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Connection error. Please try again.')),
       );

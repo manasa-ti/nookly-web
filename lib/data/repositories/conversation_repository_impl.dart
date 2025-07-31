@@ -7,15 +7,19 @@ import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/domain/repositories/conversation_repository.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart'; // Still needed for currentUserId
-import 'package:nookly/domain/entities/user.dart'; 
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/core/services/key_management_service.dart';
+import 'package:nookly/core/utils/e2ee_utils.dart'; 
 
 class ConversationRepositoryImpl implements ConversationRepository {
   // Dio instance is now managed by NetworkService
   final AuthRepository _authRepository; // Still needed for currentUserId
+  final KeyManagementService? _keyManagementService;
 
   final Map<String, StreamController<List<Message>>> _messageControllers = {};
 
-  ConversationRepositoryImpl(this._authRepository); // Updated constructor
+  ConversationRepositoryImpl(this._authRepository, {KeyManagementService? keyManagementService}) 
+    : _keyManagementService = keyManagementService; // Updated constructor
 
   @override
   Future<List<Conversation>> getConversations() async {
@@ -551,8 +555,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
       final currentUser = await _authRepository.getCurrentUser();
       final currentUserId = currentUser?.id;
       
-      final messages = (data['messages'] as List)
-          .map((msg) {
+      final messages = await Future.wait((data['messages'] as List)
+          .map((msg) async {
             AppLogger.info('Processing message: $msg');
             if (msg is! Map<String, dynamic>) {
               AppLogger.info('Warning: Message is not a Map: $msg');
@@ -575,9 +579,11 @@ class ConversationRepositoryImpl implements ConversationRepository {
             AppLogger.info('🔵 DEBUGGING GETMESSAGES: - Raw disappearingTime: ${messageData['disappearingTime']}');
             AppLogger.info('🔵 DEBUGGING GETMESSAGES: - Full messageData: $messageData');
             
-            return Message.fromJson(messageData);
-          })
-          .toList();
+            final message = Message.fromJson(messageData);
+            
+            // Decrypt message if it's encrypted
+            return await _decryptMessageIfNeeded(message, participantId);
+          }));
 
       return {
         'messages': messages,
@@ -594,5 +600,50 @@ class ConversationRepositoryImpl implements ConversationRepository {
       controller.close();
     }
     _messageControllers.clear();
+  }
+
+  /// Decrypt a message if it's encrypted
+  Future<Message> _decryptMessageIfNeeded(Message message, String senderId) async {
+    if (!message.isEncrypted || message.encryptionMetadata == null) {
+      return message; // Not encrypted, return as is
+    }
+
+    if (_keyManagementService == null) {
+      AppLogger.error('Key management service not available for decryption');
+      return message.copyWith(
+        content: '[DECRYPTION FAILED - NO KEY SERVICE]',
+        decryptionError: true,
+      );
+    }
+
+    try {
+      // Get conversation key
+      final encryptionKey = await _keyManagementService!.getConversationKey(senderId);
+      
+      // Create the proper encrypted data structure
+      final encryptedData = {
+        'iv': message.encryptionMetadata!['iv'],
+        'encryptedContent': message.encryptedContent,
+        'authTag': message.encryptionMetadata!['authTag'],
+      };
+      AppLogger.info('🔵 Decrypting message from repository: $encryptedData');
+      
+      // Decrypt the message
+      final decryptedContent = E2EEUtils.decryptMessage(
+        encryptedData,
+        encryptionKey
+      );
+      
+      return message.copyWith(
+        content: decryptedContent,
+        decryptionError: false,
+      );
+    } catch (error) {
+      AppLogger.error('Error decrypting message: $error');
+      return message.copyWith(
+        content: '[DECRYPTION FAILED]',
+        decryptionError: true,
+      );
+    }
   }
 } 

@@ -25,6 +25,12 @@ class Message extends Equatable {
   final int? disappearingTime; // Time in seconds before message disappears
   final bool isExpired;
   final DateTime? urlExpirationTime; // Add this field
+  
+  // E2EE fields
+  final bool isEncrypted;
+  final String? encryptedContent;
+  final Map<String, dynamic>? encryptionMetadata;
+  final bool decryptionError;
 
   const Message({
     required this.id,
@@ -42,6 +48,10 @@ class Message extends Equatable {
     this.disappearingTime,
     this.isExpired = false,
     this.urlExpirationTime, // Add this parameter
+    this.isEncrypted = false,
+    this.encryptedContent,
+    this.encryptionMetadata,
+    this.decryptionError = false,
   });
 
   @override
@@ -61,6 +71,10 @@ class Message extends Equatable {
         disappearingTime,
         isExpired,
         urlExpirationTime, // Add to props
+        isEncrypted,
+        encryptedContent,
+        encryptionMetadata,
+        decryptionError,
       ];
 
   Message copyWith({
@@ -79,6 +93,10 @@ class Message extends Equatable {
     int? disappearingTime,
     bool? isExpired,
     DateTime? urlExpirationTime, // Add to copyWith
+    bool? isEncrypted,
+    String? encryptedContent,
+    Map<String, dynamic>? encryptionMetadata,
+    bool? decryptionError,
   }) {
     return Message(
       id: id ?? this.id,
@@ -96,6 +114,10 @@ class Message extends Equatable {
       disappearingTime: disappearingTime ?? this.disappearingTime,
       isExpired: isExpired ?? this.isExpired,
       urlExpirationTime: urlExpirationTime ?? this.urlExpirationTime, // Add to copyWith
+      isEncrypted: isEncrypted ?? this.isEncrypted,
+      encryptedContent: encryptedContent ?? this.encryptedContent,
+      encryptionMetadata: encryptionMetadata ?? this.encryptionMetadata,
+      decryptionError: decryptionError ?? this.decryptionError,
     );
   }
 
@@ -307,6 +329,12 @@ class Message extends Equatable {
     if (json['isDisappearing'] != null) metadata['isDisappearing'] = json['isDisappearing'].toString();
     if (json['updatedAt'] != null) metadata['updatedAt'] = json['updatedAt'].toString();
 
+    // Parse E2EE fields
+    final isEncrypted = json['encryptedContent'] != null || json['encryptionMetadata'] != null;
+    final encryptedContent = json['encryptedContent'] as String?;
+    final encryptionMetadata = json['encryptionMetadata'] as Map<String, dynamic>?;
+    final decryptionError = json['decryptionError'] as bool? ?? false;
+
     return Message(
       id: id,
       sender: sender,
@@ -323,6 +351,10 @@ class Message extends Equatable {
       disappearingTime: disappearingTime,
       isExpired: false,
       urlExpirationTime: urlExpirationTime,
+      isEncrypted: isEncrypted,
+      encryptedContent: encryptedContent,
+      encryptionMetadata: encryptionMetadata,
+      decryptionError: decryptionError,
     );
   }
 
@@ -343,6 +375,10 @@ class Message extends Equatable {
       'disappearingTime': disappearingTime,
       'isExpired': isExpired,
       'urlExpirationTime': urlExpirationTime?.toIso8601String(),
+      'isEncrypted': isEncrypted,
+      'encryptedContent': encryptedContent,
+      'encryptionMetadata': encryptionMetadata,
+      'decryptionError': decryptionError,
     };
   }
 

@@ -28,6 +28,7 @@ import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_bloc.dart';
 import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/services/key_management_service.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -57,7 +58,7 @@ Future<void> init() async {
   );
   
   sl.registerLazySingleton<ConversationRepository>(
-    () => ConversationRepositoryImpl(sl<AuthRepository>()),
+    () => ConversationRepositoryImpl(sl<AuthRepository>(), keyManagementService: sl<KeyManagementService>()),
   );
 
   sl.registerLazySingleton<MatchesRepository>(
@@ -72,7 +73,14 @@ Future<void> init() async {
     () => ReportRepositoryImpl(),
   );
   
-  sl.registerLazySingleton<SocketService>(() => SocketService());
+  // E2EE Services
+  sl.registerLazySingleton<KeyManagementService>(
+    () => KeyManagementService(sl<AuthRepository>()),
+  );
+  
+  sl.registerLazySingleton<SocketService>(
+    () => SocketService(keyManagementService: sl<KeyManagementService>()),
+  );
   
   // Blocs
   sl.registerFactory(
