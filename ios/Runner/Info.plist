@@ -51,6 +51,10 @@
 <string>Need microphone access for calls</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 <string>This app needs access to photos to select images for chat messages</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+<string>This app needs location access to show nearby profiles and improve matching</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+<string>This app needs location access to show nearby profiles and improve matching</string>
 
 	<key>CFBundleURLTypes</key>
 	<array>
