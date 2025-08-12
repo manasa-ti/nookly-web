@@ -489,20 +489,21 @@ class ConversationRepositoryImpl implements ConversationRepository {
     }
   }
 
-  @override
-  Future<void> startAudioCall(String conversationId) async {
-    throw UnimplementedError('startAudioCall not implemented with API yet.');
-  }
+  // TODO: Uncomment when call feature is re-implemented
+  // @override
+  // Future<void> startAudioCall(String conversationId) async {
+  //   throw UnimplementedError('startAudioCall not implemented with API yet.');
+  // }
 
-  @override
-  Future<void> startVideoCall(String conversationId) async {
-    throw UnimplementedError('startVideoCall not implemented with API yet.');
-  }
+  // @override
+  // Future<void> startVideoCall(String conversationId) async {
+  //   throw UnimplementedError('startVideoCall not implemented with API yet.');
+  // }
 
-  @override
-  Future<void> endCall(String conversationId) async {
-    throw UnimplementedError('endCall not implemented with API yet.');
-  }
+  // @override
+  // Future<void> endCall(String conversationId) async {
+  //   throw UnimplementedError('endCall not implemented with API yet.');
+  // }
 
   @override
   Stream<List<Message>> listenToMessages(String conversationId) {

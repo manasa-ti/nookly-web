@@ -16,8 +16,9 @@ class ConversationLoaded extends ConversationState {
   final List<Message> messages;
   final bool hasMoreMessages;
   final bool isLoadingMore;
-  final bool isCallActive;
-  final bool isAudioCall;
+  // TODO: Uncomment when call feature is re-implemented
+  // final bool isCallActive;
+  // final bool isAudioCall;
   final String? error;
   final String participantName;
   final String? participantAvatar;
@@ -28,8 +29,9 @@ class ConversationLoaded extends ConversationState {
     required this.messages,
     this.hasMoreMessages = true,
     this.isLoadingMore = false,
-    this.isCallActive = false,
-    this.isAudioCall = false,
+    // TODO: Uncomment when call feature is re-implemented
+    // this.isCallActive = false,
+    // this.isAudioCall = false,
     this.error,
     required this.participantName,
     this.participantAvatar,
@@ -42,8 +44,9 @@ class ConversationLoaded extends ConversationState {
         messages,
         hasMoreMessages,
         isLoadingMore,
-        isCallActive,
-        isAudioCall,
+        // TODO: Uncomment when call feature is re-implemented
+        // isCallActive,
+        // isAudioCall,
         error,
         participantName,
         participantAvatar,
@@ -55,8 +58,9 @@ class ConversationLoaded extends ConversationState {
     List<Message>? messages,
     bool? hasMoreMessages,
     bool? isLoadingMore,
-    bool? isCallActive,
-    bool? isAudioCall,
+    // TODO: Uncomment when call feature is re-implemented
+    // bool? isCallActive,
+    // bool? isAudioCall,
     String? error,
     String? participantName,
     String? participantAvatar,
@@ -67,8 +71,9 @@ class ConversationLoaded extends ConversationState {
       messages: messages ?? this.messages,
       hasMoreMessages: hasMoreMessages ?? this.hasMoreMessages,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      isCallActive: isCallActive ?? this.isCallActive,
-      isAudioCall: isAudioCall ?? this.isAudioCall,
+      // TODO: Uncomment when call feature is re-implemented
+      // isCallActive: isCallActive ?? this.isCallActive,
+      // isAudioCall: isAudioCall ?? this.isAudioCall,
       error: error,
       participantName: participantName ?? this.participantName,
       participantAvatar: participantAvatar ?? this.participantAvatar,
@@ -79,11 +84,12 @@ class ConversationLoaded extends ConversationState {
 
 class ConversationLeft extends ConversationState {}
 
-class AudioCallStarted extends ConversationState {}
+// TODO: Uncomment when call feature is re-implemented
+// class AudioCallStarted extends ConversationState {}
 
-class VideoCallStarted extends ConversationState {}
+// class VideoCallStarted extends ConversationState {}
 
-class CallEnded extends ConversationState {}
+// class CallEnded extends ConversationState {}
 
 class ConversationError extends ConversationState {
   final String message;

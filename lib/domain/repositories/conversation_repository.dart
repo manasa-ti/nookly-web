@@ -25,7 +25,8 @@ abstract class ConversationRepository {
   Future<void> unmuteConversation(String conversationId);
   Future<void> leaveConversation(String conversationId);
   Stream<List<Message>> listenToMessages(String conversationId);
-  Future<void> startAudioCall(String conversationId);
-  Future<void> startVideoCall(String conversationId);
-  Future<void> endCall(String conversationId);
+  // TODO: Uncomment when call feature is re-implemented
+  // Future<void> startAudioCall(String conversationId);
+  // Future<void> startVideoCall(String conversationId);
+  // Future<void> endCall(String conversationId);
 } 

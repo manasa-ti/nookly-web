@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
-import 'package:nookly/core/services/call_service.dart';
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/deep_link_service.dart';
 import 'package:nookly/core/network/network_service.dart';
@@ -48,9 +47,6 @@ void main() async {
   
   await di.init();
   logger.i('Dependency injection initialized');
-  
-  // Initialize Agora
-  await CallService().initialize();
   
   // Initialize Deep Link Service
   DeepLinkService().initialize();
@@ -105,9 +101,9 @@ class MyApp extends StatelessWidget {
           scaffoldMessengerKey: scaffoldMessengerKey, // Add global scaffold messenger key
           theme: ThemeData(
             colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF4C5C8A),
+              primary: Color(0xFF234481),
               onPrimary: Colors.white,
-              surface: Color(0xFF35548b),
+              surface: Color(0xFF234481),
               onSurface: Colors.white,
               background: Color(0xFF234481),
               onBackground: Colors.white,

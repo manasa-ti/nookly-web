@@ -41,9 +41,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<MuteConversation>(_onMuteConversation);
     on<UnmuteConversation>(_onUnmuteConversation);
     on<LeaveConversation>(_onLeaveConversation);
-    on<StartAudioCall>(_onStartAudioCall);
-    on<StartVideoCall>(_onStartVideoCall);
-    on<EndCall>(_onEndCall);
+    // TODO: Uncomment when call feature is re-implemented
+    // on<StartAudioCall>(_onStartAudioCall);
+    // on<StartVideoCall>(_onStartVideoCall);
+    // on<EndCall>(_onEndCall);
     // Add a new event handler for when messages are updated by the stream
     on<_MessagesUpdated>(_onMessagesUpdated);
     on<MessageReceived>(_onMessageReceived);
@@ -338,47 +339,48 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     }
   }
 
-  void _onStartAudioCall(
-    StartAudioCall event,
-    Emitter<ConversationState> emit,
-  ) {
-    if (state is ConversationLoaded) {
-      final currentState = state as ConversationLoaded;
-      emit(currentState.copyWith(
-        isCallActive: true,
-        isAudioCall: true,
-      ));
-      AppLogger.info('🔵 Audio call started for conversation: ${event.conversationId}');
-    }
-  }
+  // TODO: Uncomment when call feature is re-implemented
+  // void _onStartAudioCall(
+  //   StartAudioCall event,
+  //   Emitter<ConversationState> emit,
+  // ) {
+  //   if (state is ConversationLoaded) {
+  //     final currentState = state as ConversationLoaded;
+  //     emit(currentState.copyWith(
+  //       isCallActive: true,
+  //       isAudioCall: true,
+  //     ));
+  //     AppLogger.info('🔵 Audio call started for conversation: ${event.conversationId}');
+  //   }
+  // }
 
-  void _onStartVideoCall(
-    StartVideoCall event,
-    Emitter<ConversationState> emit,
-  ) {
-    if (state is ConversationLoaded) {
-      final currentState = state as ConversationLoaded;
-      emit(currentState.copyWith(
-        isCallActive: true,
-        isAudioCall: false,
-      ));
-      AppLogger.info('🔵 Video call started for conversation: ${event.conversationId}');
-    }
-  }
+  // void _onStartVideoCall(
+  //   StartVideoCall event,
+  //   Emitter<ConversationState> emit,
+  // ) {
+  //   if (state is ConversationLoaded) {
+  //     final currentState = state as ConversationLoaded;
+  //     emit(currentState.copyWith(
+  //       isCallActive: true,
+  //       isAudioCall: false,
+  //     ));
+  //     AppLogger.info('🔵 Video call started for conversation: ${event.conversationId}');
+  //   }
+  // }
 
-  void _onEndCall(
-    EndCall event,
-    Emitter<ConversationState> emit,
-  ) {
-    if (state is ConversationLoaded) {
-      final currentState = state as ConversationLoaded;
-      emit(currentState.copyWith(
-        isCallActive: false,
-        isAudioCall: false,
-      ));
-      AppLogger.info('🔵 Call ended for conversation: ${event.conversationId}');
-    }
-  }
+  // void _onEndCall(
+  //   EndCall event,
+  //   Emitter<ConversationState> emit,
+  // ) {
+  //   if (state is ConversationLoaded) {
+  //     final currentState = state as ConversationLoaded;
+  //     emit(currentState.copyWith(
+  //       isCallActive: false,
+  //       isAudioCall: false,
+  //     ));
+  //     AppLogger.info('🔵 Call ended for conversation: ${event.conversationId}');
+  //   }
+  // }
 
   void _onMessageReceived(
     MessageReceived event,
@@ -444,8 +446,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         messages: updatedMessages,
         hasMoreMessages: currentState.hasMoreMessages,
-        isCallActive: currentState.isCallActive,
-        isAudioCall: currentState.isAudioCall,
+        // TODO: Uncomment when call feature is re-implemented
+        // // TODO: Uncomment when call feature is re-implemented
+        // isCallActive: currentState.isCallActive,
+        // // isAudioCall: currentState.isAudioCall,
         participantName: currentState.participantName,
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
@@ -483,8 +487,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         messages: updatedMessages,
         hasMoreMessages: currentState.hasMoreMessages,
-        isCallActive: currentState.isCallActive,
-        isAudioCall: currentState.isAudioCall,
+        // TODO: Uncomment when call feature is re-implemented
+        // // TODO: Uncomment when call feature is re-implemented
+        // isCallActive: currentState.isCallActive,
+        // // isAudioCall: currentState.isAudioCall,
         participantName: currentState.participantName,
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
@@ -531,8 +537,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         messages: updatedMessages,
         hasMoreMessages: currentState.hasMoreMessages,
-        isCallActive: currentState.isCallActive,
-        isAudioCall: currentState.isAudioCall,
+        // TODO: Uncomment when call feature is re-implemented
+        // isCallActive: currentState.isCallActive,
+        // isAudioCall: currentState.isAudioCall,
         participantName: currentState.participantName,
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
@@ -572,8 +579,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         ),
         messages: updatedMessages,
         hasMoreMessages: currentState.hasMoreMessages,
-        isCallActive: currentState.isCallActive,
-        isAudioCall: currentState.isAudioCall,
+        // TODO: Uncomment when call feature is re-implemented
+        // isCallActive: currentState.isCallActive,
+        // isAudioCall: currentState.isAudioCall,
         participantName: currentState.participantName,
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
@@ -672,8 +680,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           ),
           messages: updatedMessages,
           hasMoreMessages: currentState.hasMoreMessages,
-          isCallActive: currentState.isCallActive,
-          isAudioCall: currentState.isAudioCall,
+          // TODO: Uncomment when call feature is re-implemented
+        // isCallActive: currentState.isCallActive,
+          // isAudioCall: currentState.isAudioCall,
           participantName: currentState.participantName,
           participantAvatar: currentState.participantAvatar,
           isOnline: currentState.isOnline,
@@ -687,8 +696,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           ),
           messages: currentState.messages,
           hasMoreMessages: currentState.hasMoreMessages,
-          isCallActive: currentState.isCallActive,
-          isAudioCall: currentState.isAudioCall,
+          // TODO: Uncomment when call feature is re-implemented
+        // isCallActive: currentState.isCallActive,
+          // isAudioCall: currentState.isAudioCall,
           participantName: currentState.participantName,
           participantAvatar: currentState.participantAvatar,
           isOnline: currentState.isOnline,

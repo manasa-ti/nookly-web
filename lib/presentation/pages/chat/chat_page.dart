@@ -11,7 +11,6 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
-import 'package:nookly/presentation/pages/call/call_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
@@ -1375,14 +1374,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.call, color: Colors.white),
-            onPressed: () => _startCall(true), // Audio call
-          ),
-          IconButton(
-            icon: const Icon(Icons.videocam, color: Colors.white),
-            onPressed: () => _startCall(false), // Video call
-          ),
-          IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: _toggleMenu,
           ),
@@ -2091,31 +2082,32 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
-  void _startCall(bool isAudioCall) {
-    final channelName = '${widget.conversationId}_${DateTime.now().millisecondsSinceEpoch}';
+  // TODO: Uncomment when call feature is re-implemented
+  // void _startCall(bool isAudioCall) {
+  //   final channelName = '${widget.conversationId}_${DateTime.now().millisecondsSinceEpoch}';
     
-    // Show call screen
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => CallScreen(
-          channelName: channelName,
-          isAudioCall: isAudioCall,
-          participantName: widget.participantName,
-          participantAvatar: widget.participantAvatar,
-          onCallEnded: () {
-            context.read<ConversationBloc>().add(EndCall(conversationId: widget.conversationId));
-          },
-        ),
-      ),
-    );
+  //   // Show call screen
+  //   Navigator.of(context).push(
+  //     MaterialPageRoute(
+  //       builder: (context) => CallScreen(
+  //         channelName: channelName,
+  //         isAudioCall: isAudioCall,
+  //         participantName: widget.participantName,
+  //         participantAvatar: widget.participantAvatar,
+  //         onCallEnded: () {
+  //           context.read<ConversationBloc>().add(EndCall(conversationId: widget.conversationId));
+  //         },
+  //       ),
+  //     ),
+  //   );
 
-    // Notify bloc
-    context.read<ConversationBloc>().add(
-      isAudioCall
-          ? StartAudioCall(conversationId: widget.conversationId)
-          : StartVideoCall(conversationId: widget.conversationId),
-    );
-  }
+  //   // Notify bloc
+  //   context.read<ConversationBloc>().add(
+  //     isAudioCall
+  //         ? StartAudioCall(conversationId: widget.conversationId)
+  //         : StartVideoCall(conversationId: widget.conversationId),
+  //   );
+  // }
 
   Future<void> _sendTextMessage() async {
     if (_messageController.text.trim().isEmpty) {
