@@ -122,8 +122,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       // Initialize form with current user data
       _nameController.text = _currentUser.name ?? '';
       _bioController.text = _currentUser.bio ?? '';
-      _selectedInterests = _currentUser.interests ?? [];
-      _selectedObjectives = _currentUser.objectives ?? [];
+      _selectedInterests = List<String>.from(_currentUser.interests ?? []);
+      _selectedObjectives = List<String>.from(_currentUser.objectives ?? []);
       
       // Set distance radius from user's preferred distance radius
       _distanceRadius = (_currentUser.preferredDistanceRadius ?? 40).toDouble();
@@ -194,20 +194,35 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final hasNameChanged = _nameController.text != _currentUser.name;
     final hasBioChanged = _bioController.text != (_currentUser.bio ?? '');
     final hasInterestsChanged = !listEquals(_selectedInterests, _currentUser.interests ?? []);
-    final hasObjectivesChanged = !listEquals(_selectedObjectives, _currentUser.objectives ?? []);
+    
+    // Use set comparison for objectives since order doesn't matter
+    final currentObjectivesSet = Set<String>.from(_currentUser.objectives ?? []);
+    final selectedObjectivesSet = Set<String>.from(_selectedObjectives);
+    final hasObjectivesChanged = !currentObjectivesSet.difference(selectedObjectivesSet).isEmpty || 
+                                !selectedObjectivesSet.difference(currentObjectivesSet).isEmpty;
+    
+    // Debug logging
+    AppLogger.debug('EditProfile: Current objectives: ${_currentUser.objectives}');
+    AppLogger.debug('EditProfile: Selected objectives: $_selectedObjectives');
+    AppLogger.debug('EditProfile: Current objectives set: $currentObjectivesSet');
+    AppLogger.debug('EditProfile: Selected objectives set: $selectedObjectivesSet');
+    AppLogger.debug('EditProfile: hasObjectivesChanged: $hasObjectivesChanged');
+    
     final hasAgeRangeChanged = _ageRange.start != (_currentUser.preferredAgeRange?['lower_limit']?.toDouble() ?? 18) ||
                               _ageRange.end != (_currentUser.preferredAgeRange?['upper_limit']?.toDouble() ?? 80);
     final hasDistanceRadiusChanged = _distanceRadius.round() != (_currentUser.preferredDistanceRadius ?? 40);
     final hasImageChanged = _selectedImagePath != null;
 
-    // At least one field should be modified
-    return hasNameChanged || 
+    final isValid = hasNameChanged || 
            hasBioChanged || 
            hasInterestsChanged || 
            hasObjectivesChanged || 
            hasAgeRangeChanged || 
            hasDistanceRadiusChanged ||
            hasImageChanged;
+    
+    AppLogger.debug('EditProfile: Form valid: $isValid');
+    return isValid;
   }
 
   Future<void> _updateProfile() async {
@@ -248,9 +263,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         interests: !listEquals(_selectedInterests, _currentUser.interests ?? []) 
             ? _selectedInterests 
             : _currentUser.interests,
-        objectives: !listEquals(_selectedObjectives, _currentUser.objectives ?? []) 
-            ? _selectedObjectives 
-            : _currentUser.objectives,
+        objectives: (() {
+          final currentObjectivesSet = Set<String>.from(_currentUser.objectives ?? []);
+          final selectedObjectivesSet = Set<String>.from(_selectedObjectives);
+          final hasObjectivesChanged = !currentObjectivesSet.difference(selectedObjectivesSet).isEmpty || 
+                                      !selectedObjectivesSet.difference(currentObjectivesSet).isEmpty;
+          return hasObjectivesChanged ? _selectedObjectives : _currentUser.objectives;
+        })(),
         preferredAgeRange: (_ageRange.start != (_currentUser.preferredAgeRange?['lower_limit']?.toDouble() ?? 18) ||
                            _ageRange.end != (_currentUser.preferredAgeRange?['upper_limit']?.toDouble() ?? 80))
             ? {
@@ -511,8 +530,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             setState(() {
                               if (selected) {
                                 _selectedObjectives.add(objective);
+                                AppLogger.debug('EditProfile: Added objective: $objective');
+                                AppLogger.debug('EditProfile: Selected objectives after add: $_selectedObjectives');
                               } else {
                                 _selectedObjectives.remove(objective);
+                                AppLogger.debug('EditProfile: Removed objective: $objective');
+                                AppLogger.debug('EditProfile: Selected objectives after remove: $_selectedObjectives');
                               }
                             });
                           },
@@ -576,21 +599,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isFormValid() ? _updateProfile : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFf4656f),
-                          disabledBackgroundColor: const Color(0xFFf4656f).withOpacity(0.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          elevation: 1,
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor: Colors.white.withOpacity(0.7),
-                        ),
-                        child: Text(
-                          'Save Changes',
-                          style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500),
-                        ),
+                      child: Builder(
+                        builder: (context) {
+                          final isValid = _isFormValid();
+                          AppLogger.debug('EditProfile: Save button - isValid: $isValid');
+                          return ElevatedButton(
+                            onPressed: isValid ? _updateProfile : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFf4656f),
+                              disabledBackgroundColor: const Color(0xFFf4656f).withOpacity(0.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              elevation: 1,
+                              foregroundColor: Colors.white,
+                              disabledForegroundColor: Colors.white.withOpacity(0.7),
+                            ),
+                            child: Text(
+                              'Save Changes',
+                              style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],
