@@ -22,6 +22,7 @@ import 'package:nookly/presentation/widgets/auth_wrapper.dart';
 import 'package:logger/logger.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
+import 'package:nookly/core/theme/app_theme.dart';
 
 // Create a global logger instance
 final logger = Logger(
@@ -99,23 +100,7 @@ class MyApp extends StatelessWidget {
           title: 'nookly',
           navigatorKey: AuthHandler.navigatorKey, // Add global navigator key
           scaffoldMessengerKey: scaffoldMessengerKey, // Add global scaffold messenger key
-          theme: ThemeData(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF234481),
-              onPrimary: Colors.white,
-              surface: Color(0xFF234481),
-              onSurface: Colors.white,
-              background: Color(0xFF234481),
-              onBackground: Colors.white,
-            ),
-            useMaterial3: true,
-            fontFamily: 'Nunito',
-            textSelectionTheme: const TextSelectionThemeData(
-              cursorColor: Colors.white,
-              selectionColor: Color(0xFF4C5C8A),
-              selectionHandleColor: Color(0xFF4C5C8A),
-            ),
-          ),
+          theme: AppTheme.theme,
           home: const SplashScreen(),
           routes: {
             '/login': (context) => const LoginPage(),

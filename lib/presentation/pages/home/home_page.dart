@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/pages/profile/profile_hub_page.dart';
 import 'package:nookly/presentation/widgets/svg_icons.dart';
+import 'package:nookly/core/theme/theme_extensions.dart';
 import 'dart:ui';
 
 class HomePage extends StatefulWidget {

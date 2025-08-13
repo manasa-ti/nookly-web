@@ -22,11 +22,17 @@ class AppConfig {
   static const double defaultRadius = 8.0;
   static const double defaultIconSize = 24.0;
   
-  // Colors
+  // Colors - DEPRECATED: Use AppColors from lib/core/theme/app_colors.dart instead
+  // These are kept for backward compatibility but should be migrated
+  @deprecated
   static const Color primaryColor = Color(0xFFFF4B6A);
+  @deprecated
   static const Color secondaryColor = Color(0xFF6C63FF);
+  @deprecated
   static const Color backgroundColor = Color(0xFFF5F5F5);
+  @deprecated
   static const Color textColor = Color(0xFF333333);
+  @deprecated
   static const Color greyColor = Color(0xFF9E9E9E);
   
 
