@@ -173,7 +173,13 @@ class _LoginPageState extends State<LoginPage> {
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -214,7 +220,13 @@ class _LoginPageState extends State<LoginPage> {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
