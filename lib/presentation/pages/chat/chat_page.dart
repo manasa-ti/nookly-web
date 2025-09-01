@@ -24,6 +24,8 @@ import 'package:nookly/core/services/disappearing_image_manager.dart';
 import 'package:nookly/presentation/pages/report/report_page.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/core/services/key_management_service.dart';
+import 'package:nookly/core/services/scam_alert_service.dart';
+import 'package:nookly/presentation/widgets/scam_alert_popup.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -83,6 +85,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // Add state management for disappearing images
   late final DisappearingImageManager _disappearingImageManager;
   String? _currentlyOpenImageId; // Track which image is currently open in full-screen
+
+  // Scam alert state management
+  ScamAlertType? _currentScamAlert;
+  bool _showScamAlert = false;
+  final Map<String, DateTime> _lastAlertShown = {};
+  int _messageCount = 0;
 
   @override
   void initState() {
@@ -215,6 +223,106 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       Navigator.of(context).pop();
       _currentlyOpenImageId = null;
     }
+  }
+
+  // Scam detection and alert methods
+  void _checkForScamAlert(String message, bool isFromOtherUser) {
+    if (!isFromOtherUser) return; // Only check messages from other users
+    
+    AppLogger.info('🔍 Checking for scam alert in message: "$message"');
+    AppLogger.info('🔍 Message count: $_messageCount');
+    
+    final scamAlertService = ScamAlertService();
+    final alertType = scamAlertService.analyzeMessage(message, messageCount: _messageCount);
+    
+    AppLogger.info('🔍 Alert type detected: ${alertType?.name ?? 'None'}');
+    
+    if (alertType != null) {
+      final alertKey = '${widget.conversationId}_${alertType.name}';
+      final lastShown = _lastAlertShown[alertKey] ?? DateTime.now().subtract(const Duration(hours: 2));
+      
+      AppLogger.info('🔍 Last shown: $lastShown');
+      AppLogger.info('🔍 Should show alert: ${scamAlertService.shouldShowAlert(alertType, widget.conversationId, lastShown)}');
+      
+      if (scamAlertService.shouldShowAlert(alertType, widget.conversationId, lastShown)) {
+        AppLogger.info('🚨 Showing scam alert: ${alertType.name}');
+        setState(() {
+          _currentScamAlert = alertType;
+          _showScamAlert = true;
+          _lastAlertShown[alertKey] = DateTime.now();
+        });
+      }
+    }
+  }
+
+  void _dismissScamAlert() {
+    setState(() {
+      _showScamAlert = false;
+      _currentScamAlert = null;
+    });
+  }
+
+  // Debug: Test scam detection
+  void _testScamDetection() {
+    print('🧪 Testing scam detection...');
+    final testMessages = [
+      'Emergency has happened',  // Should trigger romanceFinancial
+      'I need help with my bills',
+      'I have an investment opportunity',
+      'Can you send me money?',
+      'Let\'s move to WhatsApp',
+    ];
+    
+    for (final message in testMessages) {
+      print('🧪 Testing: "$message"');
+      _checkForScamAlert(message, true);
+    }
+  }
+
+  void _reportScamAlert() {
+    // Navigate to report page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportPage(
+          reportedUserId: widget.conversationId,
+          reportedUserName: widget.participantName,
+        ),
+      ),
+    );
+    _dismissScamAlert();
+  }
+
+  void _learnMoreAboutScam() {
+    // Show detailed information about the scam type
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF35548b),
+        title: Text(
+          _currentScamAlert != null 
+              ? ScamAlertService().getAlertTitle(_currentScamAlert!)
+              : 'Safety Information',
+          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+        ),
+        content: Text(
+          _currentScamAlert != null 
+              ? ScamAlertService().getAlertMessage(_currentScamAlert!)
+              : 'Learn more about staying safe online.',
+          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Got it',
+              style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+            ),
+          ),
+        ],
+      ),
+    );
+    _dismissScamAlert();
   }
 
   Future<void> _initSocketAndUser() async {
@@ -488,7 +596,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final msg = Message.fromJson(messageData);
         
         // Only process messages from the other participant
-        if (msg.sender == widget.conversationId) {
+        if (msg.sender != _currentUserId) {
+          // Check for scam alerts in text messages
+          if (msg.type == MessageType.text && msg.content.isNotEmpty) {
+            _messageCount++;
+            _checkForScamAlert(msg.content, true);
+          }
+          
           context.read<ConversationBloc>().add(MessageReceived(msg));
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
@@ -1855,6 +1969,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
+          // Scam Alert Popup
+          if (_showScamAlert && _currentScamAlert != null)
+            Positioned(
+              top: 100,
+              left: 16,
+              right: 16,
+              child: ScamAlertPopup(
+                alertType: _currentScamAlert!,
+                onDismiss: _dismissScamAlert,
+                onReport: _reportScamAlert,
+                onLearnMore: _learnMoreAboutScam,
+              ),
+            ),
         ],
       ),
     );

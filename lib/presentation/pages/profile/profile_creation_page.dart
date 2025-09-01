@@ -13,6 +13,7 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/main.dart';
+import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -24,6 +25,7 @@ class ProfileCreationPage extends StatefulWidget {
 class _ProfileCreationPageState extends State<ProfileCreationPage> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
+  bool _showSafetyTips = true; // Control safety tips visibility
   final _bioController = TextEditingController();
   final _hometownController = TextEditingController();
   DateTime? _selectedDate;
@@ -287,7 +289,24 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         backgroundColor: const Color(0xFF234481),
         elevation: 0,
       ),
-      body: BlocListener<ProfileBloc, ProfileState>(
+      body: Column(
+        children: [
+          // Safety Tips Banner
+          if (_showSafetyTips)
+            SafetyTipsBanner(
+              onSkip: () {
+                setState(() {
+                  _showSafetyTips = false;
+                });
+              },
+              onComplete: () {
+                setState(() {
+                  _showSafetyTips = false;
+                });
+              },
+            ),
+          Expanded(
+            child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
           print('ProfileCreationPage: Received state: ${state.runtimeType}');
           
@@ -722,6 +741,9 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
             );
           },
         ),
+            ),
+          ),
+        ],
       ),
     );
   }
