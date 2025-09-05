@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:nookly/presentation/pages/home/recommended_profiles_page.dart';
 import 'package:nookly/presentation/pages/home/received_likes_page.dart';
 import 'package:nookly/presentation/pages/home/chat_inbox_page.dart';
-import 'package:nookly/presentation/pages/home/purchased_features_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_filters_page.dart';
 import 'package:nookly/presentation/pages/settings/settings_page.dart';
@@ -11,7 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/pages/profile/profile_hub_page.dart';
 import 'package:nookly/presentation/widgets/svg_icons.dart';
-import 'package:nookly/core/theme/theme_extensions.dart';
+import 'package:nookly/core/services/filter_preferences_service.dart';
 import 'dart:ui';
 
 class HomePage extends StatefulWidget {
@@ -79,11 +78,18 @@ class _HomePageState extends State<HomePage> {
     
     // If filters were updated, refresh the recommended profiles
     if (result == true && _currentIndex == 0) {
-      // Refresh the recommended profiles
-      // We need to access the bloc from the current page
+      // Refresh the recommended profiles with filter preferences
       print('🔵 DEBUG: Filters updated, refreshing recommended profiles');
+      
+      // Load filter preferences
+      final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
+      final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
+      
       final recommendedProfilesBloc = context.read<RecommendedProfilesBloc>();
-      recommendedProfilesBloc.add(LoadRecommendedProfiles());
+      recommendedProfilesBloc.add(LoadRecommendedProfiles(
+        physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
+        availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
+      ));
     }
   }
 

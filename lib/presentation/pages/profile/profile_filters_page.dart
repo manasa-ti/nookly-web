@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/interest_chips.dart';
 import 'package:nookly/presentation/widgets/objective_chips.dart';
+import 'package:nookly/presentation/widgets/physical_activeness_chips.dart';
+import 'package:nookly/presentation/widgets/availability_chips.dart';
 import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class ProfileFiltersPage extends StatefulWidget {
   const ProfileFiltersPage({super.key});
@@ -25,14 +29,37 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
   late double _distanceRadius;
   late List<String> _selectedInterests;
   late List<String> _selectedObjectives;
+  late List<String> _selectedPhysicalActiveness;
+  late List<String> _selectedAvailability;
 
   // Available options
   List<String> _availableObjectives = [];
+  List<String> _availablePhysicalActiveness = [];
+  List<String> _availableAvailability = [];
 
   @override
   void initState() {
     super.initState();
     _loadCurrentUserAndOptions();
+  }
+
+  Future<void> _saveFilterPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('filter_physical_activeness', jsonEncode(_selectedPhysicalActiveness));
+    await prefs.setString('filter_availability', jsonEncode(_selectedAvailability));
+  }
+
+  Future<void> _loadFilterPreferences() async {
+    final prefs = await SharedPreferences.getInstance();
+    final physicalActivenessJson = prefs.getString('filter_physical_activeness');
+    final availabilityJson = prefs.getString('filter_availability');
+    
+    if (physicalActivenessJson != null) {
+      _selectedPhysicalActiveness = List<String>.from(jsonDecode(physicalActivenessJson));
+    }
+    if (availabilityJson != null) {
+      _selectedAvailability = List<String>.from(jsonDecode(availabilityJson));
+    }
   }
 
   Future<void> _loadCurrentUserAndOptions() async {
@@ -43,8 +70,11 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
       if (user != null) {
         _currentUser = user;
         
-        // Load available options
-        _availableObjectives = await authRepository.getPredefinedObjectives();
+        // Load available options using consolidated API
+        final profileOptions = await authRepository.getProfileOptions();
+        _availableObjectives = profileOptions['objectives'] ?? [];
+        _availablePhysicalActiveness = profileOptions['physical_activeness'] ?? [];
+        _availableAvailability = profileOptions['availability'] ?? [];
         
         // Initialize form with current user data
         _ageRange = RangeValues(
@@ -54,6 +84,12 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
         _distanceRadius = (_currentUser.preferredDistanceRadius ?? 40).toDouble();
         _selectedInterests = _currentUser.interests ?? [];
         _selectedObjectives = _currentUser.objectives ?? [];
+        // Initialize new fields as empty (not pre-selected from user's own profile)
+        _selectedPhysicalActiveness = [];
+        _selectedAvailability = [];
+        
+        // Load saved filter preferences
+        await _loadFilterPreferences();
         
         setState(() {
           _isLoading = false;
@@ -100,6 +136,20 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
     });
   }
 
+  void _onPhysicalActivenessChanged(List<String> physicalActiveness) {
+    setState(() {
+      _selectedPhysicalActiveness = physicalActiveness;
+      _hasChanges = true;
+    });
+  }
+
+  void _onAvailabilityChanged(List<String> availability) {
+    setState(() {
+      _selectedAvailability = availability;
+      _hasChanges = true;
+    });
+  }
+
   Future<void> _updateFilters() async {
     if (!_hasChanges) {
       Navigator.pop(context, true); // Return with refresh flag
@@ -128,13 +178,19 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
         bio: _currentUser.bio,
         interests: _selectedInterests,
         objectives: _selectedObjectives,
+        personalityType: _currentUser.personalityType,
+        physicalActiveness: _currentUser.physicalActiveness,
+        availability: _currentUser.availability,
         profilePic: _currentUser.profilePic,
         preferredDistanceRadius: _distanceRadius.round(),
       );
 
-      // Update profile
+      // Update profile (for interests, objectives, age range, distance)
       final authRepository = GetIt.instance<AuthRepository>();
       await authRepository.updateUserProfile(updatedUser);
+
+      // Save filter preferences (for physical activeness and availability)
+      await _saveFilterPreferences();
 
       // Show success message
       if (mounted) {
@@ -177,7 +233,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : _errorMessage != null
               ? Center(
                   child: Padding(
@@ -289,6 +345,22 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           availableObjectives: _availableObjectives,
                           selectedObjectives: _selectedObjectives,
                           onObjectivesChanged: _onObjectivesChanged,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Physical Activeness
+                        PhysicalActivenessChips(
+                          availablePhysicalActiveness: _availablePhysicalActiveness,
+                          selectedPhysicalActiveness: _selectedPhysicalActiveness,
+                          onPhysicalActivenessChanged: _onPhysicalActivenessChanged,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Availability
+                        AvailabilityChips(
+                          availableAvailability: _availableAvailability,
+                          selectedAvailability: _selectedAvailability,
+                          onAvailabilityChanged: _onAvailabilityChanged,
                         ),
                         const SizedBox(height: 20),
 

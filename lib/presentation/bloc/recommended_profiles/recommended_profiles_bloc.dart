@@ -9,11 +9,15 @@ class LoadRecommendedProfiles extends RecommendedProfilesEvent {
   final double? radius;
   final int? limit;
   final int? skip;
+  final List<String>? physicalActiveness;
+  final List<String>? availability;
 
   LoadRecommendedProfiles({
     this.radius,
     this.limit,
     this.skip,
+    this.physicalActiveness,
+    this.availability,
   });
 }
 
@@ -80,6 +84,8 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
         radius: event.radius,
         limit: event.limit ?? _defaultLimit,
         skip: skip,
+        physicalActiveness: event.physicalActiveness,
+        availability: event.availability,
       );
 
       // Update skip counter for next pagination

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/widgets/profile_card.dart';
+import 'package:nookly/core/services/filter_preferences_service.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});
@@ -39,7 +40,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     }
   }
 
-  void _loadMoreProfiles() {
+  void _loadMoreProfiles() async {
     if (!_isLoadingMore) {
       final state = context.read<RecommendedProfilesBloc>().state;
       if (state is RecommendedProfilesLoaded && state.hasMore) {
@@ -48,8 +49,16 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
         });
         
         print('🔵 DEBUG: _loadMoreProfiles called - loading more profiles');
+        
+        // Load filter preferences for pagination
+        final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
+        final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
+        
         // Use current skip value for pagination
-        context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
+        context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
+          physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
+          availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
+        ));
         
         // Don't reset _isLoadingMore here - let the bloc state change handle it
         // The loading state will be reset when the bloc emits a new state
@@ -57,7 +66,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     }
   }
 
-  void _loadProfiles() {
+  void _loadProfiles() async {
     if (_isInitialLoad) {
       print('🔵 DEBUG: _loadProfiles called but already loading, skipping');
       return;
@@ -71,7 +80,17 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     
     print('🔵 DEBUG: _loadProfiles called');
     _isInitialLoad = true;
-    context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
+    
+    // Load filter preferences
+    final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
+    final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
+    
+    print('🔵 DEBUG: Loaded filters - Physical Activeness: $physicalActivenessFilters, Availability: $availabilityFilters');
+    
+    context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
+      physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
+      availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
+    ));
   }
 
   @override

@@ -1,5 +1,3 @@
-import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 import 'package:nookly/core/network/network_service.dart';
@@ -327,6 +325,9 @@ class AuthRepositoryImpl implements AuthRepository {
         'bio': userData['bio'] ?? '',
         'interests': userData['interests'] ?? [],
         'objectives': userData['objectives'] ?? [],
+        'personality_type': userData['personality_type'] ?? [],
+        'physical_activeness': userData['physical_activeness'] ?? [],
+        'availability': userData['availability'] ?? [],
         'profilePic': userData['profile_pic'] ?? '',
         'preferred_distance_radius': userData['preferred_distance_radius'] ?? 40,
       };
@@ -424,6 +425,30 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<Map<String, List<String>>> getProfileOptions() async {
+    try {
+      final response = await NetworkService.dio.get('/users/profile-options');
+      final data = response.data as Map<String, dynamic>;
+      
+      final profileOptions = {
+        'interests': List<String>.from(data['interests'] as List),
+        'objectives': List<String>.from(data['objectives'] as List),
+        'personality_types': List<String>.from(data['personality_types'] as List),
+        'physical_activeness': List<String>.from(data['physical_activeness'] as List),
+        'availability': List<String>.from(data['availability'] as List),
+      };
+      
+      AppLogger.info('Successfully fetched profile options: ${profileOptions.map((k, v) => MapEntry(k, v.length))}');
+      return profileOptions;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to fetch profile options: ${e.message}',
+      );
+      throw Exception('Failed to fetch profile options: ${e.message}');
+    }
+  }
+
   User _mapUserModelToEntity(UserModel model) {
     return User(
       id: model.id,
@@ -498,10 +523,11 @@ class AuthRepositoryImpl implements AuthRepository {
         AppLogger.error('Failed to parse OTP verification response: $parseError');
         AppLogger.error('Response data structure: ${response.data.runtimeType}');
         if (response.data is Map) {
-          AppLogger.error('Response data keys: ${(response.data as Map).keys.toList()}');
-          if ((response.data as Map).containsKey('user')) {
-            final userData = (response.data as Map)['user'];
-            AppLogger.error('User data keys: ${userData is Map ? (userData as Map).keys.toList() : 'Not a Map'}');
+          final responseMap = response.data as Map;
+          AppLogger.error('Response data keys: ${responseMap.keys.toList()}');
+          if (responseMap.containsKey('user')) {
+            final userData = responseMap['user'];
+            AppLogger.error('User data keys: ${userData is Map ? (userData as Map<String, dynamic>).keys.toList() : 'Not a Map'}');
           }
         }
         throw Exception('Failed to parse OTP verification response: $parseError');

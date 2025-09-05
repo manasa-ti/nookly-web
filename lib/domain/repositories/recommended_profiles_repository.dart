@@ -5,6 +5,8 @@ abstract class RecommendedProfilesRepository {
     double? radius,
     int? limit,
     int? skip,
+    List<String>? physicalActiveness,
+    List<String>? availability,
   });
   Future<void> likeProfile(String profileId);
   Future<void> dislikeProfile(String profileId);
