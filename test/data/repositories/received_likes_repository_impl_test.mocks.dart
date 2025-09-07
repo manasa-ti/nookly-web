@@ -38,6 +38,8 @@ class MockRecommendedProfilesRepository extends _i1.Mock
     double? radius,
     int? limit,
     int? skip,
+    List<String>? physicalActiveness,
+    List<String>? availability,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -47,6 +49,8 @@ class MockRecommendedProfilesRepository extends _i1.Mock
             #radius: radius,
             #limit: limit,
             #skip: skip,
+            #physicalActiveness: physicalActiveness,
+            #availability: availability,
           },
         ),
         returnValue: _i3.Future<List<_i4.RecommendedProfile>>.value(

@@ -13,6 +13,9 @@ class User extends Equatable {
   final String? bio;
   final List<String>? interests;
   final List<String>? objectives;
+  final List<String>? personalityType;
+  final List<String>? physicalActiveness;
+  final List<String>? availability;
   final String? profilePic;
   final int? preferredDistanceRadius;
 
@@ -29,6 +32,9 @@ class User extends Equatable {
     this.bio,
     this.interests,
     this.objectives,
+    this.personalityType,
+    this.physicalActiveness,
+    this.availability,
     this.profilePic,
     this.preferredDistanceRadius,
   });
@@ -84,6 +90,9 @@ class User extends Equatable {
       bio: json['bio'] as String?,
       interests: (json['interests'] as List<dynamic>?)?.cast<String>(),
       objectives: (json['objectives'] as List<dynamic>?)?.cast<String>(),
+      personalityType: (json['personality_type'] as List<dynamic>?)?.cast<String>(),
+      physicalActiveness: (json['physical_activeness'] as List<dynamic>?)?.cast<String>(),
+      availability: (json['availability'] as List<dynamic>?)?.cast<String>(),
       profilePic: json['profilePic'] as String?,
       preferredDistanceRadius: json['preferred_distance_radius'] as int? ?? 40,
     );
@@ -103,6 +112,9 @@ class User extends Equatable {
       'bio': bio,
       'interests': interests,
       'objectives': objectives,
+      'personality_type': personalityType,
+      'physical_activeness': physicalActiveness,
+      'availability': availability,
       'profile_pic': profilePic,
       'preferred_distance_radius': preferredDistanceRadius,
     };
@@ -122,6 +134,9 @@ class User extends Equatable {
         bio,
         interests,
         objectives,
+        personalityType,
+        physicalActiveness,
+        availability,
         profilePic,
         preferredDistanceRadius,
       ];

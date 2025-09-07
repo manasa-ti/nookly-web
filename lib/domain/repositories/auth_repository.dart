@@ -24,6 +24,7 @@ abstract class AuthRepository {
   Future<String?> getToken();
   Future<List<String>> getPredefinedInterests();
   Future<List<String>> getPredefinedObjectives();
+  Future<Map<String, List<String>>> getProfileOptions();
   
   // OTP Methods
   Future<OtpResponseModel> sendOtp(String email);

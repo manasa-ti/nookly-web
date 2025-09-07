@@ -1,16 +1,14 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:nookly/core/utils/logger.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:nookly/core/config/app_config.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:logger/logger.dart';
 import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/presentation/widgets/personality_type_chips.dart';
+import 'package:nookly/presentation/widgets/physical_activeness_chips.dart';
+import 'package:nookly/presentation/widgets/availability_chips.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 
 class EditProfilePage extends StatefulWidget {
@@ -27,16 +25,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
-  final _imagePicker = ImagePicker();
   
   bool _isLoading = false;
-  bool _isUploading = false;
-  double _uploadProgress = 0.0;
   String? _selectedImagePath;
   List<String> _selectedInterests = [];
   List<String> _selectedObjectives = [];
+  List<String> _selectedPersonalityTypes = [];
+  List<String> _selectedPhysicalActiveness = [];
+  List<String> _selectedAvailability = [];
   List<String> _availableInterests = [];
   List<String> _availableObjectives = [];
+  List<String> _availablePersonalityTypes = [];
+  List<String> _availablePhysicalActiveness = [];
+  List<String> _availableAvailability = [];
   RangeValues _ageRange = const RangeValues(18, 80);
   double _distanceRadius = 40.0; // Default value of 40 km
   bool _usedFallbackInterests = false;
@@ -74,6 +75,46 @@ class _EditProfilePageState extends State<EditProfilePage> {
     'Travel Together',
   ];
 
+  static const List<String> _fallbackPersonalityTypes = [
+    'introvert',
+    'extrovert',
+    'ambivert',
+    'foody',
+    'chatty',
+    'book worm',
+    'party animal',
+    'tech enthusiast',
+    'explorative',
+    'conventional',
+    'easy going',
+    'fussy',
+    'spontaneous',
+    'organised',
+    'competitive',
+    'loyalist',
+    'peacemaker',
+  ];
+
+  static const List<String> _fallbackPhysicalActiveness = [
+    'Weight lifter',
+    'Runner',
+    'Dancer',
+    'Sporty',
+    'walker',
+    'couch potato',
+  ];
+
+  static const List<String> _fallbackAvailability = [
+    'Majorly Texts sometimes calls',
+    'calls only',
+    'weekends only',
+    'weekdays only',
+    'all 7 days',
+    'day time only',
+    'nights only',
+    'anytime',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -103,19 +144,21 @@ class _EditProfilePageState extends State<EditProfilePage> {
         _currentUser = fetchedUser;
       });
 
-      // Load interests with fallback
+      // Load all profile options with fallback
       try {
-        _availableInterests = await _authRepository.getPredefinedInterests();
+        final profileOptions = await _authRepository.getProfileOptions();
+        _availableInterests = profileOptions['interests'] ?? [];
+        _availableObjectives = profileOptions['objectives'] ?? [];
+        _availablePersonalityTypes = profileOptions['personality_types'] ?? [];
+        _availablePhysicalActiveness = profileOptions['physical_activeness'] ?? [];
+        _availableAvailability = profileOptions['availability'] ?? [];
       } catch (e) {
         _availableInterests = _fallbackInterests;
-        _usedFallbackInterests = true;
-      }
-
-      // Load objectives with fallback
-      try {
-        _availableObjectives = await _authRepository.getPredefinedObjectives();
-      } catch (e) {
         _availableObjectives = _fallbackObjectives;
+        _availablePersonalityTypes = _fallbackPersonalityTypes;
+        _availablePhysicalActiveness = _fallbackPhysicalActiveness;
+        _availableAvailability = _fallbackAvailability;
+        _usedFallbackInterests = true;
         _usedFallbackObjectives = true;
       }
       
@@ -124,6 +167,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
       _bioController.text = _currentUser.bio ?? '';
       _selectedInterests = List<String>.from(_currentUser.interests ?? []);
       _selectedObjectives = List<String>.from(_currentUser.objectives ?? []);
+      _selectedPersonalityTypes = List<String>.from(_currentUser.personalityType ?? []);
+      _selectedPhysicalActiveness = List<String>.from(_currentUser.physicalActiveness ?? []);
+      _selectedAvailability = List<String>.from(_currentUser.availability ?? []);
       
       // Set distance radius from user's preferred distance radius
       _distanceRadius = (_currentUser.preferredDistanceRadius ?? 40).toDouble();
@@ -156,38 +202,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final pickedFile = await _imagePicker.pickImage(source: source);
-      if (pickedFile != null) {
-        setState(() {
-          _selectedImagePath = pickedFile.path;
-          _isUploading = true;
-          _uploadProgress = 0.0;
-        });
 
-        // Mock S3 upload with progress
-        await _mockUploadImage(pickedFile.path);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error picking image: $e')),
-      );
-    }
-  }
-
-  Future<void> _mockUploadImage(String imagePath) async {
-    // Simulate upload progress
-    for (int i = 0; i <= 100; i += 10) {
-      await Future.delayed(const Duration(milliseconds: 200));
-      setState(() {
-        _uploadProgress = i / 100;
-      });
-    }
-    setState(() {
-      _isUploading = false;
-    });
-  }
 
   bool _isFormValid() {
     // Check if any field has been modified
@@ -200,6 +215,24 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final selectedObjectivesSet = Set<String>.from(_selectedObjectives);
     final hasObjectivesChanged = !currentObjectivesSet.difference(selectedObjectivesSet).isEmpty || 
                                 !selectedObjectivesSet.difference(currentObjectivesSet).isEmpty;
+    
+    // Check personality types changes
+    final currentPersonalityTypesSet = Set<String>.from(_currentUser.personalityType ?? []);
+    final selectedPersonalityTypesSet = Set<String>.from(_selectedPersonalityTypes);
+    final hasPersonalityTypesChanged = !currentPersonalityTypesSet.difference(selectedPersonalityTypesSet).isEmpty || 
+                                      !selectedPersonalityTypesSet.difference(currentPersonalityTypesSet).isEmpty;
+    
+    // Check physical activeness changes
+    final currentPhysicalActivenessSet = Set<String>.from(_currentUser.physicalActiveness ?? []);
+    final selectedPhysicalActivenessSet = Set<String>.from(_selectedPhysicalActiveness);
+    final hasPhysicalActivenessChanged = !currentPhysicalActivenessSet.difference(selectedPhysicalActivenessSet).isEmpty || 
+                                        !selectedPhysicalActivenessSet.difference(currentPhysicalActivenessSet).isEmpty;
+    
+    // Check availability changes
+    final currentAvailabilitySet = Set<String>.from(_currentUser.availability ?? []);
+    final selectedAvailabilitySet = Set<String>.from(_selectedAvailability);
+    final hasAvailabilityChanged = !currentAvailabilitySet.difference(selectedAvailabilitySet).isEmpty || 
+                                  !selectedAvailabilitySet.difference(currentAvailabilitySet).isEmpty;
     
     // Debug logging
     AppLogger.debug('EditProfile: Current objectives: ${_currentUser.objectives}');
@@ -217,6 +250,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
            hasBioChanged || 
            hasInterestsChanged || 
            hasObjectivesChanged || 
+           hasPersonalityTypesChanged ||
+           hasPhysicalActivenessChanged ||
+           hasAvailabilityChanged ||
            hasAgeRangeChanged || 
            hasDistanceRadiusChanged ||
            hasImageChanged;
@@ -270,6 +306,27 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                       !selectedObjectivesSet.difference(currentObjectivesSet).isEmpty;
           return hasObjectivesChanged ? _selectedObjectives : _currentUser.objectives;
         })(),
+        personalityType: (() {
+          final currentPersonalityTypesSet = Set<String>.from(_currentUser.personalityType ?? []);
+          final selectedPersonalityTypesSet = Set<String>.from(_selectedPersonalityTypes);
+          final hasPersonalityTypesChanged = !currentPersonalityTypesSet.difference(selectedPersonalityTypesSet).isEmpty || 
+                                            !selectedPersonalityTypesSet.difference(currentPersonalityTypesSet).isEmpty;
+          return hasPersonalityTypesChanged ? _selectedPersonalityTypes : _currentUser.personalityType;
+        })(),
+        physicalActiveness: (() {
+          final currentPhysicalActivenessSet = Set<String>.from(_currentUser.physicalActiveness ?? []);
+          final selectedPhysicalActivenessSet = Set<String>.from(_selectedPhysicalActiveness);
+          final hasPhysicalActivenessChanged = !currentPhysicalActivenessSet.difference(selectedPhysicalActivenessSet).isEmpty || 
+                                              !selectedPhysicalActivenessSet.difference(currentPhysicalActivenessSet).isEmpty;
+          return hasPhysicalActivenessChanged ? _selectedPhysicalActiveness : _currentUser.physicalActiveness;
+        })(),
+        availability: (() {
+          final currentAvailabilitySet = Set<String>.from(_currentUser.availability ?? []);
+          final selectedAvailabilitySet = Set<String>.from(_selectedAvailability);
+          final hasAvailabilityChanged = !currentAvailabilitySet.difference(selectedAvailabilitySet).isEmpty || 
+                                        !selectedAvailabilitySet.difference(currentAvailabilitySet).isEmpty;
+          return hasAvailabilityChanged ? _selectedAvailability : _currentUser.availability;
+        })(),
         preferredAgeRange: (_ageRange.start != (_currentUser.preferredAgeRange?['lower_limit']?.toDouble() ?? 18) ||
                            _ageRange.end != (_currentUser.preferredAgeRange?['upper_limit']?.toDouble() ?? 80))
             ? {
@@ -309,32 +366,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
 
 
-  void _showImagePicker() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.photo_library),
-            title: const Text('Choose from Gallery'),
-            onTap: () {
-              Navigator.pop(context);
-              _pickImage(ImageSource.gallery);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Take a Photo'),
-            onTap: () {
-              Navigator.pop(context);
-              _pickImage(ImageSource.camera);
-            },
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -541,6 +572,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           },
                         );
                       }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    PersonalityTypeChips(
+                      availablePersonalityTypes: _availablePersonalityTypes,
+                      selectedPersonalityTypes: _selectedPersonalityTypes,
+                      onPersonalityTypesChanged: (personalityTypes) {
+                        setState(() {
+                          _selectedPersonalityTypes = personalityTypes;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    PhysicalActivenessChips(
+                      availablePhysicalActiveness: _availablePhysicalActiveness,
+                      selectedPhysicalActiveness: _selectedPhysicalActiveness,
+                      onPhysicalActivenessChanged: (physicalActiveness) {
+                        setState(() {
+                          _selectedPhysicalActiveness = physicalActiveness;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    AvailabilityChips(
+                      availableAvailability: _availableAvailability,
+                      selectedAvailability: _selectedAvailability,
+                      onAvailabilityChanged: (availability) {
+                        setState(() {
+                          _selectedAvailability = availability;
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                     Text(

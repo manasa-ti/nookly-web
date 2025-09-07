@@ -7,6 +7,7 @@ import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
+import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -24,6 +25,7 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isConfirmPasswordVisible = false;
   bool _isEmailLoading = false; // Add loading state for email sign up
   bool _isGoogleLoading = false; // Add loading state for Google sign up
+  bool _showSafetyTips = true; // Control safety tips visibility
 
   @override
   void dispose() {
@@ -238,6 +240,21 @@ class _SignUpPageState extends State<SignUpPage> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  // Safety Tips Banner
+                  if (_showSafetyTips)
+                    SafetyTipsBanner(
+                      onSkip: () {
+                        setState(() {
+                          _showSafetyTips = false;
+                        });
+                      },
+                      onComplete: () {
+                        setState(() {
+                          _showSafetyTips = false;
+                        });
+                      },
+                    ),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: _isEmailLoading ? null : _onSignUpPressed,
                     style: ElevatedButton.styleFrom(

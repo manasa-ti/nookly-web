@@ -336,6 +336,17 @@ class MockAuthRepository extends _i1.Mock implements _i8.AuthRepository {
       ) as _i9.Future<List<String>>);
 
   @override
+  _i9.Future<Map<String, List<String>>> getProfileOptions() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getProfileOptions,
+          [],
+        ),
+        returnValue: _i9.Future<Map<String, List<String>>>.value(
+            <String, List<String>>{}),
+      ) as _i9.Future<Map<String, List<String>>>);
+
+  @override
   _i9.Future<_i6.OtpResponseModel> sendOtp(String? email) =>
       (super.noSuchMethod(
         Invocation.method(

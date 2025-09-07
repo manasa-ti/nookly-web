@@ -1,6 +1,5 @@
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
-import 'package:nookly/data/models/recommended_profile_model.dart';
 import 'package:nookly/domain/entities/recommended_profile.dart';
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 
@@ -10,12 +9,20 @@ class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository
     double? radius,
     int? limit,
     int? skip,
+    List<String>? physicalActiveness,
+    List<String>? availability,
   }) async {
     try {
       final queryParams = <String, dynamic>{};
       if (radius != null) queryParams['radius'] = radius;
       if (limit != null) queryParams['limit'] = limit;
       if (skip != null) queryParams['skip'] = skip;
+      if (physicalActiveness != null && physicalActiveness.isNotEmpty) {
+        queryParams['physical_activeness'] = physicalActiveness.join(',');
+      }
+      if (availability != null && availability.isNotEmpty) {
+        queryParams['availability'] = availability.join(',');
+      }
 
       final response = await NetworkService.dio.get(
         '/users/recommendations',

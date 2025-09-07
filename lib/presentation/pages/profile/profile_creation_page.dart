@@ -5,14 +5,17 @@ import 'package:nookly/presentation/bloc/profile/profile_event.dart';
 import 'package:nookly/presentation/bloc/profile/profile_state.dart';
 import 'package:nookly/presentation/widgets/interest_chips.dart';
 import 'package:nookly/presentation/widgets/objective_chips.dart';
+import 'package:nookly/presentation/widgets/personality_type_chips.dart';
+import 'package:nookly/presentation/widgets/physical_activeness_chips.dart';
+import 'package:nookly/presentation/widgets/availability_chips.dart';
 import 'package:nookly/presentation/widgets/distance_radius_slider.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:intl/intl.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
-import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/main.dart';
+import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -24,6 +27,7 @@ class ProfileCreationPage extends StatefulWidget {
 class _ProfileCreationPageState extends State<ProfileCreationPage> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
+  bool _showSafetyTips = true; // Control safety tips visibility
   final _bioController = TextEditingController();
   final _hometownController = TextEditingController();
   DateTime? _selectedDate;
@@ -33,7 +37,13 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   double _distanceRadius = 40.0; // Default value of 40 km
   List<String> _selectedInterests = [];
   List<String> _selectedObjectives = [];
+  List<String> _selectedPersonalityTypes = [];
+  List<String> _selectedPhysicalActiveness = [];
+  List<String> _selectedAvailability = [];
   List<String> _availableObjectives = [];
+  List<String> _availablePersonalityTypes = [];
+  List<String> _availablePhysicalActiveness = [];
+  List<String> _availableAvailability = [];
   bool _usedFallbackObjectives = false;
 
   final List<String> _sexOptions = ['Man', 'Woman', 'Other'];
@@ -50,26 +60,76 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     'Emotional Connection',
   ];
 
+  static const List<String> _fallbackPersonalityTypes = [
+    'introvert',
+    'extrovert',
+    'ambivert',
+    'foody',
+    'chatty',
+    'book worm',
+    'party animal',
+    'tech enthusiast',
+    'explorative',
+    'conventional',
+    'easy going',
+    'fussy',
+    'spontaneous',
+    'organised',
+    'competitive',
+    'loyalist',
+    'peacemaker',
+  ];
+
+  static const List<String> _fallbackPhysicalActiveness = [
+    'Weight lifter',
+    'Runner',
+    'Dancer',
+    'Sporty',
+    'walker',
+    'couch potato',
+  ];
+
+  static const List<String> _fallbackAvailability = [
+    'Majorly Texts sometimes calls',
+    'calls only',
+    'weekends only',
+    'weekdays only',
+    'all 7 days',
+    'day time only',
+    'nights only',
+    'anytime',
+  ];
+
   @override
   void initState() {
     super.initState();
-    _loadObjectives();
+    _loadProfileOptions();
   }
 
-  Future<void> _loadObjectives() async {
+  Future<void> _loadProfileOptions() async {
     try {
       final authRepository = context.read<AuthRepository>();
-      _availableObjectives = await authRepository.getPredefinedObjectives();
+      final profileOptions = await authRepository.getProfileOptions();
+      
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _availableObjectives = profileOptions['objectives'] ?? [];
+          _availablePersonalityTypes = profileOptions['personality_types'] ?? [];
+          _availablePhysicalActiveness = profileOptions['physical_activeness'] ?? [];
+          _availableAvailability = profileOptions['availability'] ?? [];
+        });
       }
     } catch (e) {
-      _availableObjectives = _fallbackObjectives;
-      _usedFallbackObjectives = true;
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _availableObjectives = _fallbackObjectives;
+          _availablePersonalityTypes = _fallbackPersonalityTypes;
+          _availablePhysicalActiveness = _fallbackPhysicalActiveness;
+          _availableAvailability = _fallbackAvailability;
+          _usedFallbackObjectives = true;
+        });
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading objectives. Using default list. Error: $e')),
+          SnackBar(content: Text('Error loading profile options. Using default lists. Error: $e')),
         );
       }
     }
@@ -134,7 +194,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   }
 
   void _onNextStep() {
-    if (_currentStep < 3) {
+    if (_currentStep < 6) {
       bool isValid = false;
       
       // Validate based on current step
@@ -165,6 +225,15 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         case 3: // Objective
           isValid = _selectedObjectives.isNotEmpty;
           break;
+        case 4: // Personality Type
+          isValid = _selectedPersonalityTypes.isNotEmpty;
+          break;
+        case 5: // Physical Activeness
+          isValid = _selectedPhysicalActiveness.isNotEmpty;
+          break;
+        case 6: // Availability
+          isValid = _selectedAvailability.isNotEmpty;
+          break;
       }
 
       if (isValid) {
@@ -175,7 +244,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         print('ProfileCreationPage: Validation failed for step $_currentStep');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_currentStep == 3 ? 'Please select at least one objective' : 'Please fill in all required fields'),
+            content: Text(_getValidationErrorMessage()),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 2),
           ),
@@ -191,6 +260,27 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       setState(() {
         _currentStep--;
       });
+    }
+  }
+
+  String _getValidationErrorMessage() {
+    switch (_currentStep) {
+      case 0:
+        return 'Please fill in all required fields';
+      case 1:
+        return 'Please enter your hometown';
+      case 2:
+        return 'Please fill in bio and select at least one interest';
+      case 3:
+        return 'Please select at least one objective';
+      case 4:
+        return 'Please select at least one personality type';
+      case 5:
+        return 'Please select at least one physical activeness option';
+      case 6:
+        return 'Please select at least one availability option';
+      default:
+        return 'Please fill in all required fields';
     }
   }
 
@@ -251,6 +341,9 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         bio: bioModerationResult.filteredText, // Use filtered bio
         interests: _selectedInterests,
         objectives: _selectedObjectives,
+        personalityType: _selectedPersonalityTypes,
+        physicalActiveness: _selectedPhysicalActiveness,
+        availability: _selectedAvailability,
         preferredDistanceRadius: _distanceRadius.round(),
       );
       context.read<ProfileBloc>().add(SaveProfile(user));
@@ -287,7 +380,24 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         backgroundColor: const Color(0xFF234481),
         elevation: 0,
       ),
-      body: BlocListener<ProfileBloc, ProfileState>(
+      body: Column(
+        children: [
+          // Safety Tips Banner
+          if (_showSafetyTips)
+            SafetyTipsBanner(
+              onSkip: () {
+                setState(() {
+                  _showSafetyTips = false;
+                });
+              },
+              onComplete: () {
+                setState(() {
+                  _showSafetyTips = false;
+                });
+              },
+            ),
+          Expanded(
+            child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
           print('ProfileCreationPage: Received state: ${state.runtimeType}');
           
@@ -386,7 +496,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                 backgroundColor: const Color(0xFFf4656f),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                               ),
-                              child: isLoading && _currentStep == 3
+                              child: isLoading && _currentStep == 6
                                   ? const SizedBox(
                                       height: 20,
                                       width: 20,
@@ -396,7 +506,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                       ),
                                     )
                                   : Text(
-                                      _currentStep == 3 ? 'Save Profile' : 'Next',
+                                      _currentStep == 6 ? 'Save Profile' : 'Next',
                                       style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
                                     ),
                             ),
@@ -716,12 +826,84 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       ),
                       isActive: _currentStep >= 3,
                     ),
+                    Step(
+                      title: const Text('Personality Type', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('What describes your personality?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const SizedBox(height: 8),
+                          if (_availablePersonalityTypes.isEmpty)
+                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                          else
+                            PersonalityTypeChips(
+                              availablePersonalityTypes: _availablePersonalityTypes,
+                              selectedPersonalityTypes: _selectedPersonalityTypes,
+                              onPersonalityTypesChanged: (personalityTypes) {
+                                setState(() {
+                                  _selectedPersonalityTypes = personalityTypes;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      isActive: _currentStep >= 4,
+                    ),
+                    Step(
+                      title: const Text('Physical Activeness', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('How would you describe your physical activity level?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const SizedBox(height: 8),
+                          if (_availablePhysicalActiveness.isEmpty)
+                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                          else
+                            PhysicalActivenessChips(
+                              availablePhysicalActiveness: _availablePhysicalActiveness,
+                              selectedPhysicalActiveness: _selectedPhysicalActiveness,
+                              onPhysicalActivenessChanged: (physicalActiveness) {
+                                setState(() {
+                                  _selectedPhysicalActiveness = physicalActiveness;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      isActive: _currentStep >= 5,
+                    ),
+                    Step(
+                      title: const Text('Availability', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      content: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('When are you typically available?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const SizedBox(height: 8),
+                          if (_availableAvailability.isEmpty)
+                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                          else
+                            AvailabilityChips(
+                              availableAvailability: _availableAvailability,
+                              selectedAvailability: _selectedAvailability,
+                              onAvailabilityChanged: (availability) {
+                                setState(() {
+                                  _selectedAvailability = availability;
+                                });
+                              },
+                            ),
+                        ],
+                      ),
+                      isActive: _currentStep >= 6,
+                    ),
                   ],
                 ),
               ),
             );
           },
         ),
+            ),
+          ),
+        ],
       ),
     );
   }

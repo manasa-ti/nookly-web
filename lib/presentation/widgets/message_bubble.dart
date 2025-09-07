@@ -329,16 +329,44 @@ class _MessageBubbleState extends State<MessageBubble> {
                               ),
                             ),
                           if (widget.message?.type == MessageType.text)
-                            Text(
-                              widget.message!.content,
-                              style: TextStyle(
-                                color: widget.isMe ? Colors.white : Colors.white,
-                                fontFamily: 'Nunito',
-                                fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
-                                fontWeight: FontWeight.w500,
-                              ),
-                              softWrap: true,
-                              overflow: TextOverflow.visible,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  widget.message!.content,
+                                  style: TextStyle(
+                                    color: widget.isMe ? Colors.white : Colors.white,
+                                    fontFamily: 'Nunito',
+                                    fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  softWrap: true,
+                                  overflow: TextOverflow.visible,
+                                ),
+                                if (widget.message?.isAISuggested == true) ...[
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.lightbulb_outline,
+                                        size: 12,
+                                        color: widget.isMe ? Colors.white70 : Colors.white60,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'AI suggested',
+                                        style: TextStyle(
+                                          color: widget.isMe ? Colors.white70 : Colors.white60,
+                                          fontFamily: 'Nunito',
+                                          fontSize: 10,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ],
                             ),
                         ],
                       ),

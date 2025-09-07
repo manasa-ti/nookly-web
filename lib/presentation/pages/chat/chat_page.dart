@@ -24,6 +24,9 @@ import 'package:nookly/core/services/disappearing_image_manager.dart';
 import 'package:nookly/presentation/pages/report/report_page.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/core/services/key_management_service.dart';
+import 'package:nookly/core/services/scam_alert_service.dart';
+import 'package:nookly/presentation/widgets/scam_alert_popup.dart';
+import 'package:nookly/presentation/widgets/conversation_starter_widget.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -83,6 +86,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // Add state management for disappearing images
   late final DisappearingImageManager _disappearingImageManager;
   String? _currentlyOpenImageId; // Track which image is currently open in full-screen
+
+  // Scam alert state management
+  ScamAlertType? _currentScamAlert;
+  bool _showScamAlert = false;
+  final Map<String, DateTime> _lastAlertShown = {};
+  int _messageCount = 0;
 
   @override
   void initState() {
@@ -215,6 +224,106 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       Navigator.of(context).pop();
       _currentlyOpenImageId = null;
     }
+  }
+
+  // Scam detection and alert methods
+  void _checkForScamAlert(String message, bool isFromOtherUser) {
+    if (!isFromOtherUser) return; // Only check messages from other users
+    
+    AppLogger.info('🔍 Checking for scam alert in message: "$message"');
+    AppLogger.info('🔍 Message count: $_messageCount');
+    
+    final scamAlertService = ScamAlertService();
+    final alertType = scamAlertService.analyzeMessage(message, messageCount: _messageCount);
+    
+    AppLogger.info('🔍 Alert type detected: ${alertType?.name ?? 'None'}');
+    
+    if (alertType != null) {
+      final alertKey = '${widget.conversationId}_${alertType.name}';
+      final lastShown = _lastAlertShown[alertKey] ?? DateTime.now().subtract(const Duration(hours: 2));
+      
+      AppLogger.info('🔍 Last shown: $lastShown');
+      AppLogger.info('🔍 Should show alert: ${scamAlertService.shouldShowAlert(alertType, widget.conversationId, lastShown)}');
+      
+      if (scamAlertService.shouldShowAlert(alertType, widget.conversationId, lastShown)) {
+        AppLogger.info('🚨 Showing scam alert: ${alertType.name}');
+        setState(() {
+          _currentScamAlert = alertType;
+          _showScamAlert = true;
+          _lastAlertShown[alertKey] = DateTime.now();
+        });
+      }
+    }
+  }
+
+  void _dismissScamAlert() {
+    setState(() {
+      _showScamAlert = false;
+      _currentScamAlert = null;
+    });
+  }
+
+  // Debug: Test scam detection
+  void _testScamDetection() {
+    print('🧪 Testing scam detection...');
+    final testMessages = [
+      'Emergency has happened',  // Should trigger romanceFinancial
+      'I need help with my bills',
+      'I have an investment opportunity',
+      'Can you send me money?',
+      'Let\'s move to WhatsApp',
+    ];
+    
+    for (final message in testMessages) {
+      print('🧪 Testing: "$message"');
+      _checkForScamAlert(message, true);
+    }
+  }
+
+  void _reportScamAlert() {
+    // Navigate to report page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportPage(
+          reportedUserId: widget.conversationId,
+          reportedUserName: widget.participantName,
+        ),
+      ),
+    );
+    _dismissScamAlert();
+  }
+
+  void _learnMoreAboutScam() {
+    // Show detailed information about the scam type
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF35548b),
+        title: Text(
+          _currentScamAlert != null 
+              ? ScamAlertService().getAlertTitle(_currentScamAlert!)
+              : 'Safety Information',
+          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+        ),
+        content: Text(
+          _currentScamAlert != null 
+              ? ScamAlertService().getAlertMessage(_currentScamAlert!)
+              : 'Learn more about staying safe online.',
+          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Got it',
+              style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+            ),
+          ),
+        ],
+      ),
+    );
+    _dismissScamAlert();
   }
 
   Future<void> _initSocketAndUser() async {
@@ -488,7 +597,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final msg = Message.fromJson(messageData);
         
         // Only process messages from the other participant
-        if (msg.sender == widget.conversationId) {
+        if (msg.sender != _currentUserId) {
+          // Check for scam alerts in text messages
+          if (msg.type == MessageType.text && msg.content.isNotEmpty) {
+            _messageCount++;
+            _checkForScamAlert(msg.content, true);
+          }
+          
           context.read<ConversationBloc>().add(MessageReceived(msg));
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
@@ -1383,6 +1498,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         children: [
           Column(
             children: [
+              // Conversation Starter Widget
+              ConversationStarterWidget(
+                matchUserId: widget.conversationId,
+                priorMessages: _getRecentMessages(),
+                onSuggestionSelected: _onConversationStarterSelected,
+              ),
               Expanded(
                 child: BlocListener<ConversationBloc, ConversationState>(
               listener: (context, state) {
@@ -1855,6 +1976,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               ),
             ),
           ),
+          // Scam Alert Popup
+          if (_showScamAlert && _currentScamAlert != null)
+            Positioned(
+              top: 100,
+              left: 16,
+              right: 16,
+              child: ScamAlertPopup(
+                alertType: _currentScamAlert!,
+                onDismiss: _dismissScamAlert,
+                onReport: _reportScamAlert,
+                onLearnMore: _learnMoreAboutScam,
+              ),
+            ),
         ],
       ),
     );
@@ -2116,6 +2250,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
 
     final content = _messageController.text.trim();
+    final isAISuggested = _isAISuggestedMessage(content);
     
     // Content moderation check
     final moderationService = ContentModerationService();
@@ -2210,6 +2345,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'messageType': messageData['messageType'],
           'status': 'sent',
           'timestamp': DateTime.now(),
+          'isAISuggested': isAISuggested,
         });
         context.read<ConversationBloc>().add(MessageSent(msg));
         
@@ -2236,5 +2372,65 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
     setState(() => _isTyping = false);
     _socketService?.emit('stop_typing', {'to': widget.conversationId});
+  }
+
+  List<String> _getRecentMessages() {
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      // Get the last 5 messages for context
+      return state.messages
+          .take(5)
+          .where((message) => message.type == MessageType.text)
+          .map((message) => message.content)
+          .toList();
+    }
+    return [];
+  }
+
+  void _onConversationStarterSelected(String suggestion) {
+    // Auto-fill the message input with the suggestion
+    _messageController.text = suggestion;
+    
+    // Focus the input field
+    FocusScope.of(context).requestFocus();
+    
+    // Select all text for easy editing
+    _messageController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: suggestion.length,
+    );
+  }
+
+  bool _isAISuggestedMessage(String content) {
+    // Check if the current message content matches any recent conversation starter suggestions
+    // This is a simple approach - in a more sophisticated implementation, you might
+    // track the exact suggestions that were shown to the user
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      // For now, we'll use a simple heuristic: if the message was just auto-filled
+      // from a conversation starter, we can track this in a more sophisticated way
+      // For this implementation, we'll assume that if the message content matches
+      // a common conversation starter pattern, it might be AI-suggested
+      return _isCommonConversationStarterPattern(content);
+    }
+    return false;
+  }
+
+  bool _isCommonConversationStarterPattern(String content) {
+    // Simple heuristic to detect common conversation starter patterns
+    final patterns = [
+      "What's your favorite",
+      "I noticed you",
+      "Your bio mentions",
+      "I see we both",
+      "How do you like to",
+      "What do you think about",
+      "Have you ever",
+      "Do you enjoy",
+      "What's the best",
+      "Tell me about",
+    ];
+    
+    return patterns.any((pattern) => content.toLowerCase().startsWith(pattern.toLowerCase()));
   }
 } 
