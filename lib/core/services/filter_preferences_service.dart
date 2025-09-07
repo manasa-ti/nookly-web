@@ -6,20 +6,28 @@ class FilterPreferencesService {
   static const String _availabilityKey = 'filter_availability';
 
   static Future<List<String>> getPhysicalActivenessFilters() async {
+    print('🔵 FILTER DEBUG: FilterPreferencesService.getPhysicalActivenessFilters called');
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_physicalActivenessKey);
     if (json != null) {
-      return List<String>.from(jsonDecode(json));
+      final result = List<String>.from(jsonDecode(json));
+      print('🔵 FILTER DEBUG: FilterPreferencesService returning Physical Activeness: $result');
+      return result;
     }
+    print('🔵 FILTER DEBUG: FilterPreferencesService returning empty Physical Activeness');
     return [];
   }
 
   static Future<List<String>> getAvailabilityFilters() async {
+    print('🔵 FILTER DEBUG: FilterPreferencesService.getAvailabilityFilters called');
     final prefs = await SharedPreferences.getInstance();
     final json = prefs.getString(_availabilityKey);
     if (json != null) {
-      return List<String>.from(jsonDecode(json));
+      final result = List<String>.from(jsonDecode(json));
+      print('🔵 FILTER DEBUG: FilterPreferencesService returning Availability: $result');
+      return result;
     }
+    print('🔵 FILTER DEBUG: FilterPreferencesService returning empty Availability');
     return [];
   }
 

@@ -44,21 +44,32 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
   }
 
   Future<void> _saveFilterPreferences() async {
+    print('🔵 FILTER DEBUG: Saving filter preferences');
+    print('🔵 FILTER DEBUG: Physical Activeness: $_selectedPhysicalActiveness');
+    print('🔵 FILTER DEBUG: Availability: $_selectedAvailability');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('filter_physical_activeness', jsonEncode(_selectedPhysicalActiveness));
     await prefs.setString('filter_availability', jsonEncode(_selectedAvailability));
+    print('🔵 FILTER DEBUG: Filter preferences saved successfully');
   }
 
   Future<void> _loadFilterPreferences() async {
+    print('🔵 FILTER DEBUG: Loading filter preferences');
     final prefs = await SharedPreferences.getInstance();
     final physicalActivenessJson = prefs.getString('filter_physical_activeness');
     final availabilityJson = prefs.getString('filter_availability');
     
     if (physicalActivenessJson != null) {
       _selectedPhysicalActiveness = List<String>.from(jsonDecode(physicalActivenessJson));
+      print('🔵 FILTER DEBUG: Loaded Physical Activeness: $_selectedPhysicalActiveness');
+    } else {
+      print('🔵 FILTER DEBUG: No Physical Activeness preferences found');
     }
     if (availabilityJson != null) {
       _selectedAvailability = List<String>.from(jsonDecode(availabilityJson));
+      print('🔵 FILTER DEBUG: Loaded Availability: $_selectedAvailability');
+    } else {
+      print('🔵 FILTER DEBUG: No Availability preferences found');
     }
   }
 

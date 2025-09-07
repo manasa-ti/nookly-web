@@ -26,6 +26,10 @@ class Message extends Equatable {
   final bool isExpired;
   final DateTime? urlExpirationTime; // Add this field
   
+  // AI suggestion fields
+  final bool isAISuggested;
+  final String? aiSuggestionId;
+  
   // E2EE fields
   final bool isEncrypted;
   final String? encryptedContent;
@@ -48,6 +52,8 @@ class Message extends Equatable {
     this.disappearingTime,
     this.isExpired = false,
     this.urlExpirationTime, // Add this parameter
+    this.isAISuggested = false,
+    this.aiSuggestionId,
     this.isEncrypted = false,
     this.encryptedContent,
     this.encryptionMetadata,
@@ -71,6 +77,8 @@ class Message extends Equatable {
         disappearingTime,
         isExpired,
         urlExpirationTime, // Add to props
+        isAISuggested,
+        aiSuggestionId,
         isEncrypted,
         encryptedContent,
         encryptionMetadata,
@@ -93,6 +101,8 @@ class Message extends Equatable {
     int? disappearingTime,
     bool? isExpired,
     DateTime? urlExpirationTime, // Add to copyWith
+    bool? isAISuggested,
+    String? aiSuggestionId,
     bool? isEncrypted,
     String? encryptedContent,
     Map<String, dynamic>? encryptionMetadata,
@@ -114,6 +124,8 @@ class Message extends Equatable {
       disappearingTime: disappearingTime ?? this.disappearingTime,
       isExpired: isExpired ?? this.isExpired,
       urlExpirationTime: urlExpirationTime ?? this.urlExpirationTime, // Add to copyWith
+      isAISuggested: isAISuggested ?? this.isAISuggested,
+      aiSuggestionId: aiSuggestionId ?? this.aiSuggestionId,
       isEncrypted: isEncrypted ?? this.isEncrypted,
       encryptedContent: encryptedContent ?? this.encryptedContent,
       encryptionMetadata: encryptionMetadata ?? this.encryptionMetadata,
@@ -329,6 +341,10 @@ class Message extends Equatable {
     if (json['isDisappearing'] != null) metadata['isDisappearing'] = json['isDisappearing'].toString();
     if (json['updatedAt'] != null) metadata['updatedAt'] = json['updatedAt'].toString();
 
+    // Parse AI suggestion fields
+    final isAISuggested = json['isAISuggested'] as bool? ?? false;
+    final aiSuggestionId = json['aiSuggestionId'] as String?;
+
     // Parse E2EE fields
     final isEncrypted = json['encryptedContent'] != null || json['encryptionMetadata'] != null;
     final encryptedContent = json['encryptedContent'] as String?;
@@ -351,6 +367,8 @@ class Message extends Equatable {
       disappearingTime: disappearingTime,
       isExpired: false,
       urlExpirationTime: urlExpirationTime,
+      isAISuggested: isAISuggested,
+      aiSuggestionId: aiSuggestionId,
       isEncrypted: isEncrypted,
       encryptedContent: encryptedContent,
       encryptionMetadata: encryptionMetadata,
@@ -375,6 +393,8 @@ class Message extends Equatable {
       'disappearingTime': disappearingTime,
       'isExpired': isExpired,
       'urlExpirationTime': urlExpirationTime?.toIso8601String(),
+      'isAISuggested': isAISuggested,
+      'aiSuggestionId': aiSuggestionId,
       'isEncrypted': isEncrypted,
       'encryptedContent': encryptedContent,
       'encryptionMetadata': encryptionMetadata,
@@ -399,7 +419,9 @@ class Message extends Equatable {
         other.isDisappearing == isDisappearing &&
         other.disappearingTime == disappearingTime &&
         other.isExpired == isExpired &&
-        other.urlExpirationTime == urlExpirationTime;
+        other.urlExpirationTime == urlExpirationTime &&
+        other.isAISuggested == isAISuggested &&
+        other.aiSuggestionId == aiSuggestionId;
   }
 
   @override
@@ -418,5 +440,7 @@ class Message extends Equatable {
         disappearingTime,
         isExpired,
         urlExpirationTime,
+        isAISuggested,
+        aiSuggestionId,
       );
 } 

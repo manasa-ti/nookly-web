@@ -9,6 +9,7 @@ import 'package:nookly/data/repositories/purchased_features_repository_impl.dart
 import 'package:nookly/data/repositories/received_likes_repository_impl.dart';
 import 'package:nookly/data/repositories/recommended_profiles_repository_impl.dart';
 import 'package:nookly/data/repositories/report_repository_impl.dart';
+import 'package:nookly/data/repositories/conversation_starter_repository_impl.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/domain/repositories/chat_repository.dart';
 import 'package:nookly/domain/repositories/conversation_repository.dart';
@@ -17,6 +18,7 @@ import 'package:nookly/domain/repositories/purchased_features_repository.dart';
 import 'package:nookly/domain/repositories/received_likes_repository.dart';
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 import 'package:nookly/domain/repositories/report_repository.dart';
+import 'package:nookly/domain/repositories/conversation_starter_repository.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/chat/chat_bloc.dart';
 import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
@@ -29,6 +31,7 @@ import 'package:nookly/presentation/bloc/report/report_bloc.dart';
 import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/key_management_service.dart';
+import 'package:nookly/core/services/conversation_starter_service.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -73,6 +76,10 @@ Future<void> init() async {
     () => ReportRepositoryImpl(),
   );
   
+  sl.registerLazySingleton<ConversationStarterRepository>(
+    () => ConversationStarterRepositoryImpl(sl()),
+  );
+  
   // E2EE Services
   sl.registerLazySingleton<KeyManagementService>(
     () => KeyManagementService(sl<AuthRepository>()),
@@ -80,6 +87,11 @@ Future<void> init() async {
   
   sl.registerLazySingleton<SocketService>(
     () => SocketService(keyManagementService: sl<KeyManagementService>()),
+  );
+  
+  // Conversation Starter Service
+  sl.registerLazySingleton<ConversationStarterService>(
+    () => ConversationStarterService(sl()),
   );
   
   // Blocs

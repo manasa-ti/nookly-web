@@ -26,6 +26,7 @@ import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/scam_alert_service.dart';
 import 'package:nookly/presentation/widgets/scam_alert_popup.dart';
+import 'package:nookly/presentation/widgets/conversation_starter_widget.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -1497,6 +1498,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         children: [
           Column(
             children: [
+              // Conversation Starter Widget
+              ConversationStarterWidget(
+                matchUserId: widget.conversationId,
+                priorMessages: _getRecentMessages(),
+                onSuggestionSelected: _onConversationStarterSelected,
+              ),
               Expanded(
                 child: BlocListener<ConversationBloc, ConversationState>(
               listener: (context, state) {
@@ -2243,6 +2250,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
 
     final content = _messageController.text.trim();
+    final isAISuggested = _isAISuggestedMessage(content);
     
     // Content moderation check
     final moderationService = ContentModerationService();
@@ -2337,6 +2345,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'messageType': messageData['messageType'],
           'status': 'sent',
           'timestamp': DateTime.now(),
+          'isAISuggested': isAISuggested,
         });
         context.read<ConversationBloc>().add(MessageSent(msg));
         
@@ -2363,5 +2372,65 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
     setState(() => _isTyping = false);
     _socketService?.emit('stop_typing', {'to': widget.conversationId});
+  }
+
+  List<String> _getRecentMessages() {
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      // Get the last 5 messages for context
+      return state.messages
+          .take(5)
+          .where((message) => message.type == MessageType.text)
+          .map((message) => message.content)
+          .toList();
+    }
+    return [];
+  }
+
+  void _onConversationStarterSelected(String suggestion) {
+    // Auto-fill the message input with the suggestion
+    _messageController.text = suggestion;
+    
+    // Focus the input field
+    FocusScope.of(context).requestFocus();
+    
+    // Select all text for easy editing
+    _messageController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: suggestion.length,
+    );
+  }
+
+  bool _isAISuggestedMessage(String content) {
+    // Check if the current message content matches any recent conversation starter suggestions
+    // This is a simple approach - in a more sophisticated implementation, you might
+    // track the exact suggestions that were shown to the user
+    final state = context.read<ConversationBloc>().state;
+    if (state is ConversationLoaded) {
+      // For now, we'll use a simple heuristic: if the message was just auto-filled
+      // from a conversation starter, we can track this in a more sophisticated way
+      // For this implementation, we'll assume that if the message content matches
+      // a common conversation starter pattern, it might be AI-suggested
+      return _isCommonConversationStarterPattern(content);
+    }
+    return false;
+  }
+
+  bool _isCommonConversationStarterPattern(String content) {
+    // Simple heuristic to detect common conversation starter patterns
+    final patterns = [
+      "What's your favorite",
+      "I noticed you",
+      "Your bio mentions",
+      "I see we both",
+      "How do you like to",
+      "What do you think about",
+      "Have you ever",
+      "Do you enjoy",
+      "What's the best",
+      "Tell me about",
+    ];
+    
+    return patterns.any((pattern) => content.toLowerCase().startsWith(pattern.toLowerCase()));
   }
 } 
