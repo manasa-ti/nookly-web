@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>method</key>
-	<string>app-store</string>
+	<string>app-store-connect</string>
 	<key>teamID</key>
 	<string>6G2C3NCSZ5</string>
 	<key>uploadBitcode</key>
@@ -14,5 +14,12 @@
 	<false/>
 	<key>thinning</key>
 	<string>&lt;none&gt;</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.nookly.app</key>
+		<string>nookly</string>
+	</dict>
+	<key>signingStyle</key>
+	<string>manual</string>
 </dict>
 </plist> 
