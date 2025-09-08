@@ -140,7 +140,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   void _registerSocketListeners() {
     if (_socketService == null) return;
     
-    _socketService!.on('private_message', (data) {
+    _socketService!.on('private_message', (data) async {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -176,15 +176,53 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
               if (data['isDisappearing'] != null && messageType == MessageType.image) 'isDisappearing': data['isDisappearing'].toString(),
               if (data['viewedAt'] != null) 'viewedAt': data['viewedAt'].toString(),
             },
+            // Add encryption fields if present
+            isEncrypted: data['encryptedContent'] != null,
+            encryptedContent: data['encryptedContent'],
+            encryptionMetadata: data['encryptionMetadata'],
           );
+          
+          // Decrypt message if it's encrypted
+          Message decryptedMessage = message;
+          if (message.isEncrypted && message.encryptionMetadata != null) {
+            AppLogger.info('🔵 Decrypting new message in inbox from: ${conversation.participantName}');
+            AppLogger.info('🔵 Message content before decryption: ${message.content}');
+            AppLogger.info('🔵 Encrypted content to decrypt: ${message.encryptedContent}');
+            try {
+              // Get socket service to decrypt the message
+              final socketService = sl<SocketService>();
+              final decryptedData = await socketService.decryptMessage(data, data['sender'] ?? '');
+              decryptedMessage = Message(
+                id: message.id,
+                sender: message.sender,
+                receiver: message.receiver,
+                content: decryptedData['content'] ?? message.content,
+                timestamp: message.timestamp,
+                type: message.type,
+                status: message.status,
+                isDisappearing: message.isDisappearing,
+                disappearingTime: message.disappearingTime,
+                metadata: message.metadata,
+                isEncrypted: false, // Mark as decrypted
+              );
+              AppLogger.info('🔵 Message content after decryption: ${decryptedMessage.content}');
+            } catch (e) {
+              AppLogger.error('❌ Failed to decrypt message in inbox: $e');
+              // Keep original message with decryption error
+              decryptedMessage = message.copyWith(
+                content: '[DECRYPTION FAILED]',
+                decryptionError: true,
+              );
+            }
+          }
           
           // Create updated conversation with incremented unread count and new last message
           final updatedConversation = conversation.copyWith(
             unreadCount: conversation.unreadCount + 1,
-            lastMessage: message,
-            lastMessageTime: message.timestamp,
+            lastMessage: decryptedMessage,
+            lastMessageTime: decryptedMessage.timestamp,
             updatedAt: DateTime.now(),
-            messages: [message, ...conversation.messages], // Add new message to the beginning of the list
+            messages: [decryptedMessage, ...conversation.messages], // Add new message to the beginning of the list
           );
           
           // Update the conversations list

@@ -6,6 +6,8 @@ import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 import 'package:nookly/core/utils/e2ee_utils.dart';
 import 'package:nookly/core/services/key_management_service.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/core/di/injection_container.dart';
 
 class SocketService {
   static final SocketService _instance = SocketService._internal();
@@ -157,9 +159,10 @@ class SocketService {
 
     try {
       AppLogger.info('🔵 Getting conversation key for: $receiverId');
+      AppLogger.info('🔵 [ENCRYPTION] Requesting key for conversation with: $receiverId');
       // Get conversation key
       final encryptionKey = await _keyManagementService!.getConversationKey(receiverId);
-      AppLogger.info('🔵 Got encryption key: ${encryptionKey.substring(0, 10)}...');
+      AppLogger.info('🔵 [ENCRYPTION] Got encryption key: ${encryptionKey.substring(0, 10)}...');
       
       AppLogger.info('🔵 Encrypting message');
       // Encrypt the message
@@ -209,9 +212,10 @@ class SocketService {
         }
 
         AppLogger.info('🔵 Getting conversation key for sender: $senderId');
+        AppLogger.info('🔵 [DECRYPTION] Requesting key for conversation with: $senderId');
         // Get conversation key
         final encryptionKey = await _keyManagementService!.getConversationKey(senderId);
-        AppLogger.info('🔵 Got encryption key: ${encryptionKey.substring(0, 10)}...');
+        AppLogger.info('🔵 [DECRYPTION] Got encryption key: ${encryptionKey.substring(0, 10)}...');
         
         AppLogger.info('🔵 Decrypting message with E2EEUtils');
         // Create the proper encrypted data structure
@@ -222,11 +226,30 @@ class SocketService {
         };
         AppLogger.info('🔵 Encrypted data structure: $encryptedData');
         
-        // Decrypt the message
-        final decryptedContent = E2EEUtils.decryptMessage(
-          encryptedData,
-          encryptionKey
-        );
+        // Try to decrypt with server key first
+        String decryptedContent;
+        try {
+          decryptedContent = E2EEUtils.decryptMessage(
+            encryptedData,
+            encryptionKey
+          );
+          AppLogger.info('✅ Message decrypted successfully with SERVER key');
+        } catch (e) {
+          AppLogger.warning('⚠️ Failed to decrypt with server key, trying deterministic key: $e');
+          
+          // Fallback: try with deterministic key for backward compatibility
+          final authRepository = sl<AuthRepository>();
+          final currentUser = await authRepository.getCurrentUser();
+          final currentUserId = currentUser?.id ?? 'current_user';
+          final deterministicKey = E2EEUtils.generateDeterministicKey(senderId, currentUserId);
+          
+          AppLogger.info('🔵 [DECRYPTION] Trying deterministic key: ${deterministicKey.substring(0, 10)}...');
+          decryptedContent = E2EEUtils.decryptMessage(
+            encryptedData,
+            deterministicKey
+          );
+          AppLogger.info('✅ Message decrypted successfully with DETERMINISTIC key (backward compatibility)');
+        }
         
         AppLogger.info('✅ Message decrypted successfully');
         AppLogger.info('🔵 Decrypted content: $decryptedContent');

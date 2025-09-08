@@ -60,6 +60,15 @@ class ConversationRepositoryImpl implements ConversationRepository {
             }
             lastMessage = Message.fromJson(messageData);
             
+            // Decrypt message if it's encrypted
+            if (lastMessage.isEncrypted && lastMessage.encryptionMetadata != null) {
+              AppLogger.info('🔵 Decrypting last message in conversation list');
+              AppLogger.info('🔵 Message content before decryption: ${lastMessage.content}');
+              AppLogger.info('🔵 Encrypted content to decrypt: ${lastMessage.encryptedContent}');
+              lastMessage = await _decryptMessageIfNeeded(lastMessage, userJson['_id'] as String);
+              AppLogger.info('🔵 Message content after decryption: ${lastMessage.content}');
+            }
+            
             // Handle disappearing images logic
             if (lastMessage.isDisappearing && lastMessage.type == MessageType.image) {
               final isViewed = lastMessage.metadata?.containsKey('viewedAt') == true;
@@ -629,11 +638,29 @@ class ConversationRepositoryImpl implements ConversationRepository {
       };
       AppLogger.info('🔵 Decrypting message from repository: $encryptedData');
       
-      // Decrypt the message
-      final decryptedContent = E2EEUtils.decryptMessage(
-        encryptedData,
-        encryptionKey
-      );
+      // Try to decrypt with server key first, then fallback to deterministic key
+      String decryptedContent;
+      try {
+        decryptedContent = E2EEUtils.decryptMessage(
+          encryptedData,
+          encryptionKey
+        );
+        AppLogger.info('✅ Message decrypted successfully with SERVER key');
+      } catch (e) {
+        AppLogger.warning('⚠️ Failed to decrypt with server key, trying deterministic key: $e');
+        
+        // Fallback: try with deterministic key for backward compatibility
+        final currentUser = await _authRepository.getCurrentUser();
+        final currentUserId = currentUser?.id ?? 'current_user';
+        final deterministicKey = E2EEUtils.generateDeterministicKey(senderId, currentUserId);
+        
+        AppLogger.info('🔵 [REPOSITORY] Trying deterministic key: ${deterministicKey.substring(0, 10)}...');
+        decryptedContent = E2EEUtils.decryptMessage(
+          encryptedData,
+          deterministicKey
+        );
+        AppLogger.info('✅ Message decrypted successfully with DETERMINISTIC key (backward compatibility)');
+      }
       
       return message.copyWith(
         content: decryptedContent,

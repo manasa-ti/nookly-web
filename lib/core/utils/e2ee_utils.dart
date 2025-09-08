@@ -16,9 +16,13 @@ class E2EEUtils {
     // Generate a deterministic key based on conversation participants
     // This ensures both users get the same key for the same conversation
     final conversationId = generateConversationId(user1Id, user2Id);
+    AppLogger.info('🔵 Generating deterministic key for conversation: $conversationId');
+    AppLogger.info('🔵 User1 ID: $user1Id, User2 ID: $user2Id');
     final hash = sha256.convert(utf8.encode(conversationId));
     final keyBytes = hash.bytes.take(32).toList();
-    return base64Encode(keyBytes);
+    final key = base64Encode(keyBytes);
+    AppLogger.info('🔵 Generated key (first 20 chars): ${key.substring(0, key.length > 20 ? 20 : key.length)}...');
+    return key;
   }
 
   static Map<String, dynamic> encryptMessage(String message, String key) {
@@ -50,6 +54,7 @@ class E2EEUtils {
     try {
       AppLogger.info('🔵 Starting decryption process');
       AppLogger.info('🔵 Encrypted data keys: ${encryptedData.keys.toList()}');
+      AppLogger.info('🔵 Encrypted content being decrypted: ${encryptedData['encryptedContent']}');
       
       // Check for required fields
       if (encryptedData['iv'] == null) {
@@ -76,7 +81,17 @@ class E2EEUtils {
       final hmac = Hmac(sha256, keyBytes);
       final actualHmac = hmac.convert(encryptedBytes);
       
+      AppLogger.info('🔵 HMAC Verification Details:');
+      AppLogger.info('🔵 Expected HMAC (base64): ${base64Encode(expectedHmac)}');
+      AppLogger.info('🔵 Actual HMAC (base64): ${base64Encode(actualHmac.bytes)}');
+      AppLogger.info('🔵 Expected HMAC (hex): ${expectedHmac.map((b) => b.toRadixString(16).padLeft(2, '0')).join('')}');
+      AppLogger.info('🔵 Actual HMAC (hex): ${actualHmac.bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join('')}');
+      AppLogger.info('🔵 Key used (first 16 bytes): ${keyBytes.take(16).map((b) => b.toRadixString(16).padLeft(2, '0')).join('')}');
+      AppLogger.info('🔵 Encrypted content length: ${encryptedBytes.length}');
+      AppLogger.info('🔵 IV (base64): ${base64Encode(iv.bytes)}');
+      
       if (!listEquals(actualHmac.bytes, expectedHmac)) {
+        AppLogger.error('❌ HMAC verification failed - keys do not match');
         throw Exception('Message integrity check failed');
       }
       
@@ -115,6 +130,37 @@ class E2EEUtils {
       return success;
     } catch (e) {
       AppLogger.error('E2EE Test failed: $e');
+      return false;
+    }
+  }
+
+  // Test method to verify deterministic key generation
+  static bool testDeterministicKeyConsistency() {
+    try {
+      final user1Id = 'user1';
+      final user2Id = 'user2';
+      
+      // Generate key from user1's perspective
+      final key1 = generateDeterministicKey(user1Id, user2Id);
+      AppLogger.info('🔵 Key from user1 perspective: ${key1.substring(0, 20)}...');
+      
+      // Generate key from user2's perspective
+      final key2 = generateDeterministicKey(user2Id, user1Id);
+      AppLogger.info('🔵 Key from user2 perspective: ${key2.substring(0, 20)}...');
+      
+      // Test encryption/decryption with both keys
+      final testMessage = 'Test message for key consistency';
+      final encrypted = encryptMessage(testMessage, key1);
+      final decrypted = decryptMessage(encrypted, key2);
+      
+      final success = testMessage == decrypted && key1 == key2;
+      AppLogger.info('🔵 Deterministic Key Test: ${success ? 'PASSED' : 'FAILED'}');
+      AppLogger.info('🔵 Keys match: ${key1 == key2}');
+      AppLogger.info('🔵 Decryption works: ${testMessage == decrypted}');
+      
+      return success;
+    } catch (e) {
+      AppLogger.error('🔵 Deterministic Key Test failed: $e');
       return false;
     }
   }

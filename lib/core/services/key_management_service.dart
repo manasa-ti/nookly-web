@@ -20,8 +20,10 @@ class KeyManagementService {
       }
 
       AppLogger.info('🔵 Making API request to get conversation key');
+      AppLogger.info('🔵 Bearer token: Bearer $token');
+      AppLogger.info('🔵 Using SERVER key for decryption');
       final response = await NetworkService.dio.get(
-        '/api/conversation-keys/$targetUserId',
+        '/conversation-keys/$targetUserId',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
@@ -36,6 +38,7 @@ class KeyManagementService {
         final data = response.data as Map<String, dynamic>;
         final encryptionKey = data['encryptionKey'] as String;
         AppLogger.info('✅ Retrieved conversation key for user: $targetUserId');
+        AppLogger.info('🔵 Server key (first 20 chars): ${encryptionKey.substring(0, encryptionKey.length > 20 ? 20 : encryptionKey.length)}...');
         return encryptionKey;
       } else {
         throw Exception('Failed to get conversation key: ${response.statusCode}');
@@ -54,7 +57,13 @@ class KeyManagementService {
       AppLogger.info('🔵 Generated deterministic key for testing');
       AppLogger.info('🔵 Target user ID: $targetUserId');
       AppLogger.info('🔵 Current user ID: $currentUserId');
-      AppLogger.info('🔵 Deterministic key: ${deterministicKey.substring(0, 10)}...');
+      AppLogger.info('🔵 Using DETERMINISTIC key for decryption (fallback)');
+      AppLogger.info('🔵 Deterministic key (first 20 chars): ${deterministicKey.substring(0, deterministicKey.length > 20 ? 20 : deterministicKey.length)}...');
+      
+      // Test deterministic key consistency
+      AppLogger.info('🔵 Testing deterministic key consistency...');
+      E2EEUtils.testDeterministicKeyConsistency();
+      
       return deterministicKey;
     }
   }
@@ -67,8 +76,9 @@ class KeyManagementService {
         throw Exception('No authentication token available');
       }
 
+      AppLogger.info('🔵 Bearer token for rotate: Bearer $token');
       final response = await NetworkService.dio.post(
-        '/api/conversation-keys/$targetUserId/rotate',
+        '/conversation-keys/$targetUserId/rotate',
         options: Options(
           headers: {
             'Authorization': 'Bearer $token',
