@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -11,9 +10,20 @@ class KeyManagementService {
   KeyManagementService(this._authRepository);
 
   /// Get or create encryption key for a conversation
-  Future<String> getConversationKey(String targetUserId) async {
+  /// First tries to get the key from the conversation object, falls back to API call
+  Future<String> getConversationKey(String targetUserId, {String? conversationKeyFromApi}) async {
     try {
       AppLogger.info('🔵 Getting conversation key for: $targetUserId');
+      
+      // If we have the key from the unified API response, use it directly
+      if (conversationKeyFromApi != null && conversationKeyFromApi.isNotEmpty) {
+        AppLogger.info('✅ Using conversation key from unified API response');
+        AppLogger.info('🔵 Server key (first 20 chars): ${conversationKeyFromApi.substring(0, conversationKeyFromApi.length > 20 ? 20 : conversationKeyFromApi.length)}...');
+        return conversationKeyFromApi;
+      }
+      
+      // Fallback: Make API call to get the key
+      AppLogger.info('🔵 No key from unified API, making separate API request');
       final token = await _authRepository.getToken();
       if (token == null) {
         throw Exception('No authentication token available');

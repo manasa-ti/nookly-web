@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/services/google_sign_in_service.dart';
+import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/data/models/auth/auth_response_model.dart';
 import 'package:nookly/data/models/auth/login_request_model.dart';
 import 'package:nookly/data/models/auth/register_request_model.dart';
@@ -79,6 +80,11 @@ class AuthRepositoryImpl implements AuthRepository {
     await _prefs.remove('token');
     await _prefs.remove('userId');
     NetworkService.clearAuthToken();
+    
+    // Clear user cache on logout
+    final userCacheService = UserCacheService();
+    userCacheService.invalidateCache();
+    AppLogger.info('🔵 logout: User cache cleared on logout');
   }
 
   @override
@@ -283,8 +289,16 @@ class AuthRepositoryImpl implements AuthRepository {
       return null;
     }
 
+    // Check cache first
+    final userCacheService = UserCacheService();
+    final cachedUser = userCacheService.getCachedUser();
+    if (cachedUser != null) {
+      AppLogger.info('🔵 getCurrentUser: Returning cached user data for userId: $userId');
+      return cachedUser;
+    }
+
     try {
-      AppLogger.info('Fetching current user profile for userId: $userId');
+      AppLogger.info('🔵 getCurrentUser: Cache miss, fetching from API for userId: $userId');
       final response = await NetworkService.dio.get('/users/profile/$userId');
       final userData = response.data;
       AppLogger.info('Raw API response: $userData');
@@ -296,20 +310,6 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       // Log each field to check what's missing
-      AppLogger.info('User data fields:');
-      AppLogger.info('_id: ${userData['_id']}');
-      AppLogger.info('email: ${userData['email']}');
-      AppLogger.info('name: ${userData['name']}');
-      AppLogger.info('age: ${userData['age']}');
-      AppLogger.info('sex: ${userData['sex']}');
-      AppLogger.info('seekingGender: ${userData['seekingGender']}');
-      AppLogger.info('location: ${userData['location']}');
-      AppLogger.info('preferredAgeRange: ${userData['preferredAgeRange']}');
-      AppLogger.info('hometown: ${userData['hometown']}');
-      AppLogger.info('bio: ${userData['bio']}');
-      AppLogger.info('interests: ${userData['interests']}');
-      AppLogger.info('objectives: ${userData['objectives']}');
-      AppLogger.info('profilePic: ${userData['profilePic']}');
 
       // Create a map with default values for missing fields
       final Map<String, dynamic> safeUserData = {
@@ -347,6 +347,10 @@ class AuthRepositoryImpl implements AuthRepository {
       AppLogger.info('Interests set: ${user.interests != null && user.interests!.isNotEmpty}');
       AppLogger.info('Objectives set: ${user.objectives != null && user.objectives!.isNotEmpty}');
       
+      // Cache the user data
+      userCacheService.cacheUser(user);
+      AppLogger.info('🔵 getCurrentUser: User data cached successfully');
+      
       return user;
     } on DioException catch (e) {
       AppLogger.error(
@@ -375,6 +379,11 @@ class AuthRepositoryImpl implements AuthRepository {
         '/users/profile',
         data: user.toJson(),
       );
+      
+      // Invalidate cache after successful profile update
+      final userCacheService = UserCacheService();
+      userCacheService.invalidateCache();
+      AppLogger.info('🔵 updateUserProfile: Cache invalidated after profile update');
     } on DioException catch (e) {
       throw Exception('Failed to update profile: ${e.response?.data ?? e.message}');
     }

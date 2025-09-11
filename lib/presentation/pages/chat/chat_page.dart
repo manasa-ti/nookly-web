@@ -25,6 +25,7 @@ import 'package:nookly/presentation/pages/report/report_page.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/scam_alert_service.dart';
+import 'package:nookly/core/services/api_cache_service.dart';
 import 'package:nookly/presentation/widgets/scam_alert_popup.dart';
 import 'package:nookly/presentation/widgets/conversation_starter_widget.dart';
 
@@ -1017,6 +1018,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           
           final msg = Message.fromJson(messageJson);
           context.read<ConversationBloc>().add(MessageSent(msg));
+          
+          // Invalidate inbox cache since we sent an image message
+          final apiCacheService = ApiCacheService();
+          if (_currentUserId != null) {
+            apiCacheService.invalidateCache('unified_conversations_$_currentUserId');
+            AppLogger.info('🔵 Unified cache invalidated due to image message sent');
+          }
+          
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _scrollToBottom();
           });
@@ -2348,6 +2357,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'isAISuggested': isAISuggested,
         });
         context.read<ConversationBloc>().add(MessageSent(msg));
+        
+        // Invalidate inbox cache since we sent a message
+        final apiCacheService = ApiCacheService();
+        if (_currentUserId != null) {
+          apiCacheService.invalidateCache('unified_conversations_$_currentUserId');
+          AppLogger.info('🔵 Unified cache invalidated due to message sent');
+        }
         
         // Scroll to bottom after sending message
         WidgetsBinding.instance.addPostFrameCallback((_) {

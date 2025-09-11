@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/domain/entities/conversation_key.dart';
 
 class Conversation extends Equatable {
   final String id;
@@ -16,6 +17,7 @@ class Conversation extends Equatable {
   final Message? lastMessage;
   final DateTime updatedAt;
   final bool isTyping;
+  final ConversationKey? conversationKey;
 
   const Conversation({
     required this.id,
@@ -32,6 +34,7 @@ class Conversation extends Equatable {
     this.lastMessage,
     required this.updatedAt,
     this.isTyping = false,
+    this.conversationKey,
   });
 
   Conversation copyWith({
@@ -49,6 +52,7 @@ class Conversation extends Equatable {
     Message? lastMessage,
     DateTime? updatedAt,
     bool? isTyping,
+    ConversationKey? conversationKey,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -65,6 +69,7 @@ class Conversation extends Equatable {
       lastMessage: lastMessage ?? this.lastMessage,
       updatedAt: updatedAt ?? this.updatedAt,
       isTyping: isTyping ?? this.isTyping,
+      conversationKey: conversationKey ?? this.conversationKey,
     );
   }
 
@@ -84,6 +89,7 @@ class Conversation extends Equatable {
         lastMessage,
         updatedAt,
         isTyping,
+        conversationKey,
       ];
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
@@ -102,6 +108,7 @@ class Conversation extends Equatable {
       lastMessage: json['lastMessage'] != null ? Message.fromJson(json['lastMessage']) : null,
       updatedAt: DateTime.parse(json['updatedAt']),
       isTyping: json['isTyping'] ?? false,
+      conversationKey: json['conversationKey'] != null ? ConversationKey.fromJson(json['conversationKey']) : null,
     );
   }
 
@@ -121,6 +128,7 @@ class Conversation extends Equatable {
       'lastMessage': lastMessage?.toJson(),
       'updatedAt': updatedAt.toIso8601String(),
       'isTyping': isTyping,
+      'conversationKey': conversationKey?.toJson(),
     };
   }
 } 

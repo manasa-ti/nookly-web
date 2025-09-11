@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/services/user_cache_service.dart';
 
 class AuthHandler {
   static final AuthHandler _instance = AuthHandler._internal();
@@ -22,6 +23,11 @@ class AuthHandler {
 
   void triggerLogout() {
     AppLogger.info('🔐 AuthHandler: Triggering logout due to 401 error');
+    
+    // Invalidate user cache on force logout
+    final userCacheService = UserCacheService();
+    userCacheService.invalidateCache();
+    AppLogger.info('🔐 AuthHandler: User cache invalidated on force logout');
     
     if (_onLogoutCallback != null) {
       _onLogoutCallback!();

@@ -3,6 +3,7 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
+import 'package:nookly/core/services/user_cache_service.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -31,6 +32,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Invalidate cache on sign in to ensure fresh data for new session
+      final userCacheService = UserCacheService();
+      userCacheService.invalidateCache();
+      
       final authResponse = await _authRepository.signInWithEmailAndPassword(
         event.email,
         event.password,
@@ -58,6 +63,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Invalidate cache on sign up to clear any stale data
+      final userCacheService = UserCacheService();
+      userCacheService.invalidateCache();
+      
       final authResponse = await _authRepository.signUpWithEmailAndPassword(
         event.email,
         event.password,
@@ -85,6 +94,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Invalidate cache on Google sign in to ensure fresh data for new session
+      final userCacheService = UserCacheService();
+      userCacheService.invalidateCache();
+      
       final user = await _authRepository.signInWithGoogle();
       emit(Authenticated(user));
     } catch (e) {

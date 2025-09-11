@@ -1,6 +1,5 @@
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
 import 'package:nookly/data/repositories/auth_repository_impl.dart';
 import 'package:nookly/data/repositories/chat_repository_impl.dart';
 import 'package:nookly/data/repositories/conversation_repository_impl.dart';
@@ -32,6 +31,7 @@ import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/conversation_starter_service.dart';
+import 'package:nookly/core/services/user_cache_service.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -42,6 +42,7 @@ Future<void> init() async {
 
   // Services
   sl.registerLazySingleton<AuthHandler>(() => AuthHandler());
+  sl.registerLazySingleton<UserCacheService>(() => UserCacheService());
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
@@ -122,7 +123,6 @@ Future<void> init() async {
   sl.registerFactoryParam<InboxBloc, String, void>(
     (currentUserId, _) => InboxBloc(
       conversationRepository: sl(),
-      matchesRepository: sl(),
       currentUserId: currentUserId,
     ),
   );

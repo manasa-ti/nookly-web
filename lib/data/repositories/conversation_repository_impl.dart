@@ -4,11 +4,13 @@ import 'package:dio/dio.dart';
 import 'package:nookly/core/network/network_service.dart'; // Use NetworkService
 import 'package:nookly/core/utils/logger.dart'; // Add logger import
 import 'package:nookly/domain/entities/conversation.dart';
+import 'package:nookly/domain/entities/conversation_key.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/domain/repositories/conversation_repository.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart'; // Still needed for currentUserId
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/core/services/key_management_service.dart';
+import 'package:nookly/core/services/api_cache_service.dart';
 import 'package:nookly/core/utils/e2ee_utils.dart'; 
 
 class ConversationRepositoryImpl implements ConversationRepository {
@@ -24,23 +26,56 @@ class ConversationRepositoryImpl implements ConversationRepository {
   @override
   Future<List<Conversation>> getConversations() async {
     try {
+      AppLogger.info('🔵 ConversationRepository: Starting getConversations API call');
+      final apiStopwatch = Stopwatch()..start();
+      
       final User? currentUser = await _authRepository.getCurrentUser();
       if (currentUser == null) {
         throw Exception('Current user not found for conversation context.');
       }
       final String currentUserId = currentUser.id;
+      
+      // Check cache first
+      final cacheKey = 'unified_conversations_$currentUserId';
+      final apiCacheService = ApiCacheService();
+      final cachedConversations = apiCacheService.getCachedResponse<List<Conversation>>(cacheKey);
+      if (cachedConversations != null) {
+        AppLogger.info('🔵 ConversationRepository: Returning cached conversations (${cachedConversations.length} items)');
+        return cachedConversations;
+      }
 
+      AppLogger.info('🔵 ConversationRepository: Making HTTP GET to /messages/conversations');
+      final httpStopwatch = Stopwatch()..start();
+      
       // NetworkService interceptor handles token and base URL
       final response = await NetworkService.dio.get('/messages/conversations'); // Endpoint path
+      
+      httpStopwatch.stop();
+      AppLogger.info('🔵 ConversationRepository: HTTP response received in ${httpStopwatch.elapsedMilliseconds}ms');
 
       if (response.statusCode == 200 && response.data != null) {
-        final List<dynamic> apiResponseData = response.data as List<dynamic>;
+        final responseData = response.data as Map<String, dynamic>;
+        final List<dynamic> conversationsData = responseData['conversations'] as List<dynamic>;
         final List<Conversation> conversations = [];
+        
+        AppLogger.info('🔵 ConversationRepository: Processing ${conversationsData.length} unified conversation items');
+        final processingStopwatch = Stopwatch()..start();
 
-        for (var item in apiResponseData) {
+        for (var item in conversationsData) {
           final itemMap = item as Map<String, dynamic>;
           final userJson = itemMap['user'] as Map<String, dynamic>; 
           final lastMessageJson = itemMap['lastMessage'] as Map<String, dynamic>?;
+
+          // Parse conversation key if available (needed for message decryption)
+          ConversationKey? conversationKey;
+          if (itemMap['conversationKey'] != null) {
+            try {
+              conversationKey = ConversationKey.fromJson(itemMap['conversationKey'] as Map<String, dynamic>);
+              AppLogger.info('🔵 ConversationRepository: Parsed conversation key for conversation: ${userJson['_id']}');
+            } catch (e) {
+              AppLogger.error('❌ ConversationRepository: Error parsing conversation key: $e');
+            }
+          }
 
           Message? lastMessage;
           DateTime lastMessageTime;
@@ -65,7 +100,9 @@ class ConversationRepositoryImpl implements ConversationRepository {
               AppLogger.info('🔵 Decrypting last message in conversation list');
               AppLogger.info('🔵 Message content before decryption: ${lastMessage.content}');
               AppLogger.info('🔵 Encrypted content to decrypt: ${lastMessage.encryptedContent}');
-              lastMessage = await _decryptMessageIfNeeded(lastMessage, userJson['_id'] as String);
+              // Get conversation key from the conversation object if available
+              final encryptionKeyFromConversation = conversationKey?.encryptionKey;
+              lastMessage = await _decryptMessageIfNeeded(lastMessage, userJson['_id'] as String, conversationKey: encryptionKeyFromConversation);
               AppLogger.info('🔵 Message content after decryption: ${lastMessage.content}');
             }
             
@@ -110,8 +147,24 @@ class ConversationRepositoryImpl implements ConversationRepository {
             unreadCount: itemMap['unreadCount'] as int? ?? 0,
             userId: currentUserId,
             updatedAt: lastMessageTime,
+            conversationKey: conversationKey,
           ));
         }
+        
+        processingStopwatch.stop();
+        apiStopwatch.stop();
+        AppLogger.info('🔵 ConversationRepository: Processing completed in ${processingStopwatch.elapsedMilliseconds}ms');
+        AppLogger.info('🔵 ConversationRepository: getConversations unified API completed in ${apiStopwatch.elapsedMilliseconds}ms, found ${conversations.length} conversations');
+        
+        // Log statistics if available
+        if (responseData.containsKey('statistics')) {
+          final stats = responseData['statistics'] as Map<String, dynamic>;
+          AppLogger.info('🔵 ConversationRepository: Statistics - Total conversations: ${stats['totalConversations']}, New matches: ${stats['totalNewMatches']}, Total unread: ${stats['totalUnread']}');
+        }
+        
+        // Cache the result
+        apiCacheService.cacheResponse(cacheKey, conversations, duration: const Duration(minutes: 3));
+        
         return conversations;
       }
       
@@ -613,7 +666,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
   }
 
   /// Decrypt a message if it's encrypted
-  Future<Message> _decryptMessageIfNeeded(Message message, String senderId) async {
+  Future<Message> _decryptMessageIfNeeded(Message message, String senderId, {String? conversationKey}) async {
     if (!message.isEncrypted || message.encryptionMetadata == null) {
       return message; // Not encrypted, return as is
     }
@@ -627,8 +680,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
     }
 
     try {
-      // Get conversation key
-      final encryptionKey = await _keyManagementService!.getConversationKey(senderId);
+      // Get conversation key (use provided key if available, otherwise fetch from API)
+      final encryptionKey = await _keyManagementService!.getConversationKey(senderId, conversationKeyFromApi: conversationKey);
       
       // Create the proper encrypted data structure
       final encryptedData = {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/di/injection_container.dart';
-import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
@@ -9,7 +8,8 @@ import 'package:nookly/presentation/bloc/inbox/inbox_bloc.dart';
 import 'package:nookly/presentation/pages/chat/chat_page.dart';
 import 'package:intl/intl.dart';
 import 'package:nookly/core/network/socket_service.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:nookly/core/services/api_cache_service.dart';
+import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
@@ -32,8 +32,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _loadCurrentUserAndInitBloc();
-    _initSocket();
+    _initializeChatInbox();
   }
 
   @override
@@ -62,9 +61,20 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
 
   Future<void> _reconnectSocket() async {
     AppLogger.info('🔄 Reconnecting socket in inbox page');
-    await _initSocket();
-    if (_socketService?.isConnected == true && _inboxBloc?.state is InboxLoaded) {
-      _joinAllChatRooms();
+    
+    // Use existing user data if available, otherwise fetch fresh data
+    if (_currentUser != null) {
+      final authRepository = sl<AuthRepository>();
+      final token = await authRepository.getToken();
+      if (token != null) {
+        _initSocketWithData(_currentUser!, token);
+        if (_socketService?.isConnected == true && _inboxBloc?.state is InboxLoaded) {
+          _joinAllChatRooms();
+        }
+      }
+    } else {
+      // Fallback to full initialization if no user data
+      await _initializeChatInbox();
     }
   }
 
@@ -92,21 +102,82 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _loadCurrentUserAndInitBloc() async {
+  /// Optimized initialization method that reuses cached user data when possible
+  Future<void> _initializeChatInbox() async {
     try {
+      AppLogger.info('🔵 ChatInboxPage: Starting optimized chat inbox initialization');
+      final totalStopwatch = Stopwatch()..start();
+      
       final authRepository = sl<AuthRepository>();
-      final user = await authRepository.getCurrentUser();
-      if (mounted) {
-        if (user != null) {
+      
+      AppLogger.info('🔵 ChatInboxPage: Checking for cached user data first');
+      final authStopwatch = Stopwatch()..start();
+      
+      // Try to get cached user data first (much faster)
+      final userCacheService = sl<UserCacheService>();
+      User? user = userCacheService.getCachedUser();
+      
+      if (user != null) {
+        AppLogger.info('🔵 ChatInboxPage: Using cached user data for user: ${user.id}');
+        // Only fetch token since we have cached user data
+        final token = await authRepository.getToken();
+        
+        authStopwatch.stop();
+        AppLogger.info('🔵 ChatInboxPage: Cached user data + token fetched in ${authStopwatch.elapsedMilliseconds}ms');
+        
+        if (mounted && token != null) {
           setState(() {
             _currentUser = user;
-            _inboxBloc = sl<InboxBloc>(param1: _currentUser!.id);
-            _inboxBloc!.add(LoadInbox());
             _isLoadingCurrentUser = false;
           });
+          
+          // Initialize bloc with cached user data
+          _inboxBloc = sl<InboxBloc>(param1: user.id);
+          _inboxBloc!.add(LoadInbox());
+          
+          // Initialize socket with cached user data and token
+          _initSocketWithData(user, token);
+          
+          totalStopwatch.stop();
+          AppLogger.info('🔵 ChatInboxPage: Optimized initialization completed in ${totalStopwatch.elapsedMilliseconds}ms');
+          AppLogger.info('🔵 ChatInboxPage: Initialized with cached user ${user.id}');
+          return;
+        }
+      }
+      
+      // Fallback: Fetch user data and token if no cache available
+      AppLogger.info('🔵 ChatInboxPage: No cached user data, fetching fresh data');
+      final userFuture = authRepository.getCurrentUser();
+      final tokenFuture = authRepository.getToken();
+      
+      // Wait for both to complete
+      final results = await Future.wait([userFuture, tokenFuture]);
+      user = results[0] as User?;
+      final token = results[1] as String?;
+      
+      authStopwatch.stop();
+      AppLogger.info('🔵 ChatInboxPage: Fresh auth data fetched in ${authStopwatch.elapsedMilliseconds}ms');
+      
+      if (mounted) {
+        if (user != null && token != null) {
+          setState(() {
+            _currentUser = user;
+            _isLoadingCurrentUser = false;
+          });
+          
+          // Initialize bloc with fresh user data
+          _inboxBloc = sl<InboxBloc>(param1: user.id);
+          _inboxBloc!.add(LoadInbox());
+          
+          // Initialize socket with fresh user data and token
+          _initSocketWithData(user, token);
+          
+          totalStopwatch.stop();
+          AppLogger.info('🔵 ChatInboxPage: Fresh initialization completed in ${totalStopwatch.elapsedMilliseconds}ms');
+          AppLogger.info('🔵 ChatInboxPage: Initialized with fresh user ${user.id}');
         } else {
           setState(() {
-            _initializationError = 'Failed to load user. Please try again.';
+            _initializationError = 'Failed to load user or token. Please try again.';
             _isLoadingCurrentUser = false;
           });
         }
@@ -121,20 +192,22 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     }
   }
 
-  Future<void> _initSocket() async {
-    final authRepository = sl<AuthRepository>();
-    final user = await authRepository.getCurrentUser();
-    final token = await authRepository.getToken();
-    if (user != null && token != null) {
-      _socketService = sl<SocketService>();
-      _socketService!.connect(
-        serverUrl: SocketService.socketUrl, 
-        token: token,
-        userId: user.id,
-      );
-      _registerSocketListeners();
-      _joinAllChatRooms();
-    }
+  /// Initialize socket with pre-fetched user data and token
+  void _initSocketWithData(User user, String token) {
+    AppLogger.info('🔵 ChatInboxPage: Initializing socket connection');
+    final socketStopwatch = Stopwatch()..start();
+    
+    _socketService = sl<SocketService>();
+    _socketService!.connect(
+      serverUrl: SocketService.socketUrl, 
+      token: token,
+      userId: user.id,
+    );
+    _registerSocketListeners();
+    _joinAllChatRooms();
+    
+    socketStopwatch.stop();
+    AppLogger.info('🔵 ChatInboxPage: Socket initialization completed in ${socketStopwatch.elapsedMilliseconds}ms');
   }
 
   void _registerSocketListeners() {
@@ -236,6 +309,13 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           // Emit updated state immediately
           _inboxBloc?.emit(InboxLoaded(updatedConversations));
           
+          // Invalidate cache since we have new message data
+          if (_currentUser != null) {
+            final apiCacheService = ApiCacheService();
+            apiCacheService.invalidateCache('unified_conversations_${_currentUser!.id}');
+            AppLogger.info('🔵 Unified cache invalidated due to new message received');
+          }
+          
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
           AppLogger.info('🔵 Updated last message: ${updatedConversation.lastMessage?.content}');
           AppLogger.info('🔵 Message type: ${updatedConversation.lastMessage?.type}');
@@ -325,6 +405,13 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           
           // Emit updated state immediately
           _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          
+          // Invalidate cache since conversation was updated
+          if (_currentUser != null) {
+            final apiCacheService = ApiCacheService();
+            apiCacheService.invalidateCache('unified_conversations_${_currentUser!.id}');
+            AppLogger.info('🔵 Unified cache invalidated due to conversation update');
+          }
           
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
         }
