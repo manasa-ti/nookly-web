@@ -13,6 +13,8 @@ import 'package:nookly/data/models/auth/forgot_password_request_model.dart';
 import 'package:nookly/data/models/auth/forgot_password_response_model.dart';
 import 'package:nookly/data/models/auth/reset_password_request_model.dart';
 import 'package:nookly/data/models/auth/reset_password_response_model.dart';
+import 'package:nookly/data/models/auth/delete_account_request_model.dart';
+import 'package:nookly/data/models/auth/delete_account_response_model.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 
@@ -390,14 +392,30 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> deleteAccount() async {
+  Future<DeleteAccountResponseModel> deleteAccount(DeleteAccountRequestModel request) async {
     final token = await getToken();
     if (token == null) throw Exception('Not authenticated');
 
     try {
-      await NetworkService.dio.delete('/users/account');
+      AppLogger.info('Attempting to delete account');
+      final response = await NetworkService.dio.delete(
+        '/users/account',
+        data: request.toJson(),
+      );
+
+      final deleteResponse = DeleteAccountResponseModel.fromJson(response.data);
+      AppLogger.info('Account deleted successfully');
+      
+      // Logout after successful deletion
       await logout();
+      
+      return deleteResponse;
     } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to delete account',
+        e,
+        StackTrace.current,
+      );
       throw Exception('Failed to delete account: ${e.response?.data ?? e.message}');
     }
   }

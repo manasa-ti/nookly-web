@@ -6,6 +6,8 @@ import 'package:nookly/data/models/auth/otp_response_model.dart';
 import 'package:nookly/data/models/auth/verify_otp_response_model.dart';
 import 'package:nookly/data/models/auth/forgot_password_response_model.dart';
 import 'package:nookly/data/models/auth/reset_password_response_model.dart';
+import 'package:nookly/data/models/auth/delete_account_request_model.dart';
+import 'package:nookly/data/models/auth/delete_account_response_model.dart';
 
 abstract class AuthRepository {
   Future<AuthResponseModel> signInWithEmailAndPassword(String email, String password);
@@ -16,7 +18,7 @@ abstract class AuthRepository {
   Future<void> signOut();
   Future<User?> getCurrentUser();
   Future<void> updateUserProfile(User user);
-  Future<void> deleteAccount();
+  Future<DeleteAccountResponseModel> deleteAccount(DeleteAccountRequestModel request);
   Future<AuthResponseModel> login(LoginRequestModel request);
   Future<AuthResponseModel> register(RegisterRequestModel request);
   Future<void> logout();

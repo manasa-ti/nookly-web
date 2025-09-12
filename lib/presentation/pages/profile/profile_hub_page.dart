@@ -6,6 +6,7 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/data/models/auth/delete_account_request_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ProfileHubPage extends StatefulWidget {
@@ -226,7 +227,211 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
     );
   }
 
+  void _showDeleteAccountConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF234481),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Delete Account',
+            style: TextStyle(
+              color: Colors.red,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showDeleteAccountPasswordDialog();
+              },
+              child: const Text(
+                'Yes, Delete',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
+  void _showDeleteAccountPasswordDialog() {
+    final passwordController = TextEditingController();
+    final confirmationController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isPasswordValid = passwordController.text.isNotEmpty;
+            bool isConfirmationValid = confirmationController.text == 'DELETE';
+            bool canSubmit = isPasswordValid && isConfirmationValid && !isLoading;
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF234481),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Confirm Account Deletion',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'To confirm account deletion, please:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Nunito',
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+                    ),
+                    onChanged: (value) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: confirmationController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Type "DELETE" to confirm',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+                    ),
+                    onChanged: (value) => setState(() {}),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: canSubmit
+                      ? () async {
+                          setState(() => isLoading = true);
+                          try {
+                            final request = DeleteAccountRequestModel(
+                              confirmation: 'DELETE',
+                              password: passwordController.text,
+                            );
+                            
+                            await _authRepository.deleteAccount(request);
+                            
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Account deleted successfully'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginPage()),
+                                (route) => false,
+                              );
+                            }
+                          } catch (e) {
+                            setState(() => isLoading = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to delete account: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          ),
+                        )
+                      : const Text(
+                          'Delete Account',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -382,6 +587,11 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                         // TODO: Uncomment when Help & Support page is implemented
                         // _SettingsTile(icon: Icons.help, title: 'Help & Support', onTap: () {}),
                         _SettingsTile(icon: Icons.info, title: 'About', onTap: _showAboutDialog),
+                        _SettingsTile(
+                          icon: Icons.delete_forever,
+                          title: 'Delete Account',
+                          onTap: _showDeleteAccountConfirmation,
+                        ),
                         _SettingsTile(
                           icon: Icons.logout,
                           title: 'Logout',

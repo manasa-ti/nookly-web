@@ -69,9 +69,15 @@ class NetworkService {
             // Get token from SharedPreferences
             _prefs ??= await SharedPreferences.getInstance();
             final token = _prefs?.getString('token');
+            
+            // TEMP LOG: Print auth token before API call
             if (token != null) {
+              print('🔑 NetworkService: Auth token for ${options.uri}: $token');
               options.headers['Authorization'] = 'Bearer $token';
+            } else {
+              print('🔑 NetworkService: No auth token found for ${options.uri}');
             }
+            
             return handler.next(options);
           } catch (e) {
             print('debug disappearing: Interceptor onRequest error: $e');
