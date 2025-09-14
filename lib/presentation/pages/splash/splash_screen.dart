@@ -6,7 +6,7 @@ import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
-import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/core/services/deep_link_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -59,9 +59,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _controller.forward();
     _loadingController.repeat();
 
-    // Check authentication status after animation
+    // Check authentication status after animation, but only if no deep link is being processed
     Future.delayed(const Duration(seconds: 3), () {
-      context.read<AuthBloc>().add(CheckAuthStatus());
+      final deepLinkService = DeepLinkService();
+      if (!deepLinkService.isProcessingDeepLink && deepLinkService.pendingResetToken == null) {
+        context.read<AuthBloc>().add(CheckAuthStatus());
+      } else {
+        // If deep link is being processed or there's a pending reset token, wait a bit more and check again
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!deepLinkService.isProcessingDeepLink && deepLinkService.pendingResetToken == null) {
+            context.read<AuthBloc>().add(CheckAuthStatus());
+          }
+        });
+      }
     });
   }
 

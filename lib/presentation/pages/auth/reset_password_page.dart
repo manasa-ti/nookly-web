@@ -24,12 +24,28 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   final _confirmPasswordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isTokenValid = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _validateToken();
+  }
 
   @override
   void dispose() {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _validateToken() {
+    // Basic token validation - check if token is not empty and has reasonable length
+    if (widget.token.isEmpty || widget.token.length < 10) {
+      setState(() {
+        _isTokenValid = false;
+      });
+    }
   }
 
   void _onResetPasswordPressed() {
@@ -83,7 +99,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
         child: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(AppConfig.defaultPadding),
-            child: Form(
+            child: _isTokenValid ? Form(
               key: _formKey,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -193,10 +209,69 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   ),
                 ],
               ),
-            ),
+            ) : _buildInvalidTokenError(size),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInvalidTokenError(Size size) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.error_outline,
+          color: Colors.red,
+          size: 64,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Invalid Reset Link',
+          style: TextStyle(
+            fontSize: (size.width * 0.05).clamp(18.0, 24.0),
+            fontFamily: 'Nunito',
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'This password reset link is invalid or has expired. Please request a new password reset.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+            fontFamily: 'Nunito',
+            color: Colors.white70,
+          ),
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const LoginPage(),
+              ),
+              (route) => false,
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFFf4656f),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          ),
+          child: Text(
+            'Back to Login',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              color: Colors.white,
+              fontSize: (size.width * 0.035).clamp(12.0, 15.0),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
     );
   }
 } 
