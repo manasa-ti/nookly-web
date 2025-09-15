@@ -125,6 +125,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         unreadCount: 0,
         userId: _currentUserId,
         updatedAt: DateTime.now(),
+        lastSeen: event.lastSeen,
+        connectionStatus: event.connectionStatus,
       );
 
       emit(ConversationLoaded(

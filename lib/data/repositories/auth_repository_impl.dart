@@ -332,6 +332,10 @@ class AuthRepositoryImpl implements AuthRepository {
         'availability': userData['availability'] ?? [],
         'profilePic': userData['profile_pic'] ?? '',
         'preferred_distance_radius': userData['preferred_distance_radius'] ?? 40,
+        'isOnline': userData['isOnline'],
+        'lastSeen': userData['lastSeen'],
+        'connectionStatus': userData['connectionStatus'],
+        'last_active': userData['last_active'],
       };
 
       AppLogger.info('Processed user data: $safeUserData');

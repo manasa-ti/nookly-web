@@ -18,6 +18,8 @@ class Conversation extends Equatable {
   final DateTime updatedAt;
   final bool isTyping;
   final ConversationKey? conversationKey;
+  final String? lastSeen;
+  final String? connectionStatus;
 
   const Conversation({
     required this.id,
@@ -35,6 +37,8 @@ class Conversation extends Equatable {
     required this.updatedAt,
     this.isTyping = false,
     this.conversationKey,
+    this.lastSeen,
+    this.connectionStatus,
   });
 
   Conversation copyWith({
@@ -53,6 +57,8 @@ class Conversation extends Equatable {
     DateTime? updatedAt,
     bool? isTyping,
     ConversationKey? conversationKey,
+    String? lastSeen,
+    String? connectionStatus,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -70,6 +76,8 @@ class Conversation extends Equatable {
       updatedAt: updatedAt ?? this.updatedAt,
       isTyping: isTyping ?? this.isTyping,
       conversationKey: conversationKey ?? this.conversationKey,
+      lastSeen: lastSeen ?? this.lastSeen,
+      connectionStatus: connectionStatus ?? this.connectionStatus,
     );
   }
 
@@ -90,6 +98,8 @@ class Conversation extends Equatable {
         updatedAt,
         isTyping,
         conversationKey,
+        lastSeen,
+        connectionStatus,
       ];
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
@@ -109,6 +119,8 @@ class Conversation extends Equatable {
       updatedAt: DateTime.parse(json['updatedAt']),
       isTyping: json['isTyping'] ?? false,
       conversationKey: json['conversationKey'] != null ? ConversationKey.fromJson(json['conversationKey']) : null,
+      lastSeen: json['lastSeen'] as String?,
+      connectionStatus: json['connectionStatus'] as String?,
     );
   }
 
@@ -129,6 +141,8 @@ class Conversation extends Equatable {
       'updatedAt': updatedAt.toIso8601String(),
       'isTyping': isTyping,
       'conversationKey': conversationKey?.toJson(),
+      'lastSeen': lastSeen,
+      'connectionStatus': connectionStatus,
     };
   }
 } 

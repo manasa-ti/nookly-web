@@ -148,6 +148,8 @@ class ConversationRepositoryImpl implements ConversationRepository {
             userId: currentUserId,
             updatedAt: lastMessageTime,
             conversationKey: conversationKey,
+            lastSeen: userJson['lastSeen'] as String?,
+            connectionStatus: userJson['connectionStatus'] as String?,
           ));
         }
         

@@ -213,6 +213,8 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   void _registerSocketListeners() {
     if (_socketService == null) return;
     
+    AppLogger.info('🔵 Registering socket listeners for chat inbox');
+    
     _socketService!.on('private_message', (data) async {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
@@ -464,6 +466,89 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       }
     });
 
+    // Add online status event listeners
+    AppLogger.info('🔵 Registering user_online listener');
+    _socketService!.on('user_online', (data) {
+      AppLogger.info('🟢 User came online in inbox: $data');
+      AppLogger.info('🟢 Current inbox state: ${_inboxBloc?.state.runtimeType}');
+      AppLogger.info('🟢 Available conversations: ${(_inboxBloc?.state as InboxLoaded?)?.conversations.length ?? 0}');
+      
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        final userId = data['userId'] as String?;
+        
+        AppLogger.info('🟢 Looking for user ID: $userId');
+        AppLogger.info('🟢 Available conversation IDs: ${conversations.map((c) => c.id).toList()}');
+        
+        if (userId != null) {
+          final conversation = conversations.where((c) => c.id == userId).firstOrNull;
+          if (conversation != null) {
+            AppLogger.info('🔵 Found conversation for: ${conversation.participantName}');
+            AppLogger.info('🔵 Current online status: ${conversation.isOnline}');
+            
+            // Create updated conversation with online status
+            final updatedConversation = conversation.copyWith(
+              isOnline: true,
+              updatedAt: DateTime.now(),
+            );
+            
+            AppLogger.info('🔵 New online status: ${updatedConversation.isOnline}');
+            
+            // Update the conversations list
+            final updatedConversations = conversations.map((c) => 
+              c.id == conversation.id ? updatedConversation : c
+            ).toList();
+            
+            // Emit updated state immediately
+            _inboxBloc?.emit(InboxLoaded(updatedConversations));
+            
+            AppLogger.info('🔵 Updated online status for: ${conversation.participantName}');
+            AppLogger.info('🔵 State emitted successfully');
+          } else {
+            AppLogger.warning('⚠️ No conversation found for user ID: $userId');
+          }
+        } else {
+          AppLogger.warning('⚠️ User ID is null in user_online event');
+        }
+      } else {
+        AppLogger.warning('⚠️ Inbox state is not InboxLoaded: ${_inboxBloc?.state.runtimeType}');
+      }
+    });
+
+    AppLogger.info('🔵 Registering user_offline listener');
+    _socketService!.on('user_offline', (data) {
+      AppLogger.info('🔴 User went offline in inbox: $data');
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        final userId = data['userId'] as String?;
+        
+        if (userId != null) {
+          final conversation = conversations.where((c) => c.id == userId).firstOrNull;
+          if (conversation != null) {
+            AppLogger.info('🔵 Updating offline status for: ${conversation.participantName}');
+            
+            // Create updated conversation with offline status
+            final updatedConversation = conversation.copyWith(
+              isOnline: false,
+              updatedAt: DateTime.now(),
+            );
+            
+            // Update the conversations list
+            final updatedConversations = conversations.map((c) => 
+              c.id == conversation.id ? updatedConversation : c
+            ).toList();
+            
+            // Emit updated state immediately
+            _inboxBloc?.emit(InboxLoaded(updatedConversations));
+            
+            AppLogger.info('🔵 Updated offline status for: ${conversation.participantName}');
+          }
+        }
+      }
+    });
+
     _socketService!.on('error', (data) {
       AppLogger.error('❌ Socket error in inbox: $data');
     });
@@ -483,6 +568,8 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           participantName: conversation.participantName,
           participantAvatar: conversation.participantAvatar,
           isOnline: conversation.isOnline,
+          lastSeen: conversation.lastSeen,
+          connectionStatus: conversation.connectionStatus,
         ),
       ),
     );
@@ -494,6 +581,34 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       
       // Also reconnect socket and rejoin rooms
       await _reconnectSocket();
+    }
+  }
+
+  String _formatOnlineStatus(Conversation conversation) {
+    if (conversation.isOnline) {
+      return 'Online';
+    } else if (conversation.lastSeen != null) {
+      try {
+        final lastSeenDate = DateTime.parse(conversation.lastSeen!);
+        final now = DateTime.now();
+        final difference = now.difference(lastSeenDate);
+        
+        if (difference.inMinutes < 1) {
+          return 'Just now';
+        } else if (difference.inMinutes < 60) {
+          return '${difference.inMinutes}m ago';
+        } else if (difference.inHours < 24) {
+          return '${difference.inHours}h ago';
+        } else if (difference.inDays < 7) {
+          return '${difference.inDays}d ago';
+        } else {
+          return 'Last seen ${lastSeenDate.day}/${lastSeenDate.month}';
+        }
+      } catch (e) {
+        return 'Offline';
+      }
+    } else {
+      return 'Offline';
     }
   }
 
@@ -515,6 +630,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   }
 
   Widget _buildAvatar(Conversation conversation) {
+    print('🔵 Building avatar for ${conversation.participantName}: isOnline = ${conversation.isOnline}');
     return CustomAvatar(
       name: conversation.participantName,
       size: 46,

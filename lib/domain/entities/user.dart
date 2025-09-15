@@ -18,6 +18,10 @@ class User extends Equatable {
   final List<String>? availability;
   final String? profilePic;
   final int? preferredDistanceRadius;
+  final bool? isOnline;
+  final String? lastSeen;
+  final String? connectionStatus;
+  final String? lastActive;
 
   const User({
     required this.id,
@@ -37,6 +41,10 @@ class User extends Equatable {
     this.availability,
     this.profilePic,
     this.preferredDistanceRadius,
+    this.isOnline,
+    this.lastSeen,
+    this.connectionStatus,
+    this.lastActive,
   });
 
   bool get isProfileComplete {
@@ -95,6 +103,10 @@ class User extends Equatable {
       availability: (json['availability'] as List<dynamic>?)?.cast<String>(),
       profilePic: json['profilePic'] as String?,
       preferredDistanceRadius: json['preferred_distance_radius'] as int? ?? 40,
+      isOnline: json['isOnline'] as bool?,
+      lastSeen: json['lastSeen'] as String?,
+      connectionStatus: json['connectionStatus'] as String?,
+      lastActive: json['last_active'] as String?,
     );
   }
 
@@ -117,6 +129,10 @@ class User extends Equatable {
       'availability': availability,
       'profile_pic': profilePic,
       'preferred_distance_radius': preferredDistanceRadius,
+      'isOnline': isOnline,
+      'lastSeen': lastSeen,
+      'connectionStatus': connectionStatus,
+      'last_active': lastActive,
     };
   }
 
@@ -139,5 +155,9 @@ class User extends Equatable {
         availability,
         profilePic,
         preferredDistanceRadius,
+        isOnline,
+        lastSeen,
+        connectionStatus,
+        lastActive,
       ];
 } 

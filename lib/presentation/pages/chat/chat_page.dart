@@ -49,6 +49,8 @@ class ChatPage extends StatefulWidget {
   final String participantName;
   final String? participantAvatar;
   final bool isOnline;
+  final String? lastSeen;
+  final String? connectionStatus;
 
   const ChatPage({
     Key? key,
@@ -56,6 +58,8 @@ class ChatPage extends StatefulWidget {
     required this.participantName,
     this.participantAvatar,
     required this.isOnline,
+    this.lastSeen,
+    this.connectionStatus,
   }) : super(key: key);
 
   @override
@@ -110,6 +114,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       participantName: widget.participantName,
       participantAvatar: widget.participantAvatar,
       isOnline: widget.isOnline,
+      lastSeen: widget.lastSeen,
+      connectionStatus: widget.connectionStatus,
     ));
     
     // Initialize _processedMessageIds with existing messages
@@ -394,6 +400,35 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     _socketService!.on('error', (data) {
       // Socket error
+    });
+
+    // Add online status event listeners
+    _socketService!.on('user_online', (data) {
+      if (!mounted) return;
+      AppLogger.info('🟢 User came online in chat: $data');
+      final userId = data['userId'] as String?;
+      
+      if (userId == widget.conversationId) {
+        AppLogger.info('🔵 Updating online status for current chat participant');
+        setState(() {
+          // Update the widget's isOnline state
+          // Note: This will require a widget rebuild to reflect the change
+        });
+      }
+    });
+
+    _socketService!.on('user_offline', (data) {
+      if (!mounted) return;
+      AppLogger.info('🔴 User went offline in chat: $data');
+      final userId = data['userId'] as String?;
+      
+      if (userId == widget.conversationId) {
+        AppLogger.info('🔵 Updating offline status for current chat participant');
+        setState(() {
+          // Update the widget's isOnline state
+          // Note: This will require a widget rebuild to reflect the change
+        });
+      }
     });
 
     // Add listener for conversation removal (unmatch)
@@ -1482,11 +1517,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       fontFamily: 'Nunito',
                     ),
                   ),
-                  if (widget.isOnline)
-                  const Text(
-                      'Online',
+                  Text(
+                    _formatOnlineStatus(),
                     style: TextStyle(
-                        color: Color(0xFF4CAF50),
+                      color: widget.isOnline ? const Color(0xFF4CAF50) : Colors.grey,
                       fontSize: 12,
                       fontFamily: 'Nunito',
                     ),
@@ -2212,6 +2246,34 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       padding: const EdgeInsets.only(left: 4),
       child: statusIcon,
     );
+  }
+
+  String _formatOnlineStatus() {
+    if (widget.isOnline) {
+      return 'Online';
+    } else if (widget.lastSeen != null) {
+      try {
+        final lastSeenDate = DateTime.parse(widget.lastSeen!);
+        final now = DateTime.now();
+        final difference = now.difference(lastSeenDate);
+        
+        if (difference.inMinutes < 1) {
+          return 'Just now';
+        } else if (difference.inMinutes < 60) {
+          return '${difference.inMinutes}m ago';
+        } else if (difference.inHours < 24) {
+          return '${difference.inHours}h ago';
+        } else if (difference.inDays < 7) {
+          return '${difference.inDays}d ago';
+        } else {
+          return 'Last seen ${lastSeenDate.day}/${lastSeenDate.month}';
+        }
+      } catch (e) {
+        return 'Offline';
+      }
+    } else {
+      return 'Offline';
+    }
   }
 
   Widget _buildAvatar() {

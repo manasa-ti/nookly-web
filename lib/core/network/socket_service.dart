@@ -1,7 +1,6 @@
-import 'dart:io';
+import 'dart:async';
 
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:flutter/foundation.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 import 'package:nookly/core/utils/e2ee_utils.dart';
@@ -10,7 +9,6 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/di/injection_container.dart';
 
 class SocketService {
-  static final SocketService _instance = SocketService._internal();
   factory SocketService({KeyManagementService? keyManagementService}) => 
     SocketService._internal(keyManagementService: keyManagementService);
   SocketService._internal({KeyManagementService? keyManagementService}) 
@@ -18,7 +16,6 @@ class SocketService {
 
   IO.Socket? _socket;
   String? _userId;
-  String? _token;
   KeyManagementService? _keyManagementService;
 
   bool get isConnected => _socket?.connected ?? false;
@@ -42,7 +39,6 @@ class SocketService {
 
     AppLogger.info('Initializing socket connection to $serverUrl');
     _userId = userId;
-    _token = token;
     
     try {
       _socket = IO.io(
@@ -394,6 +390,17 @@ class SocketService {
       AppLogger.error('❌ Socket ID: ${_socket?.id}');
       AppLogger.error('❌ Current user ID: $_userId');
     });
+
+    // Online status event handlers
+    _socket!.on('user_online', (data) {
+      AppLogger.info('🟢 User came online: $data');
+      _handleUserOnlineStatus(data, true);
+    });
+
+    _socket!.on('user_offline', (data) {
+      AppLogger.info('🔴 User went offline: $data');
+      _handleUserOnlineStatus(data, false);
+    });
     
     AppLogger.info('✅ Socket listeners setup complete');
   }
@@ -438,4 +445,57 @@ class SocketService {
   }
 
   bool get isSocketConnected => _socket?.connected ?? false;
+
+  /// Handle user online/offline status changes
+  void _handleUserOnlineStatus(dynamic data, bool isOnline) {
+    try {
+      if (data is Map<String, dynamic> && data.containsKey('userId')) {
+        final userId = data['userId'] as String;
+        AppLogger.info('🔄 Updating online status for user $userId: $isOnline');
+        
+        // TODO: Update user status in local state management
+        // This would typically involve updating a bloc or state management system
+        // For now, we'll just log the status change
+        AppLogger.info('📱 User $userId is now ${isOnline ? 'online' : 'offline'}');
+      } else {
+        AppLogger.warning('⚠️ Invalid user status data received: $data');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Error handling user online status: $e');
+    }
+  }
+
+  /// Send heartbeat to maintain online status
+  void sendHeartbeat() {
+    if (_socket != null && _socket!.connected) {
+      AppLogger.info('💓 Sending heartbeat');
+      _socket!.emit('heartbeat');
+    } else {
+      AppLogger.warning('⚠️ Cannot send heartbeat: Socket not connected');
+    }
+  }
+
+  /// Start heartbeat timer (call this when app becomes active)
+  Timer? _heartbeatTimer;
+  void startHeartbeat({Duration interval = const Duration(seconds: 30)}) {
+    // Stop existing timer if any
+    _heartbeatTimer?.cancel();
+    
+    AppLogger.info('💓 Starting heartbeat with interval: ${interval.inSeconds}s');
+    _heartbeatTimer = Timer.periodic(interval, (timer) {
+      if (_socket?.connected == true) {
+        sendHeartbeat();
+      } else {
+        AppLogger.warning('⚠️ Stopping heartbeat: Socket disconnected');
+        timer.cancel();
+      }
+    });
+  }
+
+  /// Stop heartbeat timer (call this when app goes to background)
+  void stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+    AppLogger.info('💓 Heartbeat stopped');
+  }
 } 

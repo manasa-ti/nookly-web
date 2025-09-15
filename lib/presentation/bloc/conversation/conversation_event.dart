@@ -12,16 +12,20 @@ class LoadConversation extends ConversationEvent {
   final String participantName;
   final String? participantAvatar;
   final bool isOnline;
+  final String? lastSeen;
+  final String? connectionStatus;
 
   const LoadConversation({
     required this.participantId,
     required this.participantName,
     this.participantAvatar,
     required this.isOnline,
+    this.lastSeen,
+    this.connectionStatus,
   });
 
   @override
-  List<Object?> get props => [participantId, participantName, participantAvatar, isOnline];
+  List<Object?> get props => [participantId, participantName, participantAvatar, isOnline, lastSeen, connectionStatus];
 }
 
 class LoadMoreMessages extends ConversationEvent {}

@@ -62,6 +62,9 @@ class CustomAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Debug logging for online status
+    print('🔵 CustomAvatar for "$name": isOnline = $isOnline');
+    
     return Stack(
       children: [
         Container(
@@ -93,10 +96,6 @@ class CustomAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.green,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white,
-                  width: 2,
-                ),
               ),
             ),
           ),
