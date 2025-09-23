@@ -175,7 +175,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                           Opacity(
                             opacity: 0.9,
                             child: Text(
-                              'Never be lonely',
+                              'No more lonely',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: (MediaQuery.of(context).size.width * 0.032).clamp(11.0, 15.0), // smaller

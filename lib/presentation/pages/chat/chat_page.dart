@@ -4,6 +4,16 @@ import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:nookly/presentation/widgets/message_bubble.dart';
+import 'package:nookly/presentation/widgets/game_interface_bar.dart';
+import 'package:nookly/presentation/bloc/games/games_bloc.dart';
+import 'package:nookly/presentation/bloc/games/games_event.dart';
+import 'package:nookly/presentation/bloc/games/games_state.dart';
+import 'package:nookly/core/services/games_service.dart';
+import 'package:nookly/data/repositories/games_repository_impl.dart';
+import 'package:nookly/data/models/games/game_session_model.dart';
+import 'package:nookly/domain/entities/game_session.dart';
+import 'package:nookly/domain/entities/game_prompt.dart';
+import 'package:nookly/domain/entities/game_invite.dart';
 import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
@@ -85,6 +95,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   String? _jwtToken;
   SocketService? _socketService;
   final Set<String> _processedMessageIds = {}; // Track processed message IDs
+  
+  // Store listener references for proper cleanup
+  Function(dynamic)? _typingListener;
+  Function(dynamic)? _stopTypingListener;
+  Function(dynamic)? _privateMessageListener;
+  Function(dynamic)? _messageDeliveredListener;
+  Function(dynamic)? _messageReadListener;
   final Dio dio = Dio(); // Initialize Dio instance
   final ImagePicker _picker = ImagePicker();
 
@@ -156,18 +173,42 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Don't clear _processedMessageIds here anymore
     // _processedMessageIds.clear();
     
-    // Remove all socket listeners before disposing
+    // Remove specific socket listeners before disposing
     if (_socketService != null) {
-      _socketService!.off('private_message');
+      // Remove specific listeners to avoid affecting other pages
+      if (_privateMessageListener != null) {
+        _socketService!.offSpecific('private_message', _privateMessageListener!);
+      }
+      if (_typingListener != null) {
+        _socketService!.offSpecific('typing', _typingListener!);
+      }
+      if (_stopTypingListener != null) {
+        _socketService!.offSpecific('stop_typing', _stopTypingListener!);
+      }
+      if (_messageDeliveredListener != null) {
+        _socketService!.offSpecific('message_delivered', _messageDeliveredListener!);
+      }
+      if (_messageReadListener != null) {
+        _socketService!.offSpecific('message_read', _messageReadListener!);
+      }
+      
+      // Remove other listeners that don't conflict with inbox
       _socketService!.off('private_message_sent');
-      _socketService!.off('message_delivered');
-      _socketService!.off('message_read');
-      _socketService!.off('typing');
-      _socketService!.off('stop_typing');
       _socketService!.off('message_edited');
       _socketService!.off('message_deleted');
       _socketService!.off('conversation_removed');
       _socketService!.off('error');
+      _socketService!.off('join_error');
+      
+      // Remove game-related listeners
+      _socketService!.off('game_invite');
+      _socketService!.off('game_invite_sent');
+      _socketService!.off('game_invite_rejected');
+      _socketService!.off('game_started');
+      _socketService!.off('game_turn_switched');
+      _socketService!.off('game_ended');
+      _socketService!.off('game_choice_made');
+      _socketService!.off('game_invite_accepted');
       
       // Leave the private chat room
       _socketService!.leavePrivateChat(widget.conversationId);
@@ -345,6 +386,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     if (user != null && token != null) {
       _currentUserId = user.id;
       _jwtToken = token;
+      AppLogger.info('🔵 Current user ID set to: $_currentUserId');
       _socketService = sl<SocketService>();
       
       AppLogger.info('🔵 Socket service created');
@@ -354,12 +396,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         context.read<ConversationBloc>().add(UpdateCurrentUserId(user.id));
       }
       
-      AppLogger.info('🔵 Connecting to socket: ${SocketService.socketUrl}');
-      _socketService!.connect(
-        serverUrl: SocketService.socketUrl, 
-        token: token,
-        userId: user.id,
-      );
+      // Only connect if not already connected
+      if (!_socketService!.isConnected) {
+        AppLogger.info('🔵 Socket not connected, establishing connection...');
+        _socketService!.connect(
+          serverUrl: SocketService.socketUrl, 
+          token: token,
+          userId: user.id,
+        );
+      } else {
+        AppLogger.info('🔵 Socket already connected, reusing existing connection');
+      }
       
       // Add a small delay to ensure socket is connected
       await Future.delayed(const Duration(milliseconds: 1000));
@@ -371,12 +418,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         // Join the private chat room
         AppLogger.info('🔵 Joining private chat room: ${widget.conversationId}');
         _socketService!.joinPrivateChat(widget.conversationId);
+        
+        // Register listeners after socket is connected and room is joined
+        _registerSocketListeners();
+        AppLogger.info('🔵 Socket listeners registered');
       } else {
         AppLogger.error('❌ Socket not connected after initialization');
+        
+        // Try to register listeners anyway in case socket connects later
+        _registerSocketListeners();
+        AppLogger.info('🔵 Socket listeners registered (socket not connected)');
       }
-      
-      _registerSocketListeners();
-      AppLogger.info('🔵 Socket listeners registered');
     } else {
       AppLogger.error('❌ User or token is null');
       AppLogger.error('❌ User: $user');
@@ -386,12 +438,28 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   void _registerSocketListeners() {
     if (_socketService == null) {
+      AppLogger.error('❌ Cannot register socket listeners: _socketService is null');
       return;
     }
     
+    AppLogger.info('🔵 Registering socket listeners in chat page');
+    AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');
+    
+    // Test if socket service is working by adding a test listener
+    _socketService!.on('test_event', (data) {
+      AppLogger.info('🧪 Test event received: $data');
+    });
+    
     // Add listener for all events
     _socketService!.on('connect', (data) {
-      // Socket connected
+      AppLogger.info('🔵 Socket connected event received');
+      AppLogger.info('🔵 Re-joining private chat room after reconnection');
+      _socketService!.joinPrivateChat(widget.conversationId);
+    });
+    
+    // Add a test listener to see if sender is receiving any events
+    _socketService!.on('test_sender_event', (data) {
+      AppLogger.info('🧪 SENDER: Test event received: $data');
     });
     
     _socketService!.on('disconnect', (data) {
@@ -399,7 +467,58 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     });
     
     _socketService!.on('error', (data) {
-      // Socket error
+      if (!mounted) return;
+      
+      AppLogger.error('❌ Socket error received: $data');
+      
+      // Handle game-related errors
+      final message = data['message'] as String? ?? 'Unknown error';
+      
+      if (message.contains('Game') || message.contains('game') || 
+          message.contains('Inviter') || message.contains('inviter') ||
+          message.contains('turn') || message.contains('Turn')) {
+        
+        // Show user-friendly game error message
+        String userMessage;
+        if (message.contains('Inviter is no longer connected')) {
+          userMessage = 'The other player disconnected. Game cancelled.';
+        } else if (message.contains('Not your turn')) {
+          userMessage = 'Please wait for your turn.';
+        } else if (message.contains('Game cancelled')) {
+          userMessage = 'Game was cancelled.';
+        } else if (message.contains('User is currently offline')) {
+          userMessage = 'The other player is offline. Games are only available for online users.';
+        } else {
+          userMessage = 'Game error: $message';
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              userMessage,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        
+        // Clear any pending game state
+        try {
+          final gamesBloc = context.read<GamesBloc>();
+          gamesBloc.add(const ClearGameState());
+        } catch (e) {
+          AppLogger.error('❌ Failed to clear game state: $e');
+        }
+      } else {
+        // Handle other socket errors
+        AppLogger.error('❌ Non-game socket error: $message');
+      }
     });
 
     // Add online status event listeners
@@ -555,8 +674,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Debounce timer for typing events
     Timer? _typingDebounce;
     
-    _socketService!.on('private_message', (data) async {
+    _privateMessageListener = (data) async {
       if (!mounted) return;
+      AppLogger.info('🔍 Debugging received event: private_message - Data: $data');
       try {
         // Decrypt message if it's encrypted
         Map<String, dynamic> decryptedData = data;
@@ -669,11 +789,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       } catch (e) {
         // Error processing received message
       }
-    });
+    };
+    _socketService!.on('private_message', _privateMessageListener!);
 
     // Add typing indicator listeners with debounce
-    _socketService!.on('typing', (data) {
+    _typingListener = (data) {
       if (!mounted) return;
+      AppLogger.info('🔵 Received typing event from: ${data['from']}, expected: ${widget.conversationId}');
       if (data['from'] == widget.conversationId) {
         _typingDebounce?.cancel();
         _typingDebounce = Timer(const Duration(milliseconds: 300), () {
@@ -689,9 +811,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           }
         });
       }
-    });
+    };
+    _socketService!.on('typing', _typingListener!);
 
-    _socketService!.on('stop_typing', (data) {
+    _stopTypingListener = (data) {
       if (!mounted) return;
       if (data['from'] == widget.conversationId) {
         _typingDebounce?.cancel();
@@ -708,10 +831,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           }
         });
       }
-    });
+    };
+    _socketService!.on('stop_typing', _stopTypingListener!);
 
     // Add individual message status listeners for backward compatibility
-    _socketService!.on('message_delivered', (data) {
+    _messageDeliveredListener = (data) {
       if (!mounted) return;
       try {
         final messageId = data['messageId'];
@@ -726,9 +850,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       } catch (e) {
         // Error processing message_delivered event
       }
-    });
+    };
+    _socketService!.on('message_delivered', _messageDeliveredListener!);
 
-    _socketService!.on('message_read', (data) {
+    _messageReadListener = (data) {
       if (!mounted) return;
       try {
         final messageId = data['messageId'];
@@ -743,9 +868,205 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       } catch (e) {
         // Error processing message_read event
       }
+    };
+    _socketService!.on('message_read', _messageReadListener!);
+
+    // Game event listeners - added after existing listeners to avoid conflicts
+    _socketService!.on('game_invite', (data) {
+      if (!mounted) return;
+      
+      AppLogger.info('🎮 ChatPage: game_invite event received');
+      AppLogger.info('🎮 - Data: $data');
+      AppLogger.info('🎮 - Current user ID: $_currentUserId');
+      AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
+      AppLogger.info('🎮 - Mounted: $mounted');
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        AppLogger.info('🎮 - GamesBloc instance: ${gamesBloc.hashCode}');
+        AppLogger.info('🎮 - Current GamesBloc state: ${gamesBloc.state.runtimeType}');
+        
+        final gameInvite = GameInvite(
+          gameType: data['gameType'] as String? ?? 'truth_or_thrill',
+          fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+          fromUserName: data['fromUserName'] as String?,
+          status: GameInviteStatus.pending,
+          createdAt: DateTime.now(),
+        );
+        
+        AppLogger.info('🎮 - Created GameInvite: ${gameInvite.toJson()}');
+        gamesBloc.add(GameInviteReceived(gameInvite: gameInvite));
+        AppLogger.info('✅ ChatPage: GameInviteReceived event added to GamesBloc');
+      } catch (e) {
+        AppLogger.error('❌ ChatPage: Failed to process game invite: $e');
+        AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
+      }
+    });
+
+    _socketService!.on('game_invite_sent', (data) {
+      if (!mounted) return;
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        gamesBloc.add(GameInviteSent(
+          gameType: data['gameType'] as String? ?? 'truth_or_thrill',
+          toUserId: data['toUserId'] as String? ?? data['to'] as String? ?? '',
+          status: data['status'] as String? ?? 'sent',
+        ));
+      } catch (e) {
+        AppLogger.error('❌ Failed to process game invite sent: $e');
+      }
+    });
+
+    _socketService!.on('game_invite_rejected', (data) {
+      if (!mounted) return;
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        gamesBloc.add(GameInviteRejected(
+          gameType: data['gameType'] as String? ?? 'truth_or_thrill',
+          fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+          reason: data['reason'] as String? ?? 'No reason provided',
+        ));
+      } catch (e) {
+        AppLogger.error('❌ Failed to process game invite rejected: $e');
+      }
+    });
+
+    _socketService!.on('game_started', (data) {
+      if (!mounted) return;
+      
+      AppLogger.info('🎮 ChatPage: game_started event received');
+      AppLogger.info('🎮 - Data: $data');
+      AppLogger.info('🎮 - Current user ID: $_currentUserId');
+      AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
+      AppLogger.info('🎮 - Mounted: $mounted');
+      AppLogger.info('🎮 - SENDER/RECEIVER: This is the ${_currentUserId == data['currentTurn']['userId'] ? 'SENDER' : 'RECEIVER'}');
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        AppLogger.info('🎮 - GamesBloc instance: ${gamesBloc.hashCode}');
+        AppLogger.info('🎮 - Current GamesBloc state before adding event: ${gamesBloc.state.runtimeType}');
+        
+        final gameSession = GameSessionModel.fromJson(data);
+        AppLogger.info('🎮 - Created GameSession: ${gameSession.toJson()}');
+        
+        gamesBloc.add(GameStarted(gameSession: gameSession));
+        AppLogger.info('✅ ChatPage: GameStarted event added to GamesBloc');
+        AppLogger.info('🎮 - Current GamesBloc state after adding event: ${gamesBloc.state.runtimeType}');
+      } catch (e) {
+        AppLogger.error('❌ ChatPage: Failed to process game started: $e');
+        AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
+      }
+    });
+
+    _socketService!.on('game_turn_switched', (data) {
+      if (!mounted) return;
+      
+      AppLogger.info('🔍 Debugging received event: game_turn_switched - Data: $data');
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        AppLogger.info('🎮 Processing game_turn_switched event');
+        AppLogger.info('🎮 New turn user: ${data['newTurn']['userId']}');
+        AppLogger.info('🎮 Current user: $_currentUserId');
+        gamesBloc.add(GameTurnSwitched(
+          sessionId: data['sessionId'] as String? ?? '',
+          newTurn: Turn.fromJson(data['newTurn'] as Map<String, dynamic>),
+          nextPrompt: GamePrompt.fromJson(
+            data['nextPrompt'] as Map<String, dynamic>,
+            data['gameType'] as String? ?? 'truth_or_thrill',
+          ),
+          gameProgress: GameProgress.fromJson(data['gameProgress'] as Map<String, dynamic>),
+        ));
+        AppLogger.info('✅ GameTurnSwitched event added to GamesBloc');
+      } catch (e) {
+        AppLogger.error('❌ Failed to process game turn switched: $e');
+      }
+    });
+
+    _socketService!.on('game_ended', (data) {
+      if (!mounted) return;
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        gamesBloc.add(GameEnded(
+          sessionId: data['sessionId'] as String? ?? '',
+          reason: data['reason'] as String? ?? 'No reason provided',
+          finalStats: data['finalStats'] as Map<String, dynamic>?,
+        ));
+      } catch (e) {
+        AppLogger.error('❌ Failed to process game ended: $e');
+      }
+    });
+
+    _socketService!.on('game_choice_made', (data) {
+      if (!mounted) return;
+      
+      AppLogger.info('🎮 ChatPage: game_choice_made event received');
+      AppLogger.info('🎮 - Data: $data');
+      AppLogger.info('🎮 - Current user ID: $_currentUserId');
+      AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
+      AppLogger.info('🎮 - Mounted: $mounted');
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        AppLogger.info('🎮 - GamesBloc instance: ${gamesBloc.hashCode}');
+        AppLogger.info('🎮 - Current GamesBloc state: ${gamesBloc.state.runtimeType}');
+        AppLogger.info('🎮 - sessionId: ${data['sessionId']}');
+        AppLogger.info('🎮 - choice: ${data['choice']}');
+        AppLogger.info('🎮 - madeBy: ${data['madeBy']}');
+        
+        final selectedPrompt = Prompt.fromJson(data['selectedPrompt'] as Map<String, dynamic>);
+        AppLogger.info('🎮 - selectedPrompt: ${selectedPrompt.toJson()}');
+        
+        gamesBloc.add(GameChoiceMade(
+          sessionId: data['sessionId'] as String? ?? '',
+          choice: data['choice'] as String? ?? '',
+          selectedPrompt: selectedPrompt,
+          madeBy: data['madeBy'] as String? ?? '',
+        ));
+        AppLogger.info('✅ ChatPage: GameChoiceMade event added to GamesBloc');
+      } catch (e) {
+        AppLogger.error('❌ ChatPage: Failed to process game choice made: $e');
+        AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
+      }
+    });
+
+    _socketService!.on('game_invite_accepted', (data) {
+      if (!mounted) return;
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        gamesBloc.add(GameInviteAccepted(
+          gameType: data['gameType'] as String? ?? 'truth_or_thrill',
+          fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+          sessionId: data['sessionId'] as String? ?? '',
+        ));
+      } catch (e) {
+        AppLogger.error('❌ Failed to process game invite accepted: $e');
+      }
+    });
+
+    _socketService!.on('game_invite_rejected', (data) {
+      if (!mounted) return;
+      
+      try {
+        final gamesBloc = context.read<GamesBloc>();
+        gamesBloc.add(GameInviteRejected(
+          gameType: data['gameType'] as String? ?? 'truth_or_thrill',
+          fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+          reason: data['reason'] as String? ?? 'No reason provided',
+        ));
+      } catch (e) {
+        AppLogger.error('❌ Failed to process game invite rejected: $e');
+      }
     });
 
     // Removed redundant new_message handler - private_message handler already processes all messages
+    
+    // Log all registered listeners for debugging
+    AppLogger.info('🔍 ChatPage: All socket listeners registered, logging registered listeners...');
+    _socketService!.logRegisteredListeners();
   }
 
   void _showImagePicker() {
@@ -1490,7 +1811,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    
+    return _buildScaffold();
+  }
+
+  Widget _buildScaffold() {
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
       appBar: AppBar(
@@ -1541,11 +1865,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         children: [
           Column(
             children: [
-              // Conversation Starter Widget
-              ConversationStarterWidget(
-                matchUserId: widget.conversationId,
-                priorMessages: _getRecentMessages(),
-                onSuggestionSelected: _onConversationStarterSelected,
+              // Game Interface Bar (includes conversation starters and games)
+              // Always show the interface - it will handle its own state internally
+              BlocBuilder<GamesBloc, GamesState>(
+                builder: (context, gamesState) {
+                  return GameInterfaceBar(
+                    matchUserId: widget.conversationId,
+                    priorMessages: _getRecentMessages(),
+                    onSuggestionSelected: _onConversationStarterSelected,
+                    currentUserId: _currentUserId ?? '',
+                    isOtherUserOnline: widget.isOnline,
+                  );
+                },
               ),
               Expanded(
                 child: BlocListener<ConversationBloc, ConversationState>(
@@ -1849,9 +2180,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         updatedAt: DateTime.now(),
         isOnline: widget.isOnline,
       )),
-    ],
-    )
-  );
+        ],
+      ),
+    );
   }
 
   Widget _buildMessageInput() {
@@ -1967,37 +2298,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       onChanged: (text) {
                         if (!_isTyping && text.isNotEmpty) {
                           setState(() => _isTyping = true);
-                          _socketService?.emit('typing', {'to': widget.conversationId});
+                          final otherUserId = _getOtherUserId();
+                          AppLogger.info('🔵 Emitting typing event to: $otherUserId');
+                          _socketService?.emit('typing', {'to': otherUserId});
                         } else if (_isTyping && text.isEmpty) {
-                              setState(() => _isTyping = false);
-    _socketService?.emit('stop_typing', {'to': widget.conversationId});
-  }
-
-  // Test function to send a simple message without E2EE
-  void _sendTestMessage() {
-    if (_socketService != null && _currentUserId != null) {
-      AppLogger.info('🔵 Sending test message');
-      final messageData = {
-        '_id': DateTime.now().millisecondsSinceEpoch.toString(),
-        'from': _currentUserId,
-        'to': widget.conversationId,
-        'content': 'Test message ${DateTime.now()}',
-        'messageType': 'text',
-        'status': 'sent',
-        'createdAt': DateTime.now().toIso8601String(),
-      };
-      
-      AppLogger.info('🔵 Test message data: ${messageData.toString()}');
-      _socketService!.emit('private_message', messageData);
-      AppLogger.info('✅ Test message emitted');
-    } else {
-      AppLogger.error('❌ Cannot send test message: Socket or user ID is null');
-    }
-  }
-},
+                          setState(() => _isTyping = false);
+                          final otherUserId = _getOtherUserId();
+                          _socketService?.emit('stop_typing', {'to': otherUserId});
+                        }
+                      },
                       onEditingComplete: () {
                         setState(() => _isTyping = false);
-                        _socketService?.emit('stop_typing', {'to': widget.conversationId});
+                        final otherUserId = _getOtherUserId();
+                        _socketService?.emit('stop_typing', {'to': otherUserId});
                       },
                     ),
                   ),
@@ -2449,7 +2762,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
 
     setState(() => _isTyping = false);
-    _socketService?.emit('stop_typing', {'to': widget.conversationId});
+    final otherUserId = _getOtherUserId();
+    _socketService?.emit('stop_typing', {'to': otherUserId});
   }
 
   List<String> _getRecentMessages() {
@@ -2510,5 +2824,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     ];
     
     return patterns.any((pattern) => content.toLowerCase().startsWith(pattern.toLowerCase()));
+  }
+
+  void _showConversationStartersModal(BuildContext context) {
+    // Existing logic for showing conversation starters modal
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF234481),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => ConversationStarterWidget(
+        matchUserId: widget.conversationId,
+        priorMessages: _getRecentMessages(),
+        onSuggestionSelected: _onConversationStarterSelected,
+      ),
+    );
+  }
+
+  String _getOtherUserId() {
+    // The widget.conversationId should be the other user's ID
+    AppLogger.info('🔵 _getOtherUserId(): widget.conversationId = ${widget.conversationId}');
+    AppLogger.info('🔵 _getOtherUserId(): _currentUserId = $_currentUserId');
+    return widget.conversationId;
   }
 } 

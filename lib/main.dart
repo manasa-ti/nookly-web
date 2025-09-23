@@ -13,6 +13,7 @@ import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:nookly/presentation/bloc/purchased_features/purchased_features_bloc.dart';
 import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_bloc.dart';
+import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/presentation/pages/splash/splash_screen.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
@@ -90,6 +91,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => di.sl<ReportBloc>(),
+        ),
+        BlocProvider(
+          create: (context) => di.sl<GamesBloc>(),
         ),
         RepositoryProvider(
           create: (context) => di.sl<AuthRepository>(),

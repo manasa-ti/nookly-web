@@ -13,6 +13,12 @@ import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/presentation/widgets/game_invite_indicator.dart';
+import 'package:nookly/presentation/bloc/games/games_bloc.dart';
+import 'package:nookly/presentation/bloc/games/games_event.dart';
+import 'package:nookly/core/services/games_service.dart';
+import 'package:nookly/data/repositories/games_repository_impl.dart';
+import 'package:nookly/domain/entities/game_invite.dart';
 
 class ChatInboxPage extends StatefulWidget {
   const ChatInboxPage({super.key});
@@ -23,10 +29,17 @@ class ChatInboxPage extends StatefulWidget {
 
 class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserver {
   InboxBloc? _inboxBloc;
+  GamesBloc? _gamesBloc;
   User? _currentUser;
   bool _isLoadingCurrentUser = true;
   String? _initializationError;
   SocketService? _socketService;
+  final Map<String, GameInvite> _pendingGameInvites = {};
+  
+  // Store listener references for proper cleanup
+  Function(dynamic)? _privateMessageListener;
+  Function(dynamic)? _typingListener;
+  Function(dynamic)? _stopTypingListener;
 
   @override
   void initState() {
@@ -40,15 +53,28 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     WidgetsBinding.instance.removeObserver(this);
     _leaveAllChatRooms();
     _inboxBloc?.close();
+    _gamesBloc?.close();
     if (_socketService != null) {
-      _socketService!.off('private_message');
-      _socketService!.off('typing');
-      _socketService!.off('stop_typing');
+      // Remove specific listeners to avoid affecting other pages
+      if (_privateMessageListener != null) {
+        _socketService!.offSpecific('private_message', _privateMessageListener!);
+      }
+      if (_typingListener != null) {
+        _socketService!.offSpecific('typing', _typingListener!);
+      }
+      if (_stopTypingListener != null) {
+        _socketService!.offSpecific('stop_typing', _stopTypingListener!);
+      }
+      
+      // Remove other listeners that don't conflict with chat page
       _socketService!.off('conversation_updated');
       _socketService!.off('conversation_removed');
+      _socketService!.off('game_invite');
+      _socketService!.off('game_invite_rejected');
       _socketService!.off('error');
     }
-    _socketService?.disconnect();
+    // ❌ REMOVED: _socketService?.disconnect();
+    // Don't disconnect the shared socket service - let it stay connected for other pages
     super.dispose();
   }
 
@@ -197,12 +223,48 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     AppLogger.info('🔵 ChatInboxPage: Initializing socket connection');
     final socketStopwatch = Stopwatch()..start();
     
-    _socketService = sl<SocketService>();
-    _socketService!.connect(
-      serverUrl: SocketService.socketUrl, 
-      token: token,
-      userId: user.id,
+    _socketService = sl<SocketService>(); // This should be the same singleton instance
+    
+    // Only connect if not already connected
+    if (!_socketService!.isConnected) {
+      AppLogger.info('🔵 Socket not connected, establishing connection...');
+      _socketService!.connect(
+        serverUrl: SocketService.socketUrl, 
+        token: token,
+        userId: user.id,
+      );
+    } else {
+      AppLogger.info('🔵 Socket already connected, reusing existing connection');
+    }
+    
+    // Initialize GamesBloc after socket service is created
+    final gamesRepository = GamesRepositoryImpl(socketService: _socketService!);
+    final timeoutManager = GameTimeoutManager(
+      onInviteTimeout: (sessionId) {
+        if (_gamesBloc != null) {
+          _gamesBloc!.add(GameInviteTimeout(sessionId: sessionId));
+        }
+      },
+      onTurnTimeout: (sessionId) {
+        if (_gamesBloc != null) {
+          _gamesBloc!.add(GameTurnTimeout(sessionId: sessionId));
+        }
+      },
+      onSessionTimeout: (sessionId) {
+        if (_gamesBloc != null) {
+          _gamesBloc!.add(GameSessionTimeout(sessionId: sessionId));
+        }
+      },
     );
+    
+    _gamesBloc = GamesBloc(
+      gamesService: GamesService(
+        gamesRepository: gamesRepository,
+        timeoutManager: timeoutManager,
+      ),
+      timeoutManager: timeoutManager,
+    );
+    
     _registerSocketListeners();
     _joinAllChatRooms();
     
@@ -215,7 +277,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     
     AppLogger.info('🔵 Registering socket listeners for chat inbox');
     
-    _socketService!.on('private_message', (data) async {
+    _privateMessageListener = (data) async {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -323,10 +385,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           AppLogger.info('🔵 Message type: ${updatedConversation.lastMessage?.type}');
         }
       }
-    });
+    };
+    _socketService!.on('private_message', _privateMessageListener!);
 
     // Add typing indicator listeners
-    _socketService!.on('typing', (data) {
+    _typingListener = (data) {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -350,9 +413,10 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           _inboxBloc?.emit(InboxLoaded(updatedConversations));
         }
       }
-    });
+    };
+    _socketService!.on('typing', _typingListener!);
 
-    _socketService!.on('stop_typing', (data) {
+    _stopTypingListener = (data) {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -376,10 +440,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           _inboxBloc?.emit(InboxLoaded(updatedConversations));
         }
       }
-    });
+    };
+    _socketService!.on('stop_typing', _stopTypingListener!);
 
     _socketService!.on('conversation_updated', (data) {
-      AppLogger.info('🔵 Conversation updated event received: $data');
+      AppLogger.info('🔍 Debugging received event: conversation_updated - Data: $data');
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -421,7 +486,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     });
 
     _socketService!.on('conversation_removed', (data) {
-      AppLogger.info('🔵 Conversation removed event received: $data');
+      AppLogger.info('🔍 Debugging received event: conversation_removed - Data: $data');
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -482,7 +547,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
         AppLogger.info('🟢 Available conversation IDs: ${conversations.map((c) => c.id).toList()}');
         
         if (userId != null) {
-          final conversation = conversations.where((c) => c.id == userId).firstOrNull;
+          final conversation = conversations.where((c) => c.participantId == userId).firstOrNull;
           if (conversation != null) {
             AppLogger.info('🔵 Found conversation for: ${conversation.participantName}');
             AppLogger.info('🔵 Current online status: ${conversation.isOnline}');
@@ -525,7 +590,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
         final userId = data['userId'] as String?;
         
         if (userId != null) {
-          final conversation = conversations.where((c) => c.id == userId).firstOrNull;
+          final conversation = conversations.where((c) => c.participantId == userId).firstOrNull;
           if (conversation != null) {
             AppLogger.info('🔵 Updating offline status for: ${conversation.participantName}');
             
@@ -549,9 +614,90 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       }
     });
 
+    // Game invite listeners
+    _socketService!.on('game_invite', (data) {
+      AppLogger.info('🔍 Debugging received event: game_invite - Data: $data');
+      
+      final gameInvite = GameInvite(
+        gameType: data['gameType'] as String,
+        fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+        fromUserName: data['fromUserName'] as String?,
+        status: GameInviteStatus.pending,
+        createdAt: DateTime.now(),
+      );
+      
+      // Store the game invite for the conversation
+      _pendingGameInvites[gameInvite.fromUserId] = gameInvite;
+      
+      // Update the conversation with the game invite
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        final conversation = conversations.where((c) => c.participantId == gameInvite.fromUserId).firstOrNull;
+        
+        if (conversation != null) {
+          final updatedConversation = conversation.copyWith(
+            pendingGameInvite: gameInvite,
+            updatedAt: DateTime.now(),
+          );
+          
+          final updatedConversations = conversations.map((c) => 
+            c.id == conversation.id ? updatedConversation : c
+          ).toList();
+          
+          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+        }
+      }
+    });
+
+    _socketService!.on('game_invite_rejected', (data) {
+      AppLogger.info('🎮 Game invite rejected in inbox: $data');
+      
+      final fromUserId = data['fromUserId'] as String;
+      
+      // Remove the game invite from pending invites
+      _pendingGameInvites.remove(fromUserId);
+      
+      // Update the conversation to remove the game invite
+      if (_inboxBloc?.state is InboxLoaded) {
+        final currentState = _inboxBloc?.state as InboxLoaded;
+        final conversations = currentState.conversations;
+        final conversation = conversations.where((c) => c.participantId == fromUserId).firstOrNull;
+        
+        if (conversation != null) {
+          final updatedConversation = conversation.copyWith(
+            pendingGameInvite: null,
+            updatedAt: DateTime.now(),
+          );
+          
+          final updatedConversations = conversations.map((c) => 
+            c.id == conversation.id ? updatedConversation : c
+          ).toList();
+          
+          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+        }
+      }
+    });
+
     _socketService!.on('error', (data) {
       AppLogger.error('❌ Socket error in inbox: $data');
     });
+  }
+
+  void _onGameInviteTap(Conversation conversation) {
+    // Navigate to chat page with the game invite
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ChatPage(
+          conversationId: conversation.participantId,
+          participantName: conversation.participantName,
+          participantAvatar: conversation.participantAvatar,
+          isOnline: conversation.isOnline,
+          lastSeen: conversation.lastSeen,
+          connectionStatus: conversation.connectionStatus,
+        ),
+      ),
+    );
   }
 
   void _onConversationTap(Conversation conversation) async {
@@ -564,7 +710,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       context,
       MaterialPageRoute(
         builder: (context) => ChatPage(
-          conversationId: conversation.id,
+          conversationId: conversation.participantId, // ✅ FIXED: Use participantId (other user's ID)
           participantName: conversation.participantName,
           participantAvatar: conversation.participantAvatar,
           isOnline: conversation.isOnline,
@@ -784,14 +930,27 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                                       fontSize: isTablet ? 16.0 : null,
                                     ),
                                   ),
-                        trailing: Text(
-                          _formatTimestamp(conversation.lastMessageTime),
-                          style: TextStyle(
-                            color: hasUnread ? Colors.white : Colors.grey[400],
-                            fontSize: isTablet ? 14.0 : (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
-                            fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
-                            fontFamily: 'Nunito',
-                          ),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (conversation.pendingGameInvite != null) ...[
+                              GameInviteIndicator(
+                                gameInvite: conversation.pendingGameInvite!,
+                                onTap: () => _onGameInviteTap(conversation),
+                              ),
+                              const SizedBox(height: 4),
+                            ],
+                            Text(
+                              _formatTimestamp(conversation.lastMessageTime),
+                              style: TextStyle(
+                                color: hasUnread ? Colors.white : Colors.grey[400],
+                                fontSize: isTablet ? 14.0 : (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
+                                fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
+                                fontFamily: 'Nunito',
+                              ),
+                            ),
+                          ],
                         ),
                         ),
                         // Add separator between conversations

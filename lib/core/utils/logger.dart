@@ -4,12 +4,12 @@ import 'package:flutter/foundation.dart';
 class AppLogger {
   static final Logger _logger = Logger(
     printer: PrettyPrinter(
-      methodCount: 2,
-      errorMethodCount: 8,
-      lineLength: 120,
-      colors: true,
+      methodCount: 0,
+      errorMethodCount: 0,
+      lineLength: 80,
+      colors: false,
       printEmojis: true,
-      printTime: true,
+      printTime: false,
     ),
   );
 

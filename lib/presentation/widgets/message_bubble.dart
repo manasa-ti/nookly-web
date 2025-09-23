@@ -47,23 +47,6 @@ class _MessageBubbleState extends State<MessageBubble> {
   @override
   void initState() {
     super.initState();
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: MessageBubble initState for message: ${widget.message?.id}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Is disappearing: ${widget.message?.isDisappearing}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Disappearing time: ${widget.message?.disappearingTime}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Metadata: ${widget.message?.metadata}');
-    
-    // Add specific logging for disappearing image messages
-    if (widget.message?.type == MessageType.image && widget.message?.isDisappearing == true) {
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Image message with disappearing time detected');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message ID: ${widget.message?.id}');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Disappearing time: ${widget.message?.disappearingTime} seconds');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Has viewedAt metadata: ${widget.message?.metadata?.containsKey('viewedAt')}');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - ViewedAt value: ${widget.message?.metadata?['viewedAt']}');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget timerNotifier: ${widget.timerNotifier != null ? 'Available' : 'Not available'}');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message url expiry: ${widget.message?.urlExpirationTime}');
-      AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message type: ${widget.message?.type}');
-    }
 
     // Initialize image URL if it's an image message
     if (widget.message?.type == MessageType.image) {
@@ -74,12 +57,6 @@ class _MessageBubbleState extends State<MessageBubble> {
   @override
   void didUpdateWidget(MessageBubble oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: MessageBubble didUpdateWidget');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Old message ID: ${oldWidget.message?.id}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - New message ID: ${widget.message?.id}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - Old metadata: ${oldWidget.message?.metadata}');
-    AppLogger.info('🔵 DEBUGGING MESSAGE ID: - New metadata: ${widget.message?.metadata}');
     
     // Log message state changes
     if (widget.message?.id != oldWidget.message?.id ||

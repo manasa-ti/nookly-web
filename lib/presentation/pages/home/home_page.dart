@@ -145,7 +145,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                             SizedBox(height: isTablet ? 4.0 : screenHeight * 0.005),
                             Text(
-                              'Never be lonely',
+                              'No more lonely',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: subtitleFontSize,

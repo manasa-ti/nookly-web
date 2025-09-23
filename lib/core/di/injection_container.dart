@@ -27,11 +27,14 @@ import 'package:nookly/presentation/bloc/received_likes/received_likes_bloc.dart
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_bloc.dart';
+import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/conversation_starter_service.dart';
 import 'package:nookly/core/services/user_cache_service.dart';
+import 'package:nookly/core/services/games_service.dart';
+import 'package:nookly/data/repositories/games_repository_impl.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -137,5 +140,35 @@ Future<void> init() async {
   
   sl.registerFactory(
     () => ReportBloc(reportRepository: sl()),
+  );
+  
+  sl.registerFactory(
+    () => GamesBloc(
+      gamesService: GamesService(
+        gamesRepository: GamesRepositoryImpl(socketService: sl()),
+        timeoutManager: GameTimeoutManager(
+          onInviteTimeout: (sessionId) {
+            // This will be handled by the bloc itself
+          },
+          onTurnTimeout: (sessionId) {
+            // This will be handled by the bloc itself
+          },
+          onSessionTimeout: (sessionId) {
+            // This will be handled by the bloc itself
+          },
+        ),
+      ),
+      timeoutManager: GameTimeoutManager(
+        onInviteTimeout: (sessionId) {
+          // This will be handled by the bloc itself
+        },
+        onTurnTimeout: (sessionId) {
+          // This will be handled by the bloc itself
+        },
+        onSessionTimeout: (sessionId) {
+          // This will be handled by the bloc itself
+        },
+      ),
+    ),
   );
 } 

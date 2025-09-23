@@ -17,6 +17,9 @@ class SocketService {
   IO.Socket? _socket;
   String? _userId;
   KeyManagementService? _keyManagementService;
+  
+  // Track listeners to avoid removing all listeners for an event
+  final Map<String, List<Function(dynamic)>> _listeners = {};
 
   bool get isConnected => _socket?.connected ?? false;
   String? get socketId => _socket?.id;
@@ -416,22 +419,43 @@ class SocketService {
 
   void emit(String event, dynamic data) {
     if (_socket == null || !_socket!.connected) {
-      AppLogger.error('Cannot emit $event: Socket not connected');
+      AppLogger.error('❌ Cannot emit $event: Socket not connected');
+      AppLogger.error('❌ Socket instance: $_socket');
+      AppLogger.error('❌ Socket connected: ${_socket?.connected}');
       return;
     }
-    AppLogger.info('Emitting event $event with data: ${data.toString()}');
+    AppLogger.info('📤 EMITTING EVENT: $event');
+    AppLogger.info('📤 Event data: ${data.toString()}');
+    AppLogger.info('📤 Socket ID: ${_socket!.id}');
+    AppLogger.info('📤 Current user ID: $_userId');
+    AppLogger.info('📤 Timestamp: ${DateTime.now().toIso8601String()}');
     _socket!.emit(event, data);
+    AppLogger.info('✅ Event $event emitted successfully');
   }
 
   void on(String event, Function(dynamic) handler) {
     if (_socket == null) {
-      AppLogger.error('Cannot add listener for $event: Socket not initialized');
+      AppLogger.error('❌ Cannot add listener for $event: Socket not initialized');
       return;
     }
-    AppLogger.info('On event: $event');
+    AppLogger.info('📥 REGISTERING LISTENER: $event');
+    AppLogger.info('📥 Socket ID: ${_socket!.id}');
+    AppLogger.info('📥 Current user ID: $_userId');
+    AppLogger.info('📥 Timestamp: ${DateTime.now().toIso8601String()}');
+    
+    // Track the listener
+    _listeners.putIfAbsent(event, () => []).add(handler);
+    AppLogger.info('📥 Total listeners for $event: ${_listeners[event]?.length ?? 0}');
+    
     _socket!.on(event, (data) {
-      AppLogger.info('Received event $event: ${data.toString()}');
+      AppLogger.info('📥 RECEIVED EVENT: $event');
+      AppLogger.info('📥 Event data: ${data.toString()}');
+      AppLogger.info('📥 Socket ID: ${_socket!.id}');
+      AppLogger.info('📥 Current user ID: $_userId');
+      AppLogger.info('📥 Timestamp: ${DateTime.now().toIso8601String()}');
+      AppLogger.info('📥 Handler count for $event: ${_listeners[event]?.length ?? 0}');
       handler(data);
+      AppLogger.info('✅ Event $event processed successfully');
     });
   }
 
@@ -440,8 +464,28 @@ class SocketService {
       AppLogger.error('Cannot remove listener for $event: Socket not initialized');
       return;
     }
-    AppLogger.info('Removing listener for event: $event');
+    AppLogger.info('Removing ALL listeners for event: $event');
     _socket!.off(event);
+    _listeners.remove(event);
+  }
+  
+  void offSpecific(String event, Function(dynamic) handler) {
+    if (_socket == null) {
+      AppLogger.error('Cannot remove specific listener for $event: Socket not initialized');
+      return;
+    }
+    
+    final listeners = _listeners[event];
+    if (listeners != null) {
+      listeners.remove(handler);
+      if (listeners.isEmpty) {
+        _listeners.remove(event);
+        _socket!.off(event);
+        AppLogger.info('Removed last listener for event: $event');
+      } else {
+        AppLogger.info('Removed specific listener for event: $event, ${listeners.length} remaining');
+      }
+    }
   }
 
   bool get isSocketConnected => _socket?.connected ?? false;
@@ -463,6 +507,103 @@ class SocketService {
     } catch (e) {
       AppLogger.error('❌ Error handling user online status: $e');
     }
+  }
+
+  // Game event methods
+  void sendGameInvite({required String gameType, required String otherUserId}) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot send game invite: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('Cannot send game invite: Current user ID is null');
+      return;
+    }
+    
+    final gameInviteData = {
+      'gameType': gameType,
+      'otherUserId': otherUserId,
+    };
+    
+    AppLogger.info('🎮 Sending game invite: ${gameInviteData.toString()}');
+    _socket!.emit('game_invite', gameInviteData);
+  }
+
+  void acceptGameInvite({required String gameType, required String otherUserId}) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot accept game invite: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('Cannot accept game invite: Current user ID is null');
+      return;
+    }
+    
+    final acceptData = {
+      'gameType': gameType,
+      'otherUserId': otherUserId,
+    };
+    
+    AppLogger.info('🎮 Accepting game invite: ${acceptData.toString()}');
+    _socket!.emit('game_invite_accepted', acceptData);
+  }
+
+  void rejectGameInvite({required String gameType, required String fromUserId, String? reason}) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot reject game invite: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('Cannot reject game invite: Current user ID is null');
+      return;
+    }
+    
+    final rejectData = {
+      'gameType': gameType,
+      'fromUserId': fromUserId,
+      'reason': reason ?? 'declined',
+    };
+    
+    AppLogger.info('🎮 Rejecting game invite: ${rejectData.toString()}');
+    _socket!.emit('game_invite_rejected', rejectData);
+  }
+
+  void completeGameTurn({
+    required String sessionId,
+    String? selectedChoice,
+    required Map<String, dynamic> selectedPrompt,
+  }) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot complete game turn: Socket not connected');
+      return;
+    }
+    
+    final turnData = {
+      'sessionId': sessionId,
+      'selectedChoice': selectedChoice,
+      'selectedPrompt': selectedPrompt,
+    };
+    
+    AppLogger.info('🎮 Completing game turn: ${turnData.toString()}');
+    _socket!.emit('game_turn_completed', turnData);
+  }
+
+  void endGame({required String sessionId, required String reason}) {
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('Cannot end game: Socket not connected');
+      return;
+    }
+    
+    final endData = {
+      'sessionId': sessionId,
+      'reason': reason,
+    };
+    
+    AppLogger.info('🎮 Ending game: ${endData.toString()}');
+    _socket!.emit('game_ended', endData);
   }
 
   /// Send heartbeat to maintain online status
@@ -497,5 +638,22 @@ class SocketService {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
     AppLogger.info('💓 Heartbeat stopped');
+  }
+
+  /// Debug method to log all registered listeners
+  void logRegisteredListeners() {
+    AppLogger.info('🔍 REGISTERED LISTENERS DEBUG:');
+    AppLogger.info('🔍 Socket connected: ${_socket?.connected}');
+    AppLogger.info('🔍 Socket ID: ${_socket?.id}');
+    AppLogger.info('🔍 Current user ID: $_userId');
+    AppLogger.info('🔍 Total event types with listeners: ${_listeners.length}');
+    
+    _listeners.forEach((event, handlers) {
+      AppLogger.info('🔍 Event: $event - Handler count: ${handlers.length}');
+    });
+    
+    if (_listeners.isEmpty) {
+      AppLogger.warning('⚠️ No listeners registered!');
+    }
   }
 } 

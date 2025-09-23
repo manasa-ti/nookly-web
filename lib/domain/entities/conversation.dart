@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/domain/entities/conversation_key.dart';
+import 'package:nookly/domain/entities/game_invite.dart';
 
 class Conversation extends Equatable {
   final String id;
@@ -20,6 +21,7 @@ class Conversation extends Equatable {
   final ConversationKey? conversationKey;
   final String? lastSeen;
   final String? connectionStatus;
+  final GameInvite? pendingGameInvite;
 
   const Conversation({
     required this.id,
@@ -39,6 +41,7 @@ class Conversation extends Equatable {
     this.conversationKey,
     this.lastSeen,
     this.connectionStatus,
+    this.pendingGameInvite,
   });
 
   Conversation copyWith({
@@ -59,6 +62,7 @@ class Conversation extends Equatable {
     ConversationKey? conversationKey,
     String? lastSeen,
     String? connectionStatus,
+    GameInvite? pendingGameInvite,
   }) {
     return Conversation(
       id: id ?? this.id,
@@ -78,6 +82,7 @@ class Conversation extends Equatable {
       conversationKey: conversationKey ?? this.conversationKey,
       lastSeen: lastSeen ?? this.lastSeen,
       connectionStatus: connectionStatus ?? this.connectionStatus,
+      pendingGameInvite: pendingGameInvite ?? this.pendingGameInvite,
     );
   }
 
@@ -100,6 +105,7 @@ class Conversation extends Equatable {
         conversationKey,
         lastSeen,
         connectionStatus,
+        pendingGameInvite,
       ];
 
   factory Conversation.fromJson(Map<String, dynamic> json) {
@@ -121,6 +127,7 @@ class Conversation extends Equatable {
       conversationKey: json['conversationKey'] != null ? ConversationKey.fromJson(json['conversationKey']) : null,
       lastSeen: json['lastSeen'] as String?,
       connectionStatus: json['connectionStatus'] as String?,
+      pendingGameInvite: json['pendingGameInvite'] != null ? GameInvite.fromJson(json['pendingGameInvite']) : null,
     );
   }
 
@@ -143,6 +150,7 @@ class Conversation extends Equatable {
       'conversationKey': conversationKey?.toJson(),
       'lastSeen': lastSeen,
       'connectionStatus': connectionStatus,
+      'pendingGameInvite': pendingGameInvite?.toJson(),
     };
   }
 } 

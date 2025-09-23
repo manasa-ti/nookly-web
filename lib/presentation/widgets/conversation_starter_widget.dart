@@ -42,41 +42,38 @@ class _ConversationStarterContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        border: Border(
-          bottom: BorderSide(
-            color: Colors.white.withOpacity(0.2),
-            width: 0.5,
+    return GestureDetector(
+      onTap: () => _showConversationStartersModal(context),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.3),
+            width: 1,
           ),
         ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.lightbulb_outline,
-            color: Colors.white.withOpacity(0.8),
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _showConversationStartersModal(context),
-              child: Text(
-                'Get conversation ideas',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w500,
-                ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.ac_unit,
+              color: Colors.white.withOpacity(0.8),
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Break the ice',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 14,
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.w500,
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -151,13 +148,13 @@ class _ConversationStartersModal extends StatelessWidget {
                   Row(
                     children: [
                       Icon(
-                        Icons.lightbulb_outline,
+                        Icons.ac_unit,
                         color: Colors.white,
                         size: 24,
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Conversation Starters',
+                        'Break the Ice',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,
