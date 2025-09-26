@@ -103,17 +103,22 @@ class GameMenuModal extends StatelessWidget {
     GameType gameType,
     IconData icon,
     String title,
-    String description,
-  ) {
+    String description, {
+    bool isComingSoon = false,
+  }) {
     return GestureDetector(
-      onTap: () => onGameSelected(gameType.apiValue),
+      onTap: isComingSoon ? null : () => onGameSelected(gameType.apiValue),
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: isComingSoon 
+              ? Colors.white.withOpacity(0.05)
+              : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
+            color: isComingSoon 
+                ? Colors.white.withOpacity(0.1)
+                : Colors.white.withOpacity(0.2),
             width: 1,
           ),
         ),
@@ -122,12 +127,16 @@ class GameMenuModal extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: isComingSoon 
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.white.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 icon,
-                color: Colors.white,
+                color: isComingSoon 
+                    ? Colors.white.withOpacity(0.5)
+                    : Colors.white,
                 size: 24,
               ),
             ),
@@ -136,20 +145,53 @@ class GameMenuModal extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Nunito',
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            color: isComingSoon 
+                                ? Colors.white.withOpacity(0.5)
+                                : Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ),
+                      if (isComingSoon) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.3),
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Text(
+                            'Coming Soon',
+                            style: TextStyle(
+                              color: Colors.orange.withOpacity(0.8),
+                              fontSize: 10,
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: isComingSoon 
+                          ? Colors.white.withOpacity(0.4)
+                          : Colors.white.withOpacity(0.7),
                       fontSize: 12,
                       fontFamily: 'Nunito',
                     ),
@@ -157,11 +199,12 @@ class GameMenuModal extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.white.withOpacity(0.5),
-              size: 16,
-            ),
+            if (!isComingSoon)
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white.withOpacity(0.5),
+                size: 16,
+              ),
           ],
         ),
       ),

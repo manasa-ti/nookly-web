@@ -268,49 +268,24 @@ class GameBoardWidget extends StatelessWidget {
   }
 
   Widget _buildDirectPromptContent() {
-    // Only show prompt if it's the current user's turn
-    if (_isCurrentUserTurn()) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+    // For non-truth-or-thrill games, always show the prompt to both players
+    // The prompt is shared and both players can see it
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        gameSession.currentPrompt.getDisplayText(null) ?? '',
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.9),
+          fontSize: 14,
+          fontFamily: 'Nunito',
         ),
-        child: Text(
-          gameSession.currentPrompt.getDisplayText(null) ?? '',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 14,
-            fontFamily: 'Nunito',
-          ),
-        ),
-      );
-    } else {
-      // Show "partner's turn" message
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.orange.withOpacity(0.4),
-            width: 1,
-          ),
-        ),
-        child: Text(
-          "It's your partner's turn now",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.orange.withOpacity(0.9),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Nunito',
-          ),
-        ),
-      );
-    }
+      ),
+    );
   }
 
   Widget _buildNextTurnButton() {
@@ -327,7 +302,7 @@ class GameBoardWidget extends StatelessWidget {
           ),
         ),
         child: const Text(
-          'Next Turn',
+          'Your turn',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,

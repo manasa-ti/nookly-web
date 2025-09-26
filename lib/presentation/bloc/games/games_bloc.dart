@@ -275,7 +275,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     AppLogger.info('🎮 - sessionId: ${event.sessionId}');
     AppLogger.info('🎮 - newTurn: ${event.newTurn.toJson()}');
     AppLogger.info('🎮 - nextPrompt: ${event.nextPrompt.toJson()}');
-    AppLogger.info('🎮 - gameProgress: ${event.gameProgress.toJson()}');
+    AppLogger.info('🎮 - gameProgress: ${event.gameProgress?.toJson()}');
     
     if (state is GameActive) {
       final currentState = state as GameActive;

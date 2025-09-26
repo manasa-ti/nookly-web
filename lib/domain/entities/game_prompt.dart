@@ -21,7 +21,7 @@ class Prompt extends Equatable {
       id: json['id'] as int,
       type: json['type'] as String,
       stage: json['stage'] as int,
-      text: json['text'] as String,
+      text: json['text'] as String? ?? 'Prompt text not available',
     );
   }
 

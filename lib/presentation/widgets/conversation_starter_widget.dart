@@ -44,36 +44,25 @@ class _ConversationStarterContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => _showConversationStartersModal(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.3),
-            width: 1,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.ac_unit,
+            color: Colors.white.withOpacity(0.8),
+            size: 20,
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.ac_unit,
-              color: Colors.white.withOpacity(0.8),
-              size: 20,
+          const SizedBox(width: 6),
+          Text(
+            'Break the ice',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w500,
             ),
-            const SizedBox(width: 8),
-            Text(
-              'Break the ice',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
-                fontSize: 14,
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -172,6 +161,17 @@ class _ConversationStartersModal extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 8),
+              
+              // Description
+              Text(
+                'Choose a conversation starter by AI as an ice breaker',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
+                  fontFamily: 'Nunito',
+                ),
               ),
               const SizedBox(height: 20),
 

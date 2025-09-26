@@ -15,13 +15,26 @@ class GameSessionModel extends GameSession {
   });
 
   factory GameSessionModel.fromJson(Map<String, dynamic> json) {
+    // Infer game type from prompt type if gameType is null
+    String gameTypeString = json['gameType'] as String? ?? 'truth_or_thrill';
+    if (gameTypeString == 'truth_or_thrill' && json['currentPrompt'] != null) {
+      final promptType = json['currentPrompt']['type'] as String?;
+      if (promptType == 'memory') {
+        gameTypeString = 'memory_sparks';
+      } else if (promptType == 'question') {
+        gameTypeString = 'would_you_rather';
+      } else if (promptType == 'guess') {
+        gameTypeString = 'guess_me';
+      }
+    }
+    
     return GameSessionModel(
       sessionId: json['sessionId'] as String,
-      gameType: GameType.fromApiValue(json['gameType'] as String),
+      gameType: GameType.fromApiValue(gameTypeString),
       currentTurn: Turn.fromJson(json['currentTurn'] as Map<String, dynamic>),
       currentPrompt: GamePrompt.fromJson(
         json['currentPrompt'] as Map<String, dynamic>,
-        json['gameType'] as String,
+        gameTypeString,
       ),
       selectedChoice: json['selectedChoice'] as String?,
       players: (json['players'] as List)

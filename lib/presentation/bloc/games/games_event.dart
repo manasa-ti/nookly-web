@@ -154,13 +154,13 @@ class GameTurnSwitched extends GamesEvent {
   final String sessionId;
   final Turn newTurn;
   final GamePrompt nextPrompt;
-  final GameProgress gameProgress;
+  final GameProgress? gameProgress;
 
   const GameTurnSwitched({
     required this.sessionId,
     required this.newTurn,
     required this.nextPrompt,
-    required this.gameProgress,
+    this.gameProgress,
   });
 
   @override

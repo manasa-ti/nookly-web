@@ -7,6 +7,7 @@ import 'package:nookly/core/utils/e2ee_utils.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/core/events/global_event_bus.dart';
 
 class SocketService {
   factory SocketService({KeyManagementService? keyManagementService}) => 
@@ -466,8 +467,87 @@ class SocketService {
       AppLogger.info('🔴 User went offline: $data');
       _handleUserOnlineStatus(data, false);
     });
+
+    // Global event bus listeners for key events
+    _setupGlobalEventBusListeners();
     
     AppLogger.info('✅ Socket listeners setup complete');
+  }
+
+  /// Setup global event bus listeners for key events
+  /// This allows multiple pages to receive the same events without conflicts
+  void _setupGlobalEventBusListeners() {
+    AppLogger.info('🔔 Setting up global event bus listeners');
+
+    // Private message events - CRITICAL: This was missing and causing disappearing images to not be received
+    _socket!.on('private_message', (data) {
+      AppLogger.info('🔔 SocketService: Received private_message, emitting to event bus');
+      AppLogger.info('🔔 SocketService: Message data: $data');
+      AppLogger.info('🔔 SocketService: Message type: ${data['messageType'] ?? data['type']}');
+      AppLogger.info('🔔 SocketService: Is disappearing: ${data['isDisappearing']}');
+      AppLogger.info('🔔 SocketService: Event bus subscriber count: ${GlobalEventBus().getSubscriberCount('private_message')}');
+      GlobalEventBus().emit('private_message', data);
+    });
+
+    // Typing events
+    _socket!.on('typing', (data) {
+      AppLogger.info('🔔 SocketService: Received typing, emitting to event bus');
+      GlobalEventBus().emit('typing', data);
+    });
+
+    _socket!.on('typing_stopped', (data) {
+      AppLogger.info('🔔 SocketService: Received typing_stopped, emitting to event bus');
+      GlobalEventBus().emit('typing_stopped', data);
+    });
+
+    // Game events
+    _socket!.on('game_invite', (data) {
+      AppLogger.info('🔔 SocketService: Received game_invite, emitting to event bus');
+      GlobalEventBus().emit('game_invite', data);
+    });
+
+    _socket!.on('game_invite_accepted', (data) {
+      AppLogger.info('🔔 SocketService: Received game_invite_accepted, emitting to event bus');
+      GlobalEventBus().emit('game_invite_accepted', data);
+    });
+
+    _socket!.on('game_invite_rejected', (data) {
+      AppLogger.info('🔔 SocketService: Received game_invite_rejected, emitting to event bus');
+      GlobalEventBus().emit('game_invite_rejected', data);
+    });
+
+    _socket!.on('game_started', (data) {
+      AppLogger.info('🔔 SocketService: Received game_started, emitting to event bus');
+      GlobalEventBus().emit('game_started', data);
+    });
+
+    _socket!.on('game_turn_switched', (data) {
+      AppLogger.info('🔔 SocketService: Received game_turn_switched, emitting to event bus');
+      GlobalEventBus().emit('game_turn_switched', data);
+    });
+
+    _socket!.on('game_choice_made', (data) {
+      AppLogger.info('🔔 SocketService: Received game_choice_made, emitting to event bus');
+      GlobalEventBus().emit('game_choice_made', data);
+    });
+
+    _socket!.on('game_ended', (data) {
+      AppLogger.info('🔔 SocketService: Received game_ended, emitting to event bus');
+      GlobalEventBus().emit('game_ended', data);
+    });
+
+    // Message status events
+    _socket!.on('message_delivered', (data) {
+      AppLogger.info('🔔 SocketService: Received message_delivered, emitting to event bus');
+      GlobalEventBus().emit('message_delivered', data);
+    });
+
+    _socket!.on('message_read', (data) {
+      AppLogger.info('🔔 SocketService: Received message_read, emitting to event bus');
+      GlobalEventBus().emit('message_read', data);
+    });
+
+    AppLogger.info('✅ Global event bus listeners setup complete');
   }
 
   void disconnect() {

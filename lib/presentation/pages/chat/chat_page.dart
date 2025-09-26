@@ -27,6 +27,7 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/services/image_url_service.dart';
+import 'package:nookly/core/events/global_event_bus.dart';
 
 import 'package:nookly/presentation/widgets/disappearing_time_selector.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
@@ -104,6 +105,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Function(dynamic)? _typingListener;
   // REMOVED: _stopTypingListener - no longer needed as stop_typing is handled by typing listener
   Function(dynamic)? _privateMessageListener;
+  Function(dynamic)? _eventBusPrivateMessageListener;
   Function(dynamic)? _messageDeliveredListener;
   Function(dynamic)? _messageReadListener;
   Function(dynamic)? _gameInviteListener;
@@ -189,6 +191,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     // Don't clear _processedMessageIds here anymore
     // _processedMessageIds.clear();
+    
+    // Remove event bus listeners before disposing
+    if (_eventBusPrivateMessageListener != null) {
+      GlobalEventBus().off('private_message', _eventBusPrivateMessageListener!);
+    }
     
     // Remove specific socket listeners before disposing
     if (_socketService != null) {
@@ -551,7 +558,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       return;
     }
     
-    AppLogger.info('🔵 ===== STARTING SOCKET LISTENER REGISTRATION =====');
+    AppLogger.info('🔵 ===== STARTING EVENT BUS LISTENER REGISTRATION =====');
     AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');
     AppLogger.info('🔵 Socket ID: ${_socketService!.socketId}');
     AppLogger.info('🔵 Current user ID: $_currentUserId');
@@ -565,7 +572,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
     
     try {
-      AppLogger.info('🔵 Registering core socket listeners...');
+      AppLogger.info('🔵 Registering event bus listeners...');
     
     // Test if socket service is working by adding a test listener
     _socketService!.on('test_event', (data) {
@@ -835,12 +842,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Debounce timer for typing events
     Timer? _typingDebounce;
     
-    _privateMessageListener = (data) async {
+    // Subscribe to private_message events via event bus
+    _eventBusPrivateMessageListener = (data) async {
       if (!mounted) return;
       
       // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
       final eventConversationId = data['conversationId'] as String?;
       final actualConversationId = _getActualConversationId();
+      
+      AppLogger.info('🔍 CONVERSATION ID DEBUG:');
+      AppLogger.info('🔍 CONVERSATION ID DEBUG: - eventConversationId: $eventConversationId');
+      AppLogger.info('🔍 CONVERSATION ID DEBUG: - actualConversationId: $actualConversationId');
+      AppLogger.info('🔍 CONVERSATION ID DEBUG: - widget.conversationId: ${widget.conversationId}');
+      AppLogger.info('🔍 CONVERSATION ID DEBUG: - data keys: ${data.keys.toList()}');
       
       // If event doesn't have conversationId, allow it (for backward compatibility)
       if (eventConversationId != null && eventConversationId != actualConversationId) {
@@ -850,6 +864,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       
       AppLogger.info('🔍 Processing private_message for current conversation: $actualConversationId');
       AppLogger.info('🔍 Message data: $data');
+      AppLogger.info('🔍 Message sender: ${data['sender'] ?? data['from']}');
+      AppLogger.info('🔍 Current user ID: $_currentUserId');
+      AppLogger.info('🔍 Message type: ${data['messageType'] ?? data['type']}');
+      AppLogger.info('🔍 Is disappearing: ${data['isDisappearing']}');
       try {
         // Decrypt message if it's encrypted
         Map<String, dynamic> decryptedData = data;
@@ -882,8 +900,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         
         // Store the server's message ID
         final serverMessageId = decryptedData['_id']?.toString() ?? decryptedData['id']?.toString();
+        AppLogger.info('🔍 Server message ID: $serverMessageId');
+        
         // Parse the server's timestamp
         final serverTimestamp = decryptedData['createdAt']?.toString() ?? decryptedData['timestamp']?.toString();
+        AppLogger.info('🔍 Server timestamp: $serverTimestamp');
+        
         // Convert dynamic map to Map<String, dynamic>
         final Map<String, dynamic> messageData = {
           '_id': serverMessageId,
@@ -924,16 +946,22 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         }
         
         final msg = Message.fromJson(messageData);
+        AppLogger.info('🔍 Created message object: ${msg.id}, sender: ${msg.sender}, type: ${msg.type}, isDisappearing: ${msg.isDisappearing}');
         
         // Only process messages from the other participant
+        AppLogger.info('🔍 Checking if message should be processed: sender=${msg.sender}, currentUserId=$_currentUserId');
         if (msg.sender != _currentUserId) {
+          AppLogger.info('🔍 Message is from other participant, processing...');
           // Check for scam alerts in text messages
           if (msg.type == MessageType.text && msg.content.isNotEmpty) {
             _messageCount++;
             _checkForScamAlert(msg.content, true);
           }
           
+          AppLogger.info('🔍 Adding MessageReceived event to ConversationBloc');
           context.read<ConversationBloc>().add(MessageReceived(msg));
+          
+          AppLogger.info('🔍 Adding ConversationUpdated event to ConversationBloc');
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
             lastMessage: msg,
@@ -958,17 +986,20 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               );
             }
           });
+        } else {
+          AppLogger.info('🔍 Message is from current user, ignoring (sender: ${msg.sender}, currentUserId: $_currentUserId)');
         }
       } catch (e) {
-        // Error processing received message
+        AppLogger.error('❌ Error processing received message: $e');
+        AppLogger.error('❌ Error stack trace: ${StackTrace.current}');
       }
     };
-    AppLogger.info('🔵 Registering private_message listener...');
-    _socketService!.on('private_message', _privateMessageListener!);
-    AppLogger.info('🔵 Private_message listener registered successfully');
+    GlobalEventBus().on('private_message', _eventBusPrivateMessageListener!);
+    AppLogger.info('🔵 Private_message event bus listener registered successfully');
+    AppLogger.info('🔵 Event bus subscriber count: ${GlobalEventBus().getSubscriberCount('private_message')}');
 
-    // Add typing indicator listeners with debounce
-    _typingListener = (data) {
+    // Add typing indicator listeners with debounce via event bus
+    GlobalEventBus().on('typing', (data) {
       if (!mounted) return;
       
       // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
@@ -1019,10 +1050,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ));
         }
       }
-    };
-    AppLogger.info('🔵 Registering typing listener...');
-    _socketService!.on('typing', _typingListener!);
-    AppLogger.info('🔵 Typing listener registered successfully');
+    });
+    AppLogger.info('🔵 Typing event bus listener registered successfully');
 
     // REMOVED: stop_typing listener - backend now sends stop_typing as typing event with isTyping: false
     AppLogger.info('🔵 Note: stop_typing events are now handled by the typing listener with isTyping: false');
@@ -1064,12 +1093,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     };
     _socketService!.on('message_read', _messageReadListener!);
 
-    // Game event listeners - added after existing listeners to avoid conflicts
-    AppLogger.info('🔵 Registering game_invite listener...');
-    _gameInviteListener = (data) {
+    // Game event listeners via event bus
+    AppLogger.info('🔵 Registering game_invite event bus listener...');
+    GlobalEventBus().on('game_invite', (data) {
       if (!mounted) return;
       
-      AppLogger.info('🎮 ChatPage: game_invite event received');
+      AppLogger.info('🎮 ChatPage: game_invite event received via event bus');
       AppLogger.info('🎮 - Data: $data');
       AppLogger.info('🎮 - Current user ID: $_currentUserId');
       AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
@@ -1100,8 +1129,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.error('❌ ChatPage: Failed to process game invite: $e');
         AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
       }
-    };
-    _socketService!.on('game_invite', _gameInviteListener!);
+    });
 
     _socketService!.on('game_invite_sent', (data) {
       if (!mounted) return;
@@ -1155,6 +1183,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('🎮 - GamesBloc instance: ${gamesBloc.hashCode}');
         AppLogger.info('🎮 - Current GamesBloc state before adding event: ${gamesBloc.state.runtimeType}');
         
+        // Log currentPrompt data for debugging
+        AppLogger.info('🎮 - currentPrompt data: ${data['currentPrompt']}');
+        AppLogger.info('🎮 - gameType: ${data['gameType']}');
+        
         final gameSession = GameSessionModel.fromJson(data);
         AppLogger.info('🎮 - Created GameSession: ${gameSession.toJson()}');
         
@@ -1164,6 +1196,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       } catch (e) {
         AppLogger.error('❌ ChatPage: Failed to process game started: $e');
         AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
+        AppLogger.error('❌ ChatPage: Data that caused error: $data');
       }
     };
     _socketService!.on('game_started', _gameStartedListener!);
@@ -1177,18 +1210,58 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('🎮 Processing game_turn_switched event');
         AppLogger.info('🎮 New turn user: ${data['newTurn']['userId']}');
         AppLogger.info('🎮 Current user: $_currentUserId');
+        
+        // Log nextPrompt data for debugging
+        AppLogger.info('🎮 nextPrompt data: ${data['nextPrompt']}');
+        AppLogger.info('🎮 gameType: ${data['gameType']}');
+        
+        // Handle nullable gameProgress
+        GameProgress? gameProgress;
+        if (data['gameProgress'] != null) {
+          AppLogger.info('🎮 gameProgress data: ${data['gameProgress']}');
+          gameProgress = GameProgress.fromJson(data['gameProgress'] as Map<String, dynamic>);
+        } else {
+          AppLogger.info('🎮 gameProgress is null');
+        }
+        
+        // Create nextPrompt with error handling
+        GamePrompt nextPrompt;
+        try {
+          // Infer game type from prompt type if gameType is null
+          String gameType = data['gameType'] as String? ?? 'truth_or_thrill';
+          if (gameType == 'truth_or_thrill' && data['nextPrompt'] != null) {
+            final promptType = data['nextPrompt']['type'] as String?;
+            if (promptType == 'memory') {
+              gameType = 'memory_sparks';
+            } else if (promptType == 'question') {
+              gameType = 'would_you_rather';
+            } else if (promptType == 'guess') {
+              gameType = 'guess_me';
+            }
+            AppLogger.info('🎮 Inferred game type from prompt type: $gameType');
+          }
+          
+          nextPrompt = GamePrompt.fromJson(
+            data['nextPrompt'] as Map<String, dynamic>,
+            gameType,
+          );
+          AppLogger.info('🎮 Successfully created nextPrompt with gameType: $gameType');
+        } catch (e) {
+          AppLogger.error('❌ Failed to create nextPrompt: $e');
+          AppLogger.error('❌ nextPrompt data: ${data['nextPrompt']}');
+          rethrow;
+        }
+        
         gamesBloc.add(GameTurnSwitched(
           sessionId: data['sessionId'] as String? ?? '',
           newTurn: Turn.fromJson(data['newTurn'] as Map<String, dynamic>),
-          nextPrompt: GamePrompt.fromJson(
-            data['nextPrompt'] as Map<String, dynamic>,
-            data['gameType'] as String? ?? 'truth_or_thrill',
-          ),
-          gameProgress: GameProgress.fromJson(data['gameProgress'] as Map<String, dynamic>),
+          nextPrompt: nextPrompt,
+          gameProgress: gameProgress,
         ));
         AppLogger.info('✅ GameTurnSwitched event added to GamesBloc');
       } catch (e) {
         AppLogger.error('❌ Failed to process game turn switched: $e');
+        AppLogger.error('❌ Error stack trace: ${StackTrace.current}');
       }
     });
 
@@ -1771,14 +1844,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   _showImagePicker();
                 },
               ),
-              ListTile(
-                leading: const Icon(Icons.mic),
-                title: const Text('Voice Message'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _recordVoiceMessage();
-                },
-              ),
+              // Temporarily hidden Voice Message option
+              // ListTile(
+              //   leading: const Icon(Icons.mic),
+              //   title: const Text('Voice Message'),
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     _recordVoiceMessage();
+              //   },
+              // ),
             ],
           ),
         );

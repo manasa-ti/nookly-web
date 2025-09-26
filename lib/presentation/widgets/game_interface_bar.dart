@@ -141,29 +141,48 @@ class GameInterfaceBar extends StatelessWidget {
             }
             context.read<GamesBloc>().add(const ShowGameMenu());
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.games,
+                color: Colors.white.withOpacity(0.8),
+                size: 20,
               ),
-            ),
-            child: Row(
+              const SizedBox(width: 6),
+              Text(
+                'Play to Bond',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        const SizedBox(width: 20),
+        
+        // Spice it Up - coming soon
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  Icons.games,
-                  color: Colors.white.withOpacity(0.8),
+                  Icons.local_fire_department,
+                  color: Colors.white.withOpacity(0.5),
                   size: 20,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
-                  'Play to Bond',
+                  'Spice it Up',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withOpacity(0.5),
                     fontSize: 14,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w500,
@@ -171,7 +190,19 @@ class GameInterfaceBar extends StatelessWidget {
                 ),
               ],
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.only(left: 26), // Icon width (20) + spacing (6)
+              child: Text(
+                'Coming soon',
+                style: TextStyle(
+                  color: Colors.orange.withOpacity(0.8),
+                  fontSize: 10,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -232,7 +263,7 @@ class GameInterfaceBar extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Game invite from ${state.gameInvite.fromUserName ?? 'Unknown'}',
+              'Game invite from this chat',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
                 fontSize: 14,
@@ -390,12 +421,12 @@ class GameInterfaceBar extends StatelessWidget {
             crossAxisCount: 2,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            childAspectRatio: 2.8,
+            childAspectRatio: 1.8, // Reduced from 2.8 to give more height
             children: [
-              _buildGameCard(context, GameType.truthOrThrill, 'Truth or Thrill', 'Choose your adventure'),
-              _buildGameCard(context, GameType.memorySparks, 'Memory Sparks', 'Share your memories'),
-              _buildGameCard(context, GameType.wouldYouRather, 'Would You Rather', 'Make tough choices'),
-              _buildGameCard(context, GameType.guessMe, 'Guess Me', 'Test your knowledge'),
+              _buildGameCard(context, GameType.truthOrThrill, 'Truth or Thrill', 'Choose adventure'),
+              _buildGameCard(context, GameType.memorySparks, 'Memory Sparks', 'Share memories'),
+              _buildGameCard(context, GameType.wouldYouRather, 'Would You Rather', 'Make choices'),
+              _buildGameCard(context, GameType.guessMe, 'Guess Me', 'Test knowledge'),
             ],
           ),
         ],
@@ -403,48 +434,85 @@ class GameInterfaceBar extends StatelessWidget {
     );
   }
 
-  Widget _buildGameCard(BuildContext context, GameType gameType, String title, String description) {
+  Widget _buildGameCard(BuildContext context, GameType gameType, String title, String description, {bool isComingSoon = false}) {
     return GestureDetector(
-      onTap: () {
+      onTap: isComingSoon ? null : () {
         context.read<GamesBloc>().add(SelectGame(gameType: gameType));
         // Don't immediately send invite - show game board first
       },
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
+          color: isComingSoon 
+              ? Colors.white.withOpacity(0.05)
+              : Colors.white.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
+            color: isComingSoon 
+                ? Colors.white.withOpacity(0.1)
+                : Colors.white.withOpacity(0.2),
             width: 1,
           ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min, // Prevent overflow
           children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontFamily: 'Nunito',
-                fontWeight: FontWeight.w600,
+            Flexible(
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: isComingSoon 
+                      ? Colors.white.withOpacity(0.5)
+                      : Colors.white,
+                  fontSize: 13,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
-            Text(
-              description,
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 11,
-                fontFamily: 'Nunito',
+            const SizedBox(height: 4),
+            Flexible(
+              child: Text(
+                description,
+                style: TextStyle(
+                  color: isComingSoon 
+                      ? Colors.white.withOpacity(0.4)
+                      : Colors.white.withOpacity(0.7),
+                  fontSize: 11,
+                  fontFamily: 'Nunito',
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
+            if (isComingSoon) ...[
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.orange.withOpacity(0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Text(
+                  'Coming Soon',
+                  style: TextStyle(
+                    color: Colors.orange.withOpacity(0.8),
+                    fontSize: 9,
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

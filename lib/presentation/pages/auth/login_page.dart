@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+// import 'package:flutter_svg/flutter_svg.dart'; // Temporarily unused
 import 'package:nookly/core/config/app_config.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
@@ -273,78 +273,79 @@ class _LoginPageState extends State<LoginPage> {
                             style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
                           ),
                   ),
-                  const SizedBox(height: 14),
-                  // Divider with "or" text
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: const Color(0xFFD6D9E6).withOpacity(0.3),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text(
-                          'or',
-                          style: TextStyle(
-                            color: const Color(0xFFD6D9E6),
-                            fontFamily: 'Nunito',
-                            fontSize: (size.width * 0.03).clamp(10.0, 12.0), // smaller
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          height: 1,
-                          color: const Color(0xFFD6D9E6).withOpacity(0.3),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  // Google Sign-In Button
-                  ElevatedButton.icon(
-                    onPressed: _isGoogleLoading ? null : _onGoogleSignInPressed,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black87,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                        side: BorderSide(
-                          color: const Color(0xFFD6D9E6).withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12), // less padding
-                      elevation: 2,
-                    ),
-                    icon: _isGoogleLoading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
-                            ),
-                          )
-                        : Container(
-                            width: 18,
-                            height: 18,
-                            child: SvgPicture.asset(
-                              'assets/icons/google_icon.svg',
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                    label: Text(
-                      _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: (size.width * 0.035).clamp(12.0, 15.0),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                  // Temporarily hidden Google Sign-In Button
+                  // const SizedBox(height: 14),
+                  // // Divider with "or" text
+                  // Row(
+                  //   children: [
+                  //     Expanded(
+                  //       child: Container(
+                  //         height: 1,
+                  //         color: const Color(0xFFD6D9E6).withOpacity(0.3),
+                  //       ),
+                  //     ),
+                  //     Padding(
+                  //       padding: const EdgeInsets.symmetric(horizontal: 12),
+                  //       child: Text(
+                  //         'or',
+                  //         style: TextStyle(
+                  //           color: const Color(0xFFD6D9E6),
+                  //           fontFamily: 'Nunito',
+                  //           fontSize: (size.width * 0.03).clamp(10.0, 12.0), // smaller
+                  //         ),
+                  //       ),
+                  //     ),
+                  //     Expanded(
+                  //       child: Container(
+                  //         height: 1,
+                  //         color: const Color(0xFFD6D9E6).withOpacity(0.3),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  // const SizedBox(height: 14),
+                  // // Google Sign-In Button
+                  // ElevatedButton.icon(
+                  //   onPressed: _isGoogleLoading ? null : _onGoogleSignInPressed,
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: Colors.white,
+                  //     foregroundColor: Colors.black87,
+                  //     shape: RoundedRectangleBorder(
+                  //       borderRadius: BorderRadius.circular(20),
+                  //       side: BorderSide(
+                  //         color: const Color(0xFFD6D9E6).withOpacity(0.3),
+                  //         width: 1,
+                  //       ),
+                  //     ),
+                  //     padding: const EdgeInsets.symmetric(vertical: 12), // less padding
+                  //     elevation: 2,
+                  //   ),
+                  //   icon: _isGoogleLoading
+                  //       ? const SizedBox(
+                  //           height: 18,
+                  //           width: 18,
+                  //           child: CircularProgressIndicator(
+                  //             strokeWidth: 2,
+                  //             valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+                  //           ),
+                  //         )
+                  //       : Container(
+                  //           width: 18,
+                  //           height: 18,
+                  //           child: SvgPicture.asset(
+                  //             'assets/icons/google_icon.svg',
+                  //             fit: BoxFit.contain,
+                  //           ),
+                  //         ),
+                  //   label: Text(
+                  //     _isGoogleLoading ? 'Signing in...' : 'Continue with Google',
+                  //     style: TextStyle(
+                  //       fontFamily: 'Nunito',
+                  //       fontSize: (size.width * 0.035).clamp(12.0, 15.0),
+                  //       fontWeight: FontWeight.w500,
+                  //     ),
+                  //   ),
+                  // ),
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

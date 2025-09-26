@@ -3,7 +3,6 @@ import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/utils/logger.dart';
-import 'dart:convert';
 
 class ImageUrlService {
   static final ImageUrlService _instance = ImageUrlService._internal();
@@ -123,6 +122,10 @@ class ImageUrlService {
         if (e.response?.statusCode == 404) {
           AppLogger.error('❌ Image not found or endpoint does not exist: $imageKey');
           AppLogger.error('❌ Please verify the backend endpoint is implemented');
+        } else if (e.response?.statusCode == 403) {
+          AppLogger.error('❌ S3 Access Denied (403) for image: $imageKey');
+          AppLogger.error('❌ This suggests an issue with S3 pre-signed URL generation or permissions');
+          AppLogger.error('❌ Check server-side S3 configuration and credentials');
         }
       }
       _incrementRetryCount(imageKey);

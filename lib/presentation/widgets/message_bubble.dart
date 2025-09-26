@@ -409,6 +409,21 @@ class _MessageBubbleState extends State<MessageBubble> {
           AppLogger.error('❌ Image URL: $url');
           AppLogger.error('❌ Current image URL: $_currentImageUrl');
           AppLogger.error('❌ Message content: ${widget.message!.content}');
+          
+          // Check if it's a 403 error (S3 access denied)
+          if (error.toString().contains('403')) {
+            AppLogger.error('❌ S3 403 Error - Access denied for image URL');
+            AppLogger.error('❌ This suggests an issue with S3 pre-signed URL generation on the server');
+            
+            // Try to refresh the URL if it's a disappearing image
+            if (widget.message?.isDisappearing == true) {
+              AppLogger.info('🔵 Attempting to refresh URL for disappearing image due to 403 error');
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _loadImageUrl(); // Retry loading the image URL
+              });
+            }
+          }
+          
           return const SizedBox(
             width: 200,
             height: 200,

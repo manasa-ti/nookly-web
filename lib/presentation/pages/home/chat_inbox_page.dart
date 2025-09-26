@@ -18,6 +18,7 @@ import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/core/services/games_service.dart';
 import 'package:nookly/data/repositories/games_repository_impl.dart';
+import 'package:nookly/core/events/global_event_bus.dart';
 import 'package:nookly/domain/entities/game_invite.dart';
 
 class ChatInboxPage extends StatefulWidget {
@@ -124,10 +125,29 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   }
 
   void _joinAllChatRooms() {
-    // REMOVED: ChatInboxPage no longer joins conversation rooms
-    // This follows WhatsApp/Telegram architecture where inbox only receives notifications
-    AppLogger.info('🔵 ChatInboxPage: Not joining conversation rooms (notification-only mode)');
-    AppLogger.info('🔵 ChatInboxPage: Will receive notifications for all conversations');
+    if (_socketService == null || !_socketService!.isConnected) {
+      AppLogger.warning('🔵 ChatInboxPage: Cannot join rooms - socket not connected');
+      return;
+    }
+    
+    AppLogger.info('🔵 ChatInboxPage: Joining all conversation rooms for event bus approach');
+    
+    if (_inboxBloc?.state is InboxLoaded) {
+      final currentState = _inboxBloc!.state as InboxLoaded;
+      final conversations = currentState.conversations;
+      
+      AppLogger.info('🔵 ChatInboxPage: Found ${conversations.length} conversations to join');
+      
+      for (final conversation in conversations) {
+        // Construct proper conversation ID from current user and participant
+        final conversationId = '${_currentUser?.id}_${conversation.participantId}';
+        AppLogger.info('🔵 ChatInboxPage: Joining conversation room: $conversationId');
+        AppLogger.info('🔵 ChatInboxPage: Current user: ${_currentUser?.id}, Participant: ${conversation.participantId}');
+        _socketService!.joinConversationRoom(conversationId);
+      }
+    } else {
+      AppLogger.warning('🔵 ChatInboxPage: No conversations loaded yet, cannot join rooms');
+    }
   }
 
   /// Optimized initialization method that reuses cached user data when possible
@@ -163,6 +183,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           _inboxBloc = sl<InboxBloc>(param1: user.id);
           _inboxBloc!.add(LoadInbox());
           
+          // Join conversation rooms after loading conversations
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _joinAllChatRooms();
+          });
+          
           // Initialize socket with cached user data and token
           _initSocketWithData(user, token);
           
@@ -196,6 +221,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           // Initialize bloc with fresh user data
           _inboxBloc = sl<InboxBloc>(param1: user.id);
           _inboxBloc!.add(LoadInbox());
+          
+          // Join conversation rooms after loading conversations
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _joinAllChatRooms();
+          });
           
           // Initialize socket with fresh user data and token
           _initSocketWithData(user, token);
@@ -277,51 +307,118 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   void _registerSocketListeners() {
     if (_socketService == null) return;
     
-    // Check if ChatPage is currently active (has listeners registered)
-    // If so, don't register inbox listeners to avoid conflicts
-    AppLogger.info('🔵 Registering NOTIFICATION-ONLY socket listeners for chat inbox');
-    AppLogger.info('🔵 Following WhatsApp/Telegram architecture - no room joining');
+    AppLogger.info('🔵 Registering event bus listeners for chat inbox');
+    AppLogger.info('🔵 Using unified event system - both inbox and chat receive same events');
     
-    // NEW: Listen for message notifications instead of full messages
-    _messageNotificationListener = (data) async {
+    // Test event bus functionality
+    AppLogger.info('🔵 Testing event bus functionality...');
+    GlobalEventBus().emit('test_inbox_event', {'message': 'Event bus is working in inbox'});
+    
+    // Test listener to verify event bus is working
+    GlobalEventBus().on('test_inbox_event', (data) {
+      AppLogger.info('🔵 Inbox: Test event received: $data');
+    });
+    
+    // Listen for private_message events via event bus
+    GlobalEventBus().on('private_message', (data) async {
+      AppLogger.info('🔵 Inbox: Received private_message event via event bus');
+      AppLogger.info('🔵 Inbox: Event data: $data');
+      AppLogger.info('🔵 Inbox: Available fields: ${data.keys.toList()}');
+      
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
-        final conversationId = data['conversationId'] as String?;
-        final conversation = conversations.where((c) => c.id == conversationId).firstOrNull;
+        
+        // Try multiple possible field names for conversation ID
+        final eventConversationId = data['conversationId'] as String? ?? 
+                                   data['conversation_id'] as String? ?? 
+                                   data['roomId'] as String? ?? 
+                                   data['room_id'] as String?;
+        
+        AppLogger.info('🔵 Inbox: Event Conversation ID: $eventConversationId');
+        AppLogger.info('🔵 Inbox: Available conversations: ${conversations.map((c) => c.id).toList()}');
+        
+        // Try to match by constructed conversation ID first
+        Conversation? conversation;
+        if (eventConversationId != null) {
+          conversation = conversations.where((c) => '${_currentUser?.id}_${c.participantId}' == eventConversationId).firstOrNull;
+        }
+        
+        // Fallback: If no conversation found by ID, try to match by participant ID
+        if (conversation == null && eventConversationId == null) {
+          final fromUserId = data['from'] as String? ?? data['sender'] as String?;
+          if (fromUserId != null) {
+            conversation = conversations.where((c) => c.participantId == fromUserId).firstOrNull;
+            AppLogger.info('🔵 Inbox: Fallback - matched conversation by participant ID: $fromUserId');
+          }
+        }
         
         if (conversation != null) {
-          AppLogger.info('🔵 Processing message notification in inbox from: ${conversation.participantName}');
-          AppLogger.info('🔵 Conversation ID: $conversationId');
-          AppLogger.info('🔵 Preview: ${data['preview']}');
-          AppLogger.info('🔵 Unread count: ${data['unreadCount']}');
+          AppLogger.info('🔵 Processing private_message in inbox from: ${conversation.participantName}');
+          AppLogger.info('🔵 Conversation ID: $eventConversationId');
+          AppLogger.info('🔵 Message content: ${data['content']}');
+          AppLogger.info('🔵 Message is encrypted: ${data['isEncrypted']}');
+          AppLogger.info('🔵 Encrypted content: ${data['encryptedContent']}');
+          AppLogger.info('🔵 Current unread count: ${conversation.unreadCount}');
           
-          // Create message preview from notification data
+          // Create message from full private_message data
           final message = Message(
-            id: data['messageId'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-            sender: data['senderId'] ?? '',
+            id: data['_id'] ?? data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            sender: data['from'] ?? data['sender'] ?? '',
             receiver: _currentUser?.id ?? '',
-            content: data['preview'] ?? '', // Use preview instead of full content
-            timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),
-            type: _getMessageTypeFromString(data['messageType'] ?? 'text'),
-            status: 'sent',
-            isDisappearing: false, // Notifications don't include disappearing info
-            disappearingTime: null,
-            metadata: {
-              'isNotification': 'true',
-              'isEncrypted': data['isEncrypted']?.toString() ?? 'false',
-            },
+            content: data['content'] ?? '',
+            timestamp: DateTime.parse(data['createdAt'] ?? data['timestamp'] ?? DateTime.now().toIso8601String()),
+            type: _getMessageTypeFromString(data['messageType'] ?? data['type'] ?? 'text'),
+            status: data['status'] ?? 'sent',
+            isDisappearing: data['isDisappearing'] ?? false,
+            disappearingTime: data['disappearingTime'] != null ? int.tryParse(data['disappearingTime'].toString()) : null,
+            metadata: data['metadata'] ?? {},
             isEncrypted: data['isEncrypted'] ?? false,
-            encryptedContent: null, // Notifications don't include encrypted content
-            encryptionMetadata: null,
+            encryptedContent: data['encryptedContent'],
+            encryptionMetadata: data['encryptionMetadata'],
           );
           
-          // Use the message as-is (notifications don't need decryption)
+          // Decrypt message if it's encrypted
           Message decryptedMessage = message;
+          if ((message.isEncrypted || message.content == '[ENCRYPTED]') && message.encryptedContent != null) {
+            try {
+              AppLogger.info('🔵 Attempting to decrypt message for inbox preview');
+              AppLogger.info('🔵 Decryption data: ${data.toString()}');
+              AppLogger.info('🔵 Sender: ${message.sender}');
+              final decryptedData = await _socketService!.decryptMessage(data, message.sender);
+              decryptedMessage = Message(
+                id: message.id,
+                sender: message.sender,
+                receiver: message.receiver,
+                content: decryptedData['content'] ?? message.content,
+                timestamp: message.timestamp,
+                type: message.type,
+                status: message.status,
+                isDisappearing: message.isDisappearing,
+                disappearingTime: message.disappearingTime,
+                metadata: message.metadata,
+                isEncrypted: false,
+                encryptedContent: null,
+                encryptionMetadata: null,
+              );
+              AppLogger.info('🔵 Message decrypted successfully for inbox');
+            } catch (e) {
+              AppLogger.error('❌ Failed to decrypt message for inbox: $e');
+              // Use original message with encrypted indicator
+              decryptedMessage = message.copyWith(
+                content: '[Encrypted Message]',
+              );
+            }
+          } else {
+            AppLogger.info('🔵 Message not encrypted or no encrypted content available');
+            AppLogger.info('🔵 isEncrypted: ${message.isEncrypted}');
+            AppLogger.info('🔵 content: ${message.content}');
+            AppLogger.info('🔵 encryptedContent: ${message.encryptedContent}');
+          }
           
-          // Create updated conversation with new unread count and last message preview
+          // Create updated conversation with new unread count and last message
           final updatedConversation = conversation.copyWith(
-            unreadCount: data['unreadCount'] ?? (conversation.unreadCount + 1),
+            unreadCount: conversation.unreadCount + 1, // Increment unread count
             lastMessage: decryptedMessage,
             lastMessageTime: decryptedMessage.timestamp,
             updatedAt: DateTime.now(),
@@ -330,13 +427,14 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           
           // Update the conversations list
           final updatedConversations = conversations.map((c) => 
-            c.id == conversation.id ? updatedConversation : c
+            c.participantId == conversation?.participantId ? updatedConversation : c
           ).toList();
           
           // Sort conversations by last message time (newest first)
           updatedConversations.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
           
           // Emit updated state immediately
+          AppLogger.info('🔵 Emitting InboxUpdated event with ${updatedConversations.length} conversations');
           _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
           
           // Invalidate cache since we have new message data
@@ -349,22 +447,48 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
           AppLogger.info('🔵 Updated last message: ${updatedConversation.lastMessage?.content}');
           AppLogger.info('🔵 Message type: ${updatedConversation.lastMessage?.type}');
+          AppLogger.info('🔵 Updated conversation participant: ${updatedConversation.participantName}');
         }
       }
-    };
-    _socketService!.on('message_notification', _messageNotificationListener!);
+    });
 
-    // NEW: Listen for typing notifications instead of full typing events
-    _typingNotificationListener = (data) {
+    // Listen for typing events via event bus
+    GlobalEventBus().on('typing', (data) {
+      AppLogger.info('🔵 Inbox: Received typing event via event bus');
+      AppLogger.info('🔵 Inbox: Event data: $data');
+      AppLogger.info('🔵 Inbox: Available fields: ${data.keys.toList()}');
+      
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
-        final conversationId = data['conversationId'] as String?;
-        final conversation = conversations.where((c) => c.id == conversationId).firstOrNull;
+        
+        // Try multiple possible field names for conversation ID
+        final eventConversationId = data['conversationId'] as String? ?? 
+                                   data['conversation_id'] as String? ?? 
+                                   data['roomId'] as String? ?? 
+                                   data['room_id'] as String?;
+        
+        AppLogger.info('🔵 Inbox: Event Conversation ID: $eventConversationId');
+        AppLogger.info('🔵 Inbox: Available conversations: ${conversations.map((c) => c.id).toList()}');
+        
+        // Try to match by constructed conversation ID first
+        Conversation? conversation;
+        if (eventConversationId != null) {
+          conversation = conversations.where((c) => '${_currentUser?.id}_${c.participantId}' == eventConversationId).firstOrNull;
+        }
+        
+        // Fallback: If no conversation found by ID, try to match by participant ID
+        if (conversation == null && eventConversationId == null) {
+          final fromUserId = data['from'] as String? ?? data['sender'] as String?;
+          if (fromUserId != null) {
+            conversation = conversations.where((c) => c.participantId == fromUserId).firstOrNull;
+            AppLogger.info('🔵 Inbox: Fallback - matched conversation by participant ID: $fromUserId');
+          }
+        }
         
         if (conversation != null) {
-          AppLogger.info('🔵 Received typing notification in inbox from: ${conversation.participantName}');
-          AppLogger.info('🔵 Conversation ID: $conversationId');
+          AppLogger.info('🔵 Received typing event in inbox from: ${conversation.participantName}');
+          AppLogger.info('🔵 Conversation ID: $eventConversationId');
           AppLogger.info('🔵 Is typing: ${data['isTyping']}');
           
           // Update conversation with typing status
@@ -375,15 +499,14 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           
           // Update the conversations list
           final updatedConversations = conversations.map((c) => 
-            c.id == conversation.id ? updatedConversation : c
+            c.participantId == conversation?.participantId ? updatedConversation : c
           ).toList();
           
           // Emit updated state immediately
           _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
         }
       }
-    };
-    _socketService!.on('typing_notification', _typingNotificationListener!);
+    });
 
     // REMOVED: stop_typing listener - typing_notification handles both start and stop
 
@@ -392,11 +515,13 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
-        final conversation = conversations.where((c) => c.id == data['conversationId']).firstOrNull;
+        final conversation = conversations.where((c) => c.participantId == data['_id']).firstOrNull;
         
         if (conversation != null) {
           AppLogger.info('🔵 Updating conversation: ${conversation.participantName}');
           AppLogger.info('🔵 Current unread count: ${conversation.unreadCount}');
+          AppLogger.info('🔵 Event unread count: ${data['unreadCount']}');
+          AppLogger.info('🔵 Event last message: ${data['lastMessage']}');
           
           // Create updated conversation
           final updatedConversation = conversation.copyWith(
@@ -408,7 +533,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           
           // Update the conversations list
           final updatedConversations = conversations.map((c) => 
-            c.id == conversation.id ? updatedConversation : c
+            c.participantId == conversation?.participantId ? updatedConversation : c
           ).toList();
           
           // Sort conversations by last message time (newest first)
@@ -425,6 +550,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           }
           
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
+        } else {
+          AppLogger.info('🔵 Conversation not found for participant ID: ${data['_id']}');
+          AppLogger.info('🔵 Available conversations: ${conversations.map((c) => c.participantId).toList()}');
         }
       }
     };
@@ -508,7 +636,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             
             // Update the conversations list
             final updatedConversations = conversations.map((c) => 
-              c.id == conversation.id ? updatedConversation : c
+              c.participantId == conversation?.participantId ? updatedConversation : c
             ).toList();
             
             // Emit updated state immediately
@@ -549,7 +677,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             
             // Update the conversations list
             final updatedConversations = conversations.map((c) => 
-              c.id == conversation.id ? updatedConversation : c
+              c.participantId == conversation?.participantId ? updatedConversation : c
             ).toList();
             
             // Emit updated state immediately
@@ -562,27 +690,29 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     };
     _socketService!.on('user_offline', _userOfflineListener!);
 
-    // NEW: Listen for game notifications instead of full game events
-    _gameNotificationListener = (data) {
-      AppLogger.info('🎮 Game notification received in inbox: $data');
+    // Listen for game_invite events via event bus
+    GlobalEventBus().on('game_invite', (data) {
+      AppLogger.info('🎮 Game invite received in inbox via event bus: $data');
       
-      final conversationId = data['conversationId'] as String?;
-      final eventType = data['eventType'] as String?;
+      final eventConversationId = data['conversationId'] as String?;
       final gameType = data['gameType'] as String?;
       
-      if (conversationId != null && eventType != null) {
-        // Update conversation to show game notification
+      if (eventConversationId != null && gameType != null) {
+        // Update conversation to show game invite
         if (_inboxBloc?.state is InboxLoaded) {
           final currentState = _inboxBloc?.state as InboxLoaded;
           final conversations = currentState.conversations;
-          final conversation = conversations.where((c) => c.id == conversationId).firstOrNull;
+          
+          // Try to match by constructed conversation ID
+          Conversation? conversation;
+          conversation = conversations.where((c) => '${_currentUser?.id}_${c.participantId}' == eventConversationId).firstOrNull;
           
           if (conversation != null) {
-            // Create a simple game invite for notification purposes
+            // Create a game invite from the event data
             final gameInvite = GameInvite(
-              gameType: gameType ?? 'unknown',
-              fromUserId: data['senderId'] as String? ?? '',
-              fromUserName: data['senderName'] as String?,
+              gameType: gameType,
+              fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+              fromUserName: data['fromUserName'] as String?,
               status: GameInviteStatus.pending,
               createdAt: DateTime.now(),
             );
@@ -593,15 +723,14 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             );
             
             final updatedConversations = conversations.map((c) => 
-              c.id == conversation.id ? updatedConversation : c
+              c.participantId == conversation?.participantId ? updatedConversation : c
             ).toList();
             
             _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
           }
         }
       }
-    };
-    _socketService!.on('game_notification', _gameNotificationListener!);
+    });
 
     _errorListener = (data) {
       AppLogger.error('❌ Socket error in inbox: $data');
@@ -763,11 +892,14 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
               ));
             }
             if (state is InboxLoaded) {
-              // Join private chat rooms for each conversation
+              AppLogger.info('🔵 BlocBuilder: Rebuilding UI with ${state.conversations.length} conversations');
+              // Join conversation rooms for each conversation to receive events
               if (_socketService != null && _socketService!.isConnected) {
                 for (final conversation in state.conversations) {
-                  AppLogger.info('Joining private chat room for conversation with: ${conversation.participantId}');
-                  _socketService!.joinPrivateChat(conversation.participantId);
+                  // Construct proper conversation ID from current user and participant
+                  final conversationId = '${_currentUser?.id}_${conversation.participantId}';
+                  AppLogger.info('🔵 Joining conversation room: $conversationId');
+                  _socketService!.joinConversationRoom(conversationId);
                 }
               }
 
@@ -801,8 +933,12 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                   itemBuilder: (context, index) {
                     final conversation = state.conversations[index];
                     final hasUnread = conversation.unreadCount > 0;
-                    final lastMessage = conversation.messages.isNotEmpty ? conversation.messages.first : null;
+                    final lastMessage = conversation.lastMessage;
                     final isMe = lastMessage?.sender == _currentUser?.id;
+                    
+                    AppLogger.info('🔵 UI: Building conversation for ${conversation.participantName}');
+                    AppLogger.info('🔵 UI: Last message content: ${lastMessage?.content}');
+                    AppLogger.info('🔵 UI: Unread count: ${conversation.unreadCount}');
 
                     return Column(
                       children: [

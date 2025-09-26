@@ -136,7 +136,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
           
           final participantIdFromJson = userJson['_id'] as String;
 
-          conversations.add(Conversation(
+          final conversation = Conversation(
             id: participantIdFromJson, 
             participantId: participantIdFromJson, 
             participantName: userJson['name'] as String? ?? 'Unknown',
@@ -146,11 +146,18 @@ class ConversationRepositoryImpl implements ConversationRepository {
             isOnline: userJson['isOnline'] as bool? ?? false, 
             unreadCount: itemMap['unreadCount'] as int? ?? 0,
             userId: currentUserId,
+            lastMessage: lastMessage, // Add the lastMessage field
             updatedAt: lastMessageTime,
             conversationKey: conversationKey,
             lastSeen: userJson['lastSeen'] as String?,
             connectionStatus: userJson['connectionStatus'] as String?,
-          ));
+          );
+          
+          AppLogger.info('🔵 ConversationRepository: Created conversation for ${conversation.participantName}');
+          AppLogger.info('🔵 ConversationRepository: Last message content: ${conversation.lastMessage?.content}');
+          AppLogger.info('🔵 ConversationRepository: Unread count: ${conversation.unreadCount}');
+          
+          conversations.add(conversation);
         }
         
         processingStopwatch.stop();
@@ -231,15 +238,30 @@ class ConversationRepositoryImpl implements ConversationRepository {
             final isViewed = message.metadata?.containsKey('viewedAt') == true;
             final disappearingTime = message.disappearingTime ?? 5;
             
+            AppLogger.info('🔍 REPO FILTERING DEBUG: Message ${message.id}');
+            AppLogger.info('🔍 REPO FILTERING DEBUG: - isDisappearing: ${message.isDisappearing}');
+            AppLogger.info('🔍 REPO FILTERING DEBUG: - type: ${message.type}');
+            AppLogger.info('🔍 REPO FILTERING DEBUG: - isViewed: $isViewed');
+            AppLogger.info('🔍 REPO FILTERING DEBUG: - disappearingTime: $disappearingTime');
+            AppLogger.info('🔍 REPO FILTERING DEBUG: - metadata: ${message.metadata}');
+            
             if (isViewed) {
               // Check if the image has expired since being viewed
               final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
               final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
               
+              AppLogger.info('🔍 REPO FILTERING DEBUG: - viewedAt: $viewedAt');
+              AppLogger.info('🔍 REPO FILTERING DEBUG: - elapsedSeconds: $elapsedSeconds');
+              AppLogger.info('🔍 REPO FILTERING DEBUG: - shouldExpire: ${elapsedSeconds >= disappearingTime}');
+              
               if (elapsedSeconds >= disappearingTime) {
-                AppLogger.info('Filtering out expired disappearing image: ${message.id}');
+                AppLogger.info('🔍 REPO FILTERING DEBUG: Filtering out expired disappearing image: ${message.id}');
                 return false; // Filter out expired disappearing images
+              } else {
+                AppLogger.info('🔍 REPO FILTERING DEBUG: Keeping valid disappearing image: ${message.id}');
               }
+            } else {
+              AppLogger.info('🔍 REPO FILTERING DEBUG: Keeping unviewed disappearing image: ${message.id}');
             }
             // Keep unviewed disappearing images and valid viewed ones
           }

@@ -97,15 +97,30 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           final isViewed = message.metadata?.containsKey('viewedAt') == true;
           final disappearingTime = message.disappearingTime ?? 5;
           
+          AppLogger.info('🔍 FILTERING DEBUG: Message ${message.id}');
+          AppLogger.info('🔍 FILTERING DEBUG: - isDisappearing: ${message.isDisappearing}');
+          AppLogger.info('🔍 FILTERING DEBUG: - type: ${message.type}');
+          AppLogger.info('🔍 FILTERING DEBUG: - isViewed: $isViewed');
+          AppLogger.info('🔍 FILTERING DEBUG: - disappearingTime: $disappearingTime');
+          AppLogger.info('🔍 FILTERING DEBUG: - metadata: ${message.metadata}');
+          
           if (isViewed) {
             // Check if the image has expired since being viewed
             final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
             final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
             
+            AppLogger.info('🔍 FILTERING DEBUG: - viewedAt: $viewedAt');
+            AppLogger.info('🔍 FILTERING DEBUG: - elapsedSeconds: $elapsedSeconds');
+            AppLogger.info('🔍 FILTERING DEBUG: - shouldExpire: ${elapsedSeconds >= disappearingTime}');
+            
             if (elapsedSeconds >= disappearingTime) {
-              AppLogger.info('Conversation bloc: Filtering out expired disappearing image: ${message.id}');
+              AppLogger.info('🔍 FILTERING DEBUG: Filtering out expired disappearing image: ${message.id}');
               return false; // Filter out expired disappearing images
+            } else {
+              AppLogger.info('🔍 FILTERING DEBUG: Keeping valid disappearing image: ${message.id}');
             }
+          } else {
+            AppLogger.info('🔍 FILTERING DEBUG: Keeping unviewed disappearing image: ${message.id}');
           }
           // Keep unviewed disappearing images and valid viewed ones
         }
