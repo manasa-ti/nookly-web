@@ -5,12 +5,14 @@ class GameBoardWidget extends StatelessWidget {
   final GameSession gameSession;
   final String currentUserId;
   final Function(String) onGameAction;
+  final bool isTurnCompleted; // Flag to indicate if turn is completed
 
   const GameBoardWidget({
     Key? key,
     required this.gameSession,
     required this.currentUserId,
     required this.onGameAction,
+    this.isTurnCompleted = false,
   }) : super(key: key);
 
   @override
@@ -88,6 +90,35 @@ class GameBoardWidget extends StatelessWidget {
   }
 
   Widget _buildTruthOrThrillContent() {
+    // If turn is completed, show waiting message for the user who completed their turn
+    // (This user is no longer the current turn user)
+    if (isTurnCompleted && !_isCurrentUserTurn()) {
+      print('🎮 Showing turn completed message for user who completed turn: $currentUserId');
+      print('🎮 Current turn user: ${gameSession.currentTurn.userId}');
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.green.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.green.withOpacity(0.4),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          "Waiting for your partner to make their choice...",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.green.withOpacity(0.9),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Nunito',
+          ),
+        ),
+      );
+    }
+    
     // If no choice has been made yet (by any player), show both options
     if (gameSession.selectedChoice == null) {
       // Only show buttons if it's the current user's turn
@@ -97,6 +128,7 @@ class GameBoardWidget extends StatelessWidget {
         print('🎮 Game session ID: ${gameSession.sessionId}');
         print('🎮 Game type: ${gameSession.gameType.displayName}');
         print('🎮 Selected choice: ${gameSession.selectedChoice}');
+        print('🎮 isTurnCompleted: $isTurnCompleted');
         return Row(
           children: [
             Expanded(
@@ -155,6 +187,8 @@ class GameBoardWidget extends StatelessWidget {
       } else {
         print('🎮 Showing partner turn message for user: $currentUserId');
         print('🎮 Current turn user: ${gameSession.currentTurn.userId}');
+        print('🎮 isTurnCompleted: $isTurnCompleted');
+        print('🎮 selectedChoice: ${gameSession.selectedChoice}');
         // Show "partner's turn" message
         return Container(
           width: double.infinity,

@@ -14,6 +14,7 @@ class GameInterfaceBar extends StatelessWidget {
   final Function(String) onSuggestionSelected;
   final String currentUserId;
   final bool isOtherUserOnline;
+  final String? serverConversationId; // Server-provided conversation ID
 
   const GameInterfaceBar({
     Key? key,
@@ -22,6 +23,7 @@ class GameInterfaceBar extends StatelessWidget {
     required this.onSuggestionSelected,
     required this.currentUserId,
     required this.isOtherUserOnline,
+    this.serverConversationId,
   }) : super(key: key);
 
   @override
@@ -73,6 +75,18 @@ class GameInterfaceBar extends StatelessWidget {
         gameSession: state.gameSession,
         currentUserId: currentUserId,
         onGameAction: (action) => _handleGameAction(context, action, state.gameSession),
+      );
+    }
+
+    // Show game board if turn is completed (waiting for partner's turn)
+    if (state is GameTurnCompleted) {
+      AppLogger.info('🎮 GameInterfaceBar: Showing GameBoardWidget for completed turn');
+      AppLogger.info('🎮 GameInterfaceBar: GameSession details: sessionId=${state.gameSession.sessionId}, gameType=${state.gameSession.gameType.displayName}, currentTurn=${state.gameSession.currentTurn.userId}');
+      return GameBoardWidget(
+        gameSession: state.gameSession,
+        currentUserId: currentUserId,
+        onGameAction: (action) => _handleGameAction(context, action, state.gameSession),
+        isTurnCompleted: true, // Pass flag to indicate turn is completed
       );
     }
 
@@ -462,12 +476,14 @@ class GameInterfaceBar extends StatelessWidget {
         context.read<GamesBloc>().add(SelectGameChoice(
           choice: 'truth',
           currentUserId: currentUserId,
+          conversationId: _getActualConversationId(), // Pass actual conversation ID for room-based broadcasting
         ));
         break;
       case 'select_thrill':
         context.read<GamesBloc>().add(SelectGameChoice(
           choice: 'thrill',
           currentUserId: currentUserId,
+          conversationId: _getActualConversationId(), // Pass actual conversation ID for room-based broadcasting
         ));
         break;
       case 'send_invite':
@@ -478,6 +494,7 @@ class GameInterfaceBar extends StatelessWidget {
         context.read<GamesBloc>().add(SendGameInvite(
           gameType: gameSession.gameType.apiValue,
           otherUserId: matchUserId,
+          conversationId: _getActualConversationId(),
         ));
         break;
       case 'next_turn':
@@ -487,9 +504,33 @@ class GameInterfaceBar extends StatelessWidget {
         context.read<GamesBloc>().add(EndGame(
           sessionId: gameSession.sessionId,
           reason: 'user_ended',
+          conversationId: _getActualConversationId(), // Pass actual conversation ID for room-based broadcasting
         ));
         break;
     }
+  }
+
+  String _getActualConversationId() {
+    // Use server-provided conversation ID if available
+    if (serverConversationId != null && serverConversationId!.isNotEmpty) {
+      AppLogger.info('🔵 GameInterfaceBar: Using server-provided conversation ID: $serverConversationId');
+      return serverConversationId!;
+    }
+    
+    // Fallback: Generate the actual conversation ID in the format: user1_user2 (sorted alphabetically)
+    if (currentUserId.isEmpty || matchUserId.isEmpty) {
+      AppLogger.error('❌ Cannot generate conversation ID: user IDs are empty');
+      return matchUserId; // Fallback to other user's ID
+    }
+    
+    final userIds = [currentUserId, matchUserId];
+    userIds.sort(); // Sort alphabetically to ensure consistent format
+    
+    final actualConversationId = '${userIds[0]}_${userIds[1]}';
+    AppLogger.info('🔵 GameInterfaceBar: Generated fallback conversation ID: $actualConversationId');
+    AppLogger.info('🔵 From user IDs: $currentUserId and $matchUserId');
+    
+    return actualConversationId;
   }
 
   void _completeGameTurn(BuildContext context, gameSession) {
@@ -533,6 +574,7 @@ class GameInterfaceBar extends StatelessWidget {
       sessionId: gameSession.sessionId,
       selectedChoice: selectedChoice,
       selectedPrompt: selectedPrompt,
+      conversationId: _getActualConversationId(), // Pass actual conversation ID for room-based broadcasting
     ));
   }
 }

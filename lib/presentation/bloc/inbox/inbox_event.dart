@@ -17,4 +17,13 @@ class MarkConversationAsRead extends InboxEvent {
   
   @override
   List<Object> get props => [conversationId];
+}
+
+class InboxUpdated extends InboxEvent {
+  final List<Conversation> conversations;
+  
+  const InboxUpdated({required this.conversations});
+  
+  @override
+  List<Object> get props => [conversations];
 } 

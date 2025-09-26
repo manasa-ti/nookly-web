@@ -300,11 +300,11 @@ class Message extends Equatable {
       // But only for image messages - text messages should never be disappearing
       if (disappearingTime != null && messageType == MessageType.image) {
         isDisappearing = true;
-        AppLogger.info('🔵 DEBUGGING API MESSAGE: Inferring isDisappearing=true because disappearingTime=$disappearingTime is present for image message');
+        // Inferring isDisappearing=true because disappearingTime is present for image message
       } else if (disappearingTime != null && messageType == MessageType.text) {
         // Text messages should never be disappearing, even if disappearingTime is present
         isDisappearing = false;
-        AppLogger.warning('🔵 DEBUGGING API MESSAGE: Ignoring disappearingTime=$disappearingTime for text message - text messages should not disappear');
+        AppLogger.warning('Ignoring disappearingTime=$disappearingTime for text message - text messages should not disappear');
       } else {
         // Only check explicit isDisappearing field if no disappearingTime is present
         if (json['metadata'] != null && json['metadata']['isDisappearing'] != null) {
@@ -317,15 +317,7 @@ class Message extends Equatable {
       print('Error parsing isDisappearing: $e');
     }
 
-    // Add debugging for disappearing fields
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: Parsing disappearing fields from JSON');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw isDisappearing (root): ${json['isDisappearing']}');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw disappearingTime (root): ${json['disappearingTime']}');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw metadata: ${json['metadata']}');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw isDisappearing (metadata): ${json['metadata']?['isDisappearing']}');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Raw disappearingTime (metadata): ${json['metadata']?['disappearingTime']}');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed isDisappearing: $isDisappearing (inferred from disappearingTime: $disappearingTime)');
-    AppLogger.info('🔵 DEBUGGING API MESSAGE: - Final parsed disappearingTime: $disappearingTime');
+    // Parse disappearing fields from JSON
 
     // Parse other metadata fields
     Map<String, String> metadata = {};

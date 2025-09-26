@@ -7,6 +7,7 @@ abstract class GamesRepository {
   Future<void> sendGameInvite({
     required String gameType,
     required String otherUserId,
+    required String conversationId,
   });
 
   Future<void> acceptGameInvite({
@@ -26,17 +27,20 @@ abstract class GamesRepository {
     required String choice,
     required Map<String, dynamic> selectedPrompt,
     required String madeBy,
+    required String conversationId,
   });
 
   Future<void> completeGameTurn({
     required String sessionId,
     String? selectedChoice,
     required Map<String, dynamic> selectedPrompt,
+    required String conversationId,
   });
 
   Future<void> endGame({
     required String sessionId,
     required String reason,
+    required String conversationId,
   });
 
   // Game state management

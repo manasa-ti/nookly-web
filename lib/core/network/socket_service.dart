@@ -104,6 +104,52 @@ class SocketService {
     _socket!.emit('leave_private_chat', {'otherUserId': otherUserId});
   }
 
+  // NEW: WhatsApp/Telegram style room management
+  void joinConversationRoom(String conversationId) {
+    AppLogger.info('🔵 Joining conversation room: $conversationId');
+    AppLogger.info('🔵 Current user ID: $_userId');
+    AppLogger.info('🔵 Socket connected: ${_socket?.connected}');
+    AppLogger.info('🔵 Socket ID: ${_socket?.id}');
+    
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('❌ Cannot join conversation room: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('❌ Cannot join conversation room: Current user ID is null');
+      return;
+    }
+    
+    AppLogger.info('🔵 Emitting join_conversation event for: $conversationId');
+    _socket!.emit('join_conversation', {
+      'conversationId': conversationId,
+      'userId': _userId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  void leaveConversationRoom(String conversationId) {
+    AppLogger.info('🔵 Leaving conversation room: $conversationId');
+    
+    if (_socket == null || !_socket!.connected) {
+      AppLogger.error('❌ Cannot leave conversation room: Socket not connected');
+      return;
+    }
+    
+    if (_userId == null) {
+      AppLogger.error('❌ Cannot leave conversation room: Current user ID is null');
+      return;
+    }
+    
+    AppLogger.info('🔵 Emitting leave_conversation event for: $conversationId');
+    _socket!.emit('leave_conversation', {
+      'conversationId': conversationId,
+      'userId': _userId,
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
   void sendMessage(Map<String, dynamic> message) {
     if (_socket == null || !_socket!.connected) {
       AppLogger.error('Cannot send message: Socket not connected');
@@ -125,6 +171,7 @@ class SocketService {
       ...message,
       'from': _userId,
       'timestamp': DateTime.now().toIso8601String(),
+      'conversationId': message['to'], // NOTE: This should be the actual conversation ID, not receiver ID
     };
     
     AppLogger.info('Sending private message: ${messageData.toString()}');
@@ -175,6 +222,7 @@ class SocketService {
         'content': '[ENCRYPTED]', // Placeholder for backward compatibility
         'messageType': messageType,
         'timestamp': DateTime.now().toIso8601String(),
+        'conversationId': receiverId, // NOTE: This should be the actual conversation ID, not receiver ID
         'encryptedContent': encryptedData['encryptedContent'],
         'encryptionMetadata': {
           'iv': encryptedData['iv'],
@@ -337,6 +385,20 @@ class SocketService {
     _socket!.on('private_chat_left', (data) {
       AppLogger.info('✅ Left private chat room: $data');
       AppLogger.info('🔵 Room details: ${data.toString()}');
+    });
+
+    // NEW: WhatsApp/Telegram style room management listeners
+    _socket!.on('conversation_joined', (data) {
+      AppLogger.info('✅ Joined conversation room: $data');
+      AppLogger.info('🔵 Conversation ID: ${data['conversationId']}');
+      AppLogger.info('🔵 Room name: ${data['roomName']}');
+      AppLogger.info('🔵 Timestamp: ${data['timestamp']}');
+    });
+
+    _socket!.on('conversation_left', (data) {
+      AppLogger.info('✅ Left conversation room: $data');
+      AppLogger.info('🔵 Conversation ID: ${data['conversationId']}');
+      AppLogger.info('🔵 Timestamp: ${data['timestamp']}');
     });
 
     _socket!.on('message_delivered', (data) {

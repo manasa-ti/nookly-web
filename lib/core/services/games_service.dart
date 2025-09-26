@@ -103,11 +103,13 @@ class GamesService {
   Future<void> sendGameInvite({
     required String gameType,
     required String otherUserId,
+    required String conversationId,
   }) async {
     try {
       await _gamesRepository.sendGameInvite(
         gameType: gameType,
         otherUserId: otherUserId,
+        conversationId: conversationId,
       );
       
       // Start invite timeout - COMMENTED OUT
@@ -161,6 +163,7 @@ class GamesService {
     required String sessionId,
     String? selectedChoice,
     required Map<String, dynamic> selectedPrompt,
+    required String conversationId,
   }) async {
     AppLogger.info('🎮 GamesService: completeGameTurn called');
     AppLogger.info('🎮 - sessionId: $sessionId');
@@ -174,6 +177,7 @@ class GamesService {
         sessionId: sessionId,
         selectedChoice: selectedChoice,
         selectedPrompt: selectedPrompt,
+        conversationId: conversationId,
       );
       
       AppLogger.info('🎮 GamesService: completeGameTurn repository call completed');
@@ -192,11 +196,13 @@ class GamesService {
   Future<void> endGame({
     required String sessionId,
     required String reason,
+    required String conversationId,
   }) async {
     try {
       await _gamesRepository.endGame(
         sessionId: sessionId,
         reason: reason,
+        conversationId: conversationId,
       );
       
       // Cancel all timeouts

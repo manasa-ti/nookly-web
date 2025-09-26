@@ -176,13 +176,14 @@ class GameSession extends Equatable {
     GameProgress? gameProgress,
     DateTime? startedAt,
     DateTime? lastActivityAt,
+    bool clearSelectedChoice = false,
   }) {
     return GameSession(
       sessionId: sessionId ?? this.sessionId,
       gameType: gameType ?? this.gameType,
       currentTurn: currentTurn ?? this.currentTurn,
       currentPrompt: currentPrompt ?? this.currentPrompt,
-      selectedChoice: selectedChoice ?? this.selectedChoice,
+      selectedChoice: clearSelectedChoice ? null : (selectedChoice ?? this.selectedChoice),
       players: players ?? this.players,
       gameProgress: gameProgress ?? this.gameProgress,
       startedAt: startedAt ?? this.startedAt,

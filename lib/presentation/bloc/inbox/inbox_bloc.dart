@@ -27,6 +27,7 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
     on<LoadInbox>(_onLoadInbox);
     on<RefreshInbox>(_onRefreshInbox);
     on<MarkConversationAsRead>(_onMarkConversationAsRead);
+    on<InboxUpdated>(_onInboxUpdated);
   }
 
   Future<void> _onLoadInbox(LoadInbox event, Emitter<InboxState> emit) async {
@@ -79,6 +80,11 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
       
       emit(InboxLoaded(updatedConversations));
     }
+  }
+
+  Future<void> _onInboxUpdated(InboxUpdated event, Emitter<InboxState> emit) async {
+    AppLogger.info('🔵 InboxBloc: Updating inbox with new conversations');
+    emit(InboxLoaded(event.conversations));
   }
 
   // Removed _mergeConversationsWithMatches method - no longer needed with unified API

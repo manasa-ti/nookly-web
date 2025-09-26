@@ -34,12 +34,17 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   bool _isLoadingCurrentUser = true;
   String? _initializationError;
   SocketService? _socketService;
-  final Map<String, GameInvite> _pendingGameInvites = {};
+  // REMOVED: _pendingGameInvites - not needed for notification-based architecture
   
   // Store listener references for proper cleanup
-  Function(dynamic)? _privateMessageListener;
-  Function(dynamic)? _typingListener;
-  Function(dynamic)? _stopTypingListener;
+  Function(dynamic)? _messageNotificationListener;
+  Function(dynamic)? _typingNotificationListener;
+  Function(dynamic)? _conversationUpdatedListener;
+  Function(dynamic)? _conversationRemovedListener;
+  Function(dynamic)? _userOnlineListener;
+  Function(dynamic)? _userOfflineListener;
+  Function(dynamic)? _gameNotificationListener;
+  Function(dynamic)? _errorListener;
 
   @override
   void initState() {
@@ -56,22 +61,30 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     _gamesBloc?.close();
     if (_socketService != null) {
       // Remove specific listeners to avoid affecting other pages
-      if (_privateMessageListener != null) {
-        _socketService!.offSpecific('private_message', _privateMessageListener!);
+      if (_messageNotificationListener != null) {
+        _socketService!.offSpecific('message_notification', _messageNotificationListener!);
       }
-      if (_typingListener != null) {
-        _socketService!.offSpecific('typing', _typingListener!);
+      if (_typingNotificationListener != null) {
+        _socketService!.offSpecific('typing_notification', _typingNotificationListener!);
       }
-      if (_stopTypingListener != null) {
-        _socketService!.offSpecific('stop_typing', _stopTypingListener!);
+      if (_conversationUpdatedListener != null) {
+        _socketService!.offSpecific('conversation_updated', _conversationUpdatedListener!);
       }
-      
-      // Remove other listeners that don't conflict with chat page
-      _socketService!.off('conversation_updated');
-      _socketService!.off('conversation_removed');
-      _socketService!.off('game_invite');
-      _socketService!.off('game_invite_rejected');
-      _socketService!.off('error');
+      if (_conversationRemovedListener != null) {
+        _socketService!.offSpecific('conversation_removed', _conversationRemovedListener!);
+      }
+      if (_userOnlineListener != null) {
+        _socketService!.offSpecific('user_online', _userOnlineListener!);
+      }
+      if (_userOfflineListener != null) {
+        _socketService!.offSpecific('user_offline', _userOfflineListener!);
+      }
+      if (_gameNotificationListener != null) {
+        _socketService!.offSpecific('game_notification', _gameNotificationListener!);
+      }
+      if (_errorListener != null) {
+        _socketService!.offSpecific('error', _errorListener!);
+      }
     }
     // ❌ REMOVED: _socketService?.disconnect();
     // Don't disconnect the shared socket service - let it stay connected for other pages
@@ -105,27 +118,16 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   }
 
   void _leaveAllChatRooms() {
-    if (_socketService != null && _socketService!.isConnected) {
-      final state = _inboxBloc?.state;
-      if (state is InboxLoaded) {
-        for (final conversation in state.conversations) {
-          AppLogger.info('Leaving private chat room for conversation with: ${conversation.participantId}');
-          _socketService!.leavePrivateChat(conversation.participantId);
-        }
-      }
-    }
+    // REMOVED: ChatInboxPage no longer leaves conversation rooms
+    // This follows WhatsApp/Telegram architecture where inbox only receives notifications
+    AppLogger.info('🔵 ChatInboxPage: Not leaving conversation rooms (notification-only mode)');
   }
 
   void _joinAllChatRooms() {
-    if (_socketService != null && _socketService!.isConnected) {
-      final state = _inboxBloc?.state;
-      if (state is InboxLoaded) {
-        for (final conversation in state.conversations) {
-          AppLogger.info('Joining private chat room for conversation with: ${conversation.participantId}');
-          _socketService!.joinPrivateChat(conversation.participantId);
-        }
-      }
-    }
+    // REMOVED: ChatInboxPage no longer joins conversation rooms
+    // This follows WhatsApp/Telegram architecture where inbox only receives notifications
+    AppLogger.info('🔵 ChatInboxPage: Not joining conversation rooms (notification-only mode)');
+    AppLogger.info('🔵 ChatInboxPage: Will receive notifications for all conversations');
   }
 
   /// Optimized initialization method that reuses cached user data when possible
@@ -275,91 +277,55 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   void _registerSocketListeners() {
     if (_socketService == null) return;
     
-    AppLogger.info('🔵 Registering socket listeners for chat inbox');
+    // Check if ChatPage is currently active (has listeners registered)
+    // If so, don't register inbox listeners to avoid conflicts
+    AppLogger.info('🔵 Registering NOTIFICATION-ONLY socket listeners for chat inbox');
+    AppLogger.info('🔵 Following WhatsApp/Telegram architecture - no room joining');
     
-    _privateMessageListener = (data) async {
+    // NEW: Listen for message notifications instead of full messages
+    _messageNotificationListener = (data) async {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
-        final conversation = conversations.where((c) => c.id == data['sender']).firstOrNull;
+        final conversationId = data['conversationId'] as String?;
+        final conversation = conversations.where((c) => c.id == conversationId).firstOrNull;
         
         if (conversation != null) {
-          AppLogger.info('🔵 Processing new message in inbox from: ${conversation.participantName}');
-          AppLogger.info('🔵 Current unread count: ${conversation.unreadCount}');
-          AppLogger.info('🔵 Message data: $data');
+          AppLogger.info('🔵 Processing message notification in inbox from: ${conversation.participantName}');
+          AppLogger.info('🔵 Conversation ID: $conversationId');
+          AppLogger.info('🔵 Preview: ${data['preview']}');
+          AppLogger.info('🔵 Unread count: ${data['unreadCount']}');
           
-          // Determine message type from socket data
-          MessageType messageType = MessageType.text;
-          if (data['messageType'] == 'image') {
-            messageType = MessageType.image;
-          } else if (data['messageType'] == 'voice') {
-            messageType = MessageType.voice;
-          } else if (data['messageType'] == 'file') {
-            messageType = MessageType.file;
-          }
-          
-          // Create message from socket data with proper type
+          // Create message preview from notification data
           final message = Message(
-            id: data['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
-            sender: data['sender'] ?? '',
-            receiver: data['receiver'] ?? '',
-            content: data['content'] ?? '',
-            timestamp: DateTime.parse(data['createdAt'] ?? DateTime.now().toIso8601String()),
-            type: messageType, // ✅ Use proper message type
-            status: data['status'] ?? 'sent',
-            isDisappearing: messageType == MessageType.image ? (data['isDisappearing'] ?? false) : false,
-            disappearingTime: messageType == MessageType.image ? data['disappearingTime'] : null,
+            id: data['messageId'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            sender: data['senderId'] ?? '',
+            receiver: _currentUser?.id ?? '',
+            content: data['preview'] ?? '', // Use preview instead of full content
+            timestamp: DateTime.parse(data['timestamp'] ?? DateTime.now().toIso8601String()),
+            type: _getMessageTypeFromString(data['messageType'] ?? 'text'),
+            status: 'sent',
+            isDisappearing: false, // Notifications don't include disappearing info
+            disappearingTime: null,
             metadata: {
-              if (data['isDisappearing'] != null && messageType == MessageType.image) 'isDisappearing': data['isDisappearing'].toString(),
-              if (data['viewedAt'] != null) 'viewedAt': data['viewedAt'].toString(),
+              'isNotification': 'true',
+              'isEncrypted': data['isEncrypted']?.toString() ?? 'false',
             },
-            // Add encryption fields if present
-            isEncrypted: data['encryptedContent'] != null,
-            encryptedContent: data['encryptedContent'],
-            encryptionMetadata: data['encryptionMetadata'],
+            isEncrypted: data['isEncrypted'] ?? false,
+            encryptedContent: null, // Notifications don't include encrypted content
+            encryptionMetadata: null,
           );
           
-          // Decrypt message if it's encrypted
+          // Use the message as-is (notifications don't need decryption)
           Message decryptedMessage = message;
-          if (message.isEncrypted && message.encryptionMetadata != null) {
-            AppLogger.info('🔵 Decrypting new message in inbox from: ${conversation.participantName}');
-            AppLogger.info('🔵 Message content before decryption: ${message.content}');
-            AppLogger.info('🔵 Encrypted content to decrypt: ${message.encryptedContent}');
-            try {
-              // Get socket service to decrypt the message
-              final socketService = sl<SocketService>();
-              final decryptedData = await socketService.decryptMessage(data, data['sender'] ?? '');
-              decryptedMessage = Message(
-                id: message.id,
-                sender: message.sender,
-                receiver: message.receiver,
-                content: decryptedData['content'] ?? message.content,
-                timestamp: message.timestamp,
-                type: message.type,
-                status: message.status,
-                isDisappearing: message.isDisappearing,
-                disappearingTime: message.disappearingTime,
-                metadata: message.metadata,
-                isEncrypted: false, // Mark as decrypted
-              );
-              AppLogger.info('🔵 Message content after decryption: ${decryptedMessage.content}');
-            } catch (e) {
-              AppLogger.error('❌ Failed to decrypt message in inbox: $e');
-              // Keep original message with decryption error
-              decryptedMessage = message.copyWith(
-                content: '[DECRYPTION FAILED]',
-                decryptionError: true,
-              );
-            }
-          }
           
-          // Create updated conversation with incremented unread count and new last message
+          // Create updated conversation with new unread count and last message preview
           final updatedConversation = conversation.copyWith(
-            unreadCount: conversation.unreadCount + 1,
+            unreadCount: data['unreadCount'] ?? (conversation.unreadCount + 1),
             lastMessage: decryptedMessage,
             lastMessageTime: decryptedMessage.timestamp,
             updatedAt: DateTime.now(),
-            messages: [decryptedMessage, ...conversation.messages], // Add new message to the beginning of the list
+            // Don't add to messages list - this is just a preview
           );
           
           // Update the conversations list
@@ -371,7 +337,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           updatedConversations.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
           
           // Emit updated state immediately
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
           
           // Invalidate cache since we have new message data
           if (_currentUser != null) {
@@ -386,21 +352,24 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
         }
       }
     };
-    _socketService!.on('private_message', _privateMessageListener!);
+    _socketService!.on('message_notification', _messageNotificationListener!);
 
-    // Add typing indicator listeners
-    _typingListener = (data) {
+    // NEW: Listen for typing notifications instead of full typing events
+    _typingNotificationListener = (data) {
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
-        final conversation = conversations.where((c) => c.id == data['from']).firstOrNull;
-        AppLogger.info('conversations on event typing: $conversations');
+        final conversationId = data['conversationId'] as String?;
+        final conversation = conversations.where((c) => c.id == conversationId).firstOrNull;
+        
         if (conversation != null) {
-          AppLogger.info('🔵 User is typing: ${conversation.participantName}');
+          AppLogger.info('🔵 Received typing notification in inbox from: ${conversation.participantName}');
+          AppLogger.info('🔵 Conversation ID: $conversationId');
+          AppLogger.info('🔵 Is typing: ${data['isTyping']}');
           
-          // Create updated conversation with typing status
+          // Update conversation with typing status
           final updatedConversation = conversation.copyWith(
-            isTyping: true,
+            isTyping: data['isTyping'] ?? false,
             updatedAt: DateTime.now(),
           );
           
@@ -410,40 +379,15 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           ).toList();
           
           // Emit updated state immediately
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
         }
       }
     };
-    _socketService!.on('typing', _typingListener!);
+    _socketService!.on('typing_notification', _typingNotificationListener!);
 
-    _stopTypingListener = (data) {
-      if (_inboxBloc?.state is InboxLoaded) {
-        final currentState = _inboxBloc?.state as InboxLoaded;
-        final conversations = currentState.conversations;
-        final conversation = conversations.where((c) => c.id == data['from']).firstOrNull;
-        AppLogger.info('conversations on event stop typing: $conversations');
-        if (conversation != null) {
-          AppLogger.info('🔵 User stopped typing: ${conversation.participantName}');
-          
-          // Create updated conversation with typing status
-          final updatedConversation = conversation.copyWith(
-            isTyping: false,
-            updatedAt: DateTime.now(),
-          );
-          
-          // Update the conversations list
-          final updatedConversations = conversations.map((c) => 
-            c.id == conversation.id ? updatedConversation : c
-          ).toList();
-          
-          // Emit updated state immediately
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
-        }
-      }
-    };
-    _socketService!.on('stop_typing', _stopTypingListener!);
+    // REMOVED: stop_typing listener - typing_notification handles both start and stop
 
-    _socketService!.on('conversation_updated', (data) {
+    _conversationUpdatedListener = (data) {
       AppLogger.info('🔍 Debugging received event: conversation_updated - Data: $data');
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
@@ -471,7 +415,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           updatedConversations.sort((a, b) => b.lastMessageTime.compareTo(a.lastMessageTime));
           
           // Emit updated state immediately
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
           
           // Invalidate cache since conversation was updated
           if (_currentUser != null) {
@@ -483,9 +427,10 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
         }
       }
-    });
+    };
+    _socketService!.on('conversation_updated', _conversationUpdatedListener!);
 
-    _socketService!.on('conversation_removed', (data) {
+    _conversationRemovedListener = (data) {
       AppLogger.info('🔍 Debugging received event: conversation_removed - Data: $data');
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
@@ -514,7 +459,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           final updatedConversations = conversations.where((c) => c.id != conversationToRemove).toList();
           
           // Emit updated state immediately
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
           
           AppLogger.info('🔵 Conversation removed successfully. Remaining conversations: ${updatedConversations.length}');
           
@@ -529,11 +474,12 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           }
         }
       }
-    });
+    };
+    _socketService!.on('conversation_removed', _conversationRemovedListener!);
 
     // Add online status event listeners
     AppLogger.info('🔵 Registering user_online listener');
-    _socketService!.on('user_online', (data) {
+    _userOnlineListener = (data) {
       AppLogger.info('🟢 User came online in inbox: $data');
       AppLogger.info('🟢 Current inbox state: ${_inboxBloc?.state.runtimeType}');
       AppLogger.info('🟢 Available conversations: ${(_inboxBloc?.state as InboxLoaded?)?.conversations.length ?? 0}');
@@ -566,7 +512,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             ).toList();
             
             // Emit updated state immediately
-            _inboxBloc?.emit(InboxLoaded(updatedConversations));
+            _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
             
             AppLogger.info('🔵 Updated online status for: ${conversation.participantName}');
             AppLogger.info('🔵 State emitted successfully');
@@ -579,10 +525,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       } else {
         AppLogger.warning('⚠️ Inbox state is not InboxLoaded: ${_inboxBloc?.state.runtimeType}');
       }
-    });
+    };
+    _socketService!.on('user_online', _userOnlineListener!);
 
     AppLogger.info('🔵 Registering user_offline listener');
-    _socketService!.on('user_offline', (data) {
+    _userOfflineListener = (data) {
       AppLogger.info('🔴 User went offline in inbox: $data');
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
@@ -606,82 +553,60 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             ).toList();
             
             // Emit updated state immediately
-            _inboxBloc?.emit(InboxLoaded(updatedConversations));
+            _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
             
             AppLogger.info('🔵 Updated offline status for: ${conversation.participantName}');
           }
         }
       }
-    });
+    };
+    _socketService!.on('user_offline', _userOfflineListener!);
 
-    // Game invite listeners
-    _socketService!.on('game_invite', (data) {
-      AppLogger.info('🔍 Debugging received event: game_invite - Data: $data');
+    // NEW: Listen for game notifications instead of full game events
+    _gameNotificationListener = (data) {
+      AppLogger.info('🎮 Game notification received in inbox: $data');
       
-      final gameInvite = GameInvite(
-        gameType: data['gameType'] as String,
-        fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
-        fromUserName: data['fromUserName'] as String?,
-        status: GameInviteStatus.pending,
-        createdAt: DateTime.now(),
-      );
+      final conversationId = data['conversationId'] as String?;
+      final eventType = data['eventType'] as String?;
+      final gameType = data['gameType'] as String?;
       
-      // Store the game invite for the conversation
-      _pendingGameInvites[gameInvite.fromUserId] = gameInvite;
-      
-      // Update the conversation with the game invite
-      if (_inboxBloc?.state is InboxLoaded) {
-        final currentState = _inboxBloc?.state as InboxLoaded;
-        final conversations = currentState.conversations;
-        final conversation = conversations.where((c) => c.participantId == gameInvite.fromUserId).firstOrNull;
-        
-        if (conversation != null) {
-          final updatedConversation = conversation.copyWith(
-            pendingGameInvite: gameInvite,
-            updatedAt: DateTime.now(),
-          );
+      if (conversationId != null && eventType != null) {
+        // Update conversation to show game notification
+        if (_inboxBloc?.state is InboxLoaded) {
+          final currentState = _inboxBloc?.state as InboxLoaded;
+          final conversations = currentState.conversations;
+          final conversation = conversations.where((c) => c.id == conversationId).firstOrNull;
           
-          final updatedConversations = conversations.map((c) => 
-            c.id == conversation.id ? updatedConversation : c
-          ).toList();
-          
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
+          if (conversation != null) {
+            // Create a simple game invite for notification purposes
+            final gameInvite = GameInvite(
+              gameType: gameType ?? 'unknown',
+              fromUserId: data['senderId'] as String? ?? '',
+              fromUserName: data['senderName'] as String?,
+              status: GameInviteStatus.pending,
+              createdAt: DateTime.now(),
+            );
+            
+            final updatedConversation = conversation.copyWith(
+              pendingGameInvite: gameInvite,
+              updatedAt: DateTime.now(),
+            );
+            
+            final updatedConversations = conversations.map((c) => 
+              c.id == conversation.id ? updatedConversation : c
+            ).toList();
+            
+            _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
+          }
         }
       }
-    });
+    };
+    _socketService!.on('game_notification', _gameNotificationListener!);
 
-    _socketService!.on('game_invite_rejected', (data) {
-      AppLogger.info('🎮 Game invite rejected in inbox: $data');
-      
-      final fromUserId = data['fromUserId'] as String;
-      
-      // Remove the game invite from pending invites
-      _pendingGameInvites.remove(fromUserId);
-      
-      // Update the conversation to remove the game invite
-      if (_inboxBloc?.state is InboxLoaded) {
-        final currentState = _inboxBloc?.state as InboxLoaded;
-        final conversations = currentState.conversations;
-        final conversation = conversations.where((c) => c.participantId == fromUserId).firstOrNull;
-        
-        if (conversation != null) {
-          final updatedConversation = conversation.copyWith(
-            pendingGameInvite: null,
-            updatedAt: DateTime.now(),
-          );
-          
-          final updatedConversations = conversations.map((c) => 
-            c.id == conversation.id ? updatedConversation : c
-          ).toList();
-          
-          _inboxBloc?.emit(InboxLoaded(updatedConversations));
-        }
-      }
-    });
-
-    _socketService!.on('error', (data) {
+    _errorListener = (data) {
       AppLogger.error('❌ Socket error in inbox: $data');
-    });
+    };
+    _socketService!.on('error', _errorListener!);
   }
 
   void _onGameInviteTap(Conversation conversation) {
@@ -730,33 +655,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     }
   }
 
-  String _formatOnlineStatus(Conversation conversation) {
-    if (conversation.isOnline) {
-      return 'Online';
-    } else if (conversation.lastSeen != null) {
-      try {
-        final lastSeenDate = DateTime.parse(conversation.lastSeen!);
-        final now = DateTime.now();
-        final difference = now.difference(lastSeenDate);
-        
-        if (difference.inMinutes < 1) {
-          return 'Just now';
-        } else if (difference.inMinutes < 60) {
-          return '${difference.inMinutes}m ago';
-        } else if (difference.inHours < 24) {
-          return '${difference.inHours}h ago';
-        } else if (difference.inDays < 7) {
-          return '${difference.inDays}d ago';
-        } else {
-          return 'Last seen ${lastSeenDate.day}/${lastSeenDate.month}';
-        }
-      } catch (e) {
-        return 'Offline';
-      }
-    } else {
-      return 'Offline';
-    }
-  }
+  // REMOVED: _formatOnlineStatus method - not being used
 
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
@@ -803,6 +702,20 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     }
     
     return displayText;
+  }
+
+  // Helper function to convert message type string to enum
+  MessageType _getMessageTypeFromString(String type) {
+    switch (type.toLowerCase()) {
+      case 'image':
+        return MessageType.image;
+      case 'voice':
+        return MessageType.voice;
+      case 'file':
+        return MessageType.file;
+      default:
+        return MessageType.text;
+    }
   }
 
   @override
@@ -915,7 +828,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                               )
                             : lastMessage != null
                                 ? Text(
-                                    _getMessageDisplayText(lastMessage!, isMe),
+                                    _getMessageDisplayText(lastMessage, isMe),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(

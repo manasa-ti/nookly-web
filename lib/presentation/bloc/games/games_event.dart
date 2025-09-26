@@ -14,14 +14,16 @@ abstract class GamesEvent extends Equatable {
 class SendGameInvite extends GamesEvent {
   final String gameType;
   final String otherUserId;
+  final String conversationId;
 
   const SendGameInvite({
     required this.gameType,
     required this.otherUserId,
+    required this.conversationId,
   });
 
   @override
-  List<Object?> get props => [gameType, otherUserId];
+  List<Object?> get props => [gameType, otherUserId, conversationId];
 }
 
 class AcceptGameInvite extends GamesEvent {
@@ -119,29 +121,33 @@ class GameStarted extends GamesEvent {
 class SelectGameChoice extends GamesEvent {
   final String choice; // 'truth' or 'thrill'
   final String currentUserId;
+  final String conversationId;
 
   const SelectGameChoice({
     required this.choice,
     required this.currentUserId,
+    required this.conversationId,
   });
 
   @override
-  List<Object?> get props => [choice, currentUserId];
+  List<Object?> get props => [choice, currentUserId, conversationId];
 }
 
 class CompleteGameTurn extends GamesEvent {
   final String sessionId;
   final String? selectedChoice;
   final Map<String, dynamic> selectedPrompt;
+  final String conversationId;
 
   const CompleteGameTurn({
     required this.sessionId,
     this.selectedChoice,
     required this.selectedPrompt,
+    required this.conversationId,
   });
 
   @override
-  List<Object?> get props => [sessionId, selectedChoice, selectedPrompt];
+  List<Object?> get props => [sessionId, selectedChoice, selectedPrompt, conversationId];
 }
 
 class GameTurnSwitched extends GamesEvent {
@@ -181,14 +187,16 @@ class GameChoiceMade extends GamesEvent {
 class EndGame extends GamesEvent {
   final String sessionId;
   final String reason;
+  final String conversationId;
 
   const EndGame({
     required this.sessionId,
     required this.reason,
+    required this.conversationId,
   });
 
   @override
-  List<Object?> get props => [sessionId, reason];
+  List<Object?> get props => [sessionId, reason, conversationId];
 }
 
 class GameEnded extends GamesEvent {

@@ -37,17 +37,20 @@ class GamesRepositoryImpl implements GamesRepository {
   Future<void> sendGameInvite({
     required String gameType,
     required String otherUserId,
+    required String conversationId,
   }) async {
     try {
       AppLogger.info('🎮 GamesRepository: sendGameInvite called');
       AppLogger.info('🎮 - gameType: $gameType');
       AppLogger.info('🎮 - otherUserId: $otherUserId');
+      AppLogger.info('🎮 - conversationId: $conversationId');
       AppLogger.info('🎮 - socketService available: ${_socketService != null}');
       AppLogger.info('🎮 - socket connected: ${_socketService.isConnected}');
       
       final eventData = {
         'gameType': gameType,
         'otherUserId': otherUserId,
+        'conversationId': conversationId, // NEW: Use actual conversation ID for room-based broadcasting
       };
       
       AppLogger.info('🎮 Emitting game_invite event with data: $eventData');
@@ -74,6 +77,7 @@ class GamesRepositoryImpl implements GamesRepository {
       final eventData = {
         'gameType': gameType,
         'otherUserId': otherUserId,
+        'conversationId': otherUserId, // NEW: Required for room-based broadcasting
       };
       
       AppLogger.info('🎮 Emitting game_invite_accepted event with data: $eventData');
@@ -103,6 +107,7 @@ class GamesRepositoryImpl implements GamesRepository {
         'gameType': gameType,
         'fromUserId': fromUserId,
         'reason': reason ?? 'declined',
+        'conversationId': fromUserId, // NEW: Required for room-based broadcasting
       };
       
       AppLogger.info('🎮 Emitting game_invite_rejected event with data: $eventData');
@@ -120,6 +125,7 @@ class GamesRepositoryImpl implements GamesRepository {
     required String choice,
     required Map<String, dynamic> selectedPrompt,
     required String madeBy,
+    required String conversationId,
   }) async {
     try {
       AppLogger.info('🎮 GamesRepository: Sending game choice for session: $sessionId');
@@ -132,11 +138,13 @@ class GamesRepositoryImpl implements GamesRepository {
         'choice': choice,
         'selectedPrompt': selectedPrompt,
         'madeBy': madeBy,
+        'conversationId': conversationId, // NEW: Required for room-based broadcasting
       };
       
+      AppLogger.info('🎮 ===== EMITTING GAME_CHOICE_MADE EVENT =====');
       AppLogger.info('🎮 Emitting game_choice_made event with data: $eventData');
       _socketService.emit('game_choice_made', eventData);
-      AppLogger.info('🎮 Successfully emitted game_choice_made event');
+      AppLogger.info('🎮 ===== GAME_CHOICE_MADE EVENT EMITTED SUCCESSFULLY =====');
     } catch (e) {
       AppLogger.error('❌ Failed to send game choice: $e');
       rethrow;
@@ -148,6 +156,7 @@ class GamesRepositoryImpl implements GamesRepository {
     required String sessionId,
     String? selectedChoice,
     required Map<String, dynamic> selectedPrompt,
+    required String conversationId,
   }) async {
     try {
       AppLogger.info('🎮 GamesRepository: completeGameTurn called');
@@ -161,6 +170,7 @@ class GamesRepositoryImpl implements GamesRepository {
         'sessionId': sessionId,
         'selectedChoice': selectedChoice,
         'selectedPrompt': selectedPrompt,
+        'conversationId': conversationId, // NEW: Required for room-based broadcasting
       };
       
       AppLogger.info('🎮 Emitting game_turn_completed event with data: $eventData');
@@ -176,6 +186,7 @@ class GamesRepositoryImpl implements GamesRepository {
   Future<void> endGame({
     required String sessionId,
     required String reason,
+    required String conversationId,
   }) async {
     try {
       AppLogger.info('🎮 GamesRepository: endGame called');
@@ -187,6 +198,7 @@ class GamesRepositoryImpl implements GamesRepository {
       final eventData = {
         'sessionId': sessionId,
         'reason': reason,
+        'conversationId': conversationId, // NEW: Required for room-based broadcasting
       };
       
       AppLogger.info('🎮 Emitting game_ended event with data: $eventData');

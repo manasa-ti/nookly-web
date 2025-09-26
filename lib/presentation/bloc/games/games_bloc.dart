@@ -67,6 +67,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
       await _gamesService.sendGameInvite(
         gameType: event.gameType,
         otherUserId: event.otherUserId,
+        conversationId: event.conversationId,
       );
       
       emit(GameInviteSentState(
@@ -222,6 +223,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
         choice: event.choice,
         selectedPrompt: selectedPrompt,
         madeBy: event.currentUserId,
+        conversationId: event.conversationId,
       );
     } else {
       AppLogger.warning('🎮 Current state is not GameActive: ${state.runtimeType}');
@@ -245,6 +247,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
         sessionId: event.sessionId,
         selectedChoice: event.selectedChoice,
         selectedPrompt: event.selectedPrompt,
+        conversationId: event.conversationId,
       );
       AppLogger.info('🎮 Successfully called gamesService.completeGameTurn');
       
@@ -280,14 +283,32 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
       final updatedSession = currentState.gameSession.copyWith(
         currentTurn: event.newTurn,
         currentPrompt: event.nextPrompt,
-        selectedChoice: null, // Reset for new turn
+        clearSelectedChoice: true, // Reset for new turn
         gameProgress: event.gameProgress,
         lastActivityAt: DateTime.now(),
       );
       AppLogger.info('🎮 Emitting updated GameActive state');
+      AppLogger.info('🎮 - selectedChoice reset to: ${updatedSession.selectedChoice}');
+      AppLogger.info('🎮 - currentTurn: ${updatedSession.currentTurn.userId}');
+      AppLogger.info('🎮 - This should show Truth/Thrill buttons for the new turn user');
+      emit(GameActive(gameSession: updatedSession));
+    } else if (state is GameTurnCompleted) {
+      final currentState = state as GameTurnCompleted;
+      AppLogger.info('🎮 Current state is GameTurnCompleted, transitioning to GameActive...');
+      final updatedSession = currentState.gameSession.copyWith(
+        currentTurn: event.newTurn,
+        currentPrompt: event.nextPrompt,
+        clearSelectedChoice: true, // Reset for new turn
+        gameProgress: event.gameProgress,
+        lastActivityAt: DateTime.now(),
+      );
+      AppLogger.info('🎮 Emitting GameActive state from GameTurnCompleted');
+      AppLogger.info('🎮 - selectedChoice reset to: ${updatedSession.selectedChoice}');
+      AppLogger.info('🎮 - currentTurn: ${updatedSession.currentTurn.userId}');
+      AppLogger.info('🎮 - This should show Truth/Thrill buttons for the new turn user');
       emit(GameActive(gameSession: updatedSession));
     } else {
-      AppLogger.warning('🎮 Current state is not GameActive: ${state.runtimeType}');
+      AppLogger.warning('🎮 Current state is not GameActive or GameTurnCompleted: ${state.runtimeType}');
     }
   }
 
@@ -300,22 +321,47 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     AppLogger.info('🎮 - choice: ${event.choice}');
     AppLogger.info('🎮 - selectedPrompt: ${event.selectedPrompt.toJson()}');
     AppLogger.info('🎮 - madeBy: ${event.madeBy}');
+    AppLogger.info('🎮 - Current state: ${state.runtimeType}');
     
     if (state is GameActive) {
       final currentState = state as GameActive;
-      AppLogger.info('🎮 Current state is GameActive, updating session with choice...');
+      AppLogger.info('🎮 Current state is GameActive');
+      AppLogger.info('🎮 Choice made by: ${event.madeBy}');
+      AppLogger.info('🎮 Current turn user: ${currentState.gameSession.currentTurn.userId}');
       
-      // Update the game session with the selected choice
-      // Keep the original truthOrThrill prompt structure, just update the selected choice
-      final updatedSession = currentState.gameSession.copyWith(
-        selectedChoice: event.choice,
-        lastActivityAt: DateTime.now(),
-      );
+      // Guard against late/out-of-order events: only accept choice from the current turn user
+      if (currentState.gameSession.currentTurn.userId == event.madeBy) {
+        AppLogger.info('🎮 Accepting choice for current turn user; updating selectedChoice');
+        final updatedSession = currentState.gameSession.copyWith(
+          selectedChoice: event.choice,
+          lastActivityAt: DateTime.now(),
+        );
+        AppLogger.info('🎮 Emitting updated GameActive state with choice');
+        emit(GameActive(gameSession: updatedSession));
+      } else {
+        AppLogger.info("⚠️ Ignoring GameChoiceMade: madeBy doesn't match current turn user (likely late event)");
+      }
+    } else if (state is GameTurnCompleted) {
+      final currentState = state as GameTurnCompleted;
+      AppLogger.info('🎮 Current state is GameTurnCompleted');
+      AppLogger.info('🎮 Choice made by: ${event.madeBy}');
+      AppLogger.info('🎮 Current turn user: ${currentState.gameSession.currentTurn.userId}');
       
-      AppLogger.info('🎮 Emitting updated GameActive state with choice');
-      emit(GameActive(gameSession: updatedSession));
+      // Same guard during completed state to avoid re-setting after switch
+      if (currentState.gameSession.currentTurn.userId == event.madeBy) {
+        AppLogger.info('🎮 Accepting choice for current turn user in GameTurnCompleted; updating selectedChoice');
+        final updatedSession = currentState.gameSession.copyWith(
+          selectedChoice: event.choice,
+          lastActivityAt: DateTime.now(),
+        );
+        AppLogger.info('🎮 Emitting updated GameTurnCompleted state with choice');
+        emit(GameTurnCompleted(gameSession: updatedSession));
+      } else {
+        AppLogger.info("⚠️ Ignoring GameChoiceMade in GameTurnCompleted: madeBy doesn't match current turn user (likely late event)");
+      }
     } else {
-      AppLogger.warning('🎮 Current state is not GameActive: ${state.runtimeType}');
+      AppLogger.warning('🎮 Current state is not GameActive or GameTurnCompleted: ${state.runtimeType}');
+      AppLogger.warning('🎮 Cannot process GameChoiceMade event in this state');
     }
   }
 
@@ -327,6 +373,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
       await _gamesService.endGame(
         sessionId: event.sessionId,
         reason: event.reason,
+        conversationId: event.conversationId,
       );
       
       emit(const GamesInitial());
@@ -362,7 +409,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     Emitter<GamesState> emit,
   ) {
     AppLogger.warning('⏰ Game turn timeout: ${event.sessionId}');
-    add(EndGame(sessionId: event.sessionId, reason: 'timeout'));
+    add(EndGame(sessionId: event.sessionId, reason: 'timeout', conversationId: event.sessionId));
   }
 
   void _onGameSessionTimeout(
@@ -370,7 +417,7 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     Emitter<GamesState> emit,
   ) {
     AppLogger.warning('⏰ Game session timeout: ${event.sessionId}');
-    add(EndGame(sessionId: event.sessionId, reason: 'timeout'));
+    add(EndGame(sessionId: event.sessionId, reason: 'timeout', conversationId: event.sessionId));
   }
 
   // UI event handlers

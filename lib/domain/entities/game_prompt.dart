@@ -114,3 +114,7 @@ class GamePrompt extends Equatable {
   bool get isSinglePrompt => singlePrompt != null;
 }
 
+
+
+
+

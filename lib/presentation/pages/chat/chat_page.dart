@@ -38,6 +38,8 @@ import 'package:nookly/core/services/scam_alert_service.dart';
 import 'package:nookly/core/services/api_cache_service.dart';
 import 'package:nookly/presentation/widgets/scam_alert_popup.dart';
 import 'package:nookly/presentation/widgets/conversation_starter_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nookly/core/services/user_cache_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -95,13 +97,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   String? _jwtToken;
   SocketService? _socketService;
   final Set<String> _processedMessageIds = {}; // Track processed message IDs
+  bool _listenersRegistered = false; // Prevent multiple listener registrations
+  String? _serverConversationId; // Store server-provided conversation ID
   
   // Store listener references for proper cleanup
   Function(dynamic)? _typingListener;
-  Function(dynamic)? _stopTypingListener;
+  // REMOVED: _stopTypingListener - no longer needed as stop_typing is handled by typing listener
   Function(dynamic)? _privateMessageListener;
   Function(dynamic)? _messageDeliveredListener;
   Function(dynamic)? _messageReadListener;
+  Function(dynamic)? _gameInviteListener;
+  Function(dynamic)? _gameStartedListener;
+  Function(dynamic)? _gameChoiceMadeListener;
   final Dio dio = Dio(); // Initialize Dio instance
   final ImagePicker _picker = ImagePicker();
 
@@ -123,6 +130,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _disappearingImageManager = DisappearingImageManager(
       onImageExpired: _handleImageExpired,
     );
+    
+    // Initialize user ID immediately from cache
+    _initializeUserFromCache();
     
     _initSocketAndUser();
     // Load conversation when the page is initialized
@@ -167,6 +177,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   @override
   void dispose() {
+        // NEW: Leave conversation room (WhatsApp/Telegram style)
+        if (_socketService != null) {
+          final actualConversationId = _getActualConversationId();
+          AppLogger.info('🔵 ChatPage: Leaving conversation room: $actualConversationId');
+          _socketService!.leaveConversationRoom(actualConversationId);
+        }
+    
     // Dispose DisappearingImageManager
     _disappearingImageManager.dispose();
     
@@ -182,14 +199,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       if (_typingListener != null) {
         _socketService!.offSpecific('typing', _typingListener!);
       }
-      if (_stopTypingListener != null) {
-        _socketService!.offSpecific('stop_typing', _stopTypingListener!);
-      }
+      // REMOVED: stop_typing listener cleanup - no longer needed
       if (_messageDeliveredListener != null) {
         _socketService!.offSpecific('message_delivered', _messageDeliveredListener!);
       }
       if (_messageReadListener != null) {
         _socketService!.offSpecific('message_read', _messageReadListener!);
+      }
+      if (_gameInviteListener != null) {
+        _socketService!.offSpecific('game_invite', _gameInviteListener!);
+      }
+      if (_gameStartedListener != null) {
+        _socketService!.offSpecific('game_started', _gameStartedListener!);
+      }
+      if (_gameChoiceMadeListener != null) {
+        _socketService!.offSpecific('game_choice_made', _gameChoiceMadeListener!);
       }
       
       // Remove other listeners that don't conflict with inbox
@@ -213,6 +237,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       // Leave the private chat room
       _socketService!.leavePrivateChat(widget.conversationId);
     }
+    
+    // Reset the listeners registered flag
+    _listenersRegistered = false;
+    
     _messageController.dispose();
     _scrollController.dispose();
     _menuAnimationController.dispose();
@@ -328,6 +356,73 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
   }
 
+  void _initializeUserFromCache() {
+    try {
+      // Get user ID from SharedPreferences immediately (synchronous)
+      final authRepository = sl<AuthRepository>();
+      final userCacheService = UserCacheService();
+      
+      // Try to get cached user first
+      final cachedUser = userCacheService.getCachedUser();
+      if (cachedUser != null) {
+        _currentUserId = cachedUser.id;
+        AppLogger.info('🔵 ChatPage: User ID initialized from cache: $_currentUserId');
+        return;
+      }
+      
+      // If no cache, try to get from SharedPreferences
+      // Note: This is a synchronous operation on SharedPreferences
+      final prefs = sl<SharedPreferences>();
+      final userId = prefs.getString('userId');
+      if (userId != null) {
+        _currentUserId = userId;
+        AppLogger.info('🔵 ChatPage: User ID initialized from SharedPreferences: $_currentUserId');
+        return;
+      }
+      
+      AppLogger.warning('⚠️ ChatPage: No cached user ID found, will wait for async initialization');
+    } catch (e) {
+      AppLogger.error('❌ ChatPage: Failed to initialize user from cache: $e');
+    }
+  }
+
+  void _cleanupSocketListeners() {
+    if (_socketService == null) return;
+    
+    AppLogger.info('🔵 ChatPage: Cleaning up socket listeners...');
+    
+    // Remove all game-related listeners
+    _socketService!.off('game_invite');
+    _socketService!.off('game_invite_sent');
+    _socketService!.off('game_invite_rejected');
+    _socketService!.off('game_started');
+    _socketService!.off('game_turn_switched');
+    _socketService!.off('game_ended');
+    _socketService!.off('game_choice_made');
+    _socketService!.off('game_invite_accepted');
+    
+    // Remove typing listeners
+    _socketService!.off('typing');
+    // REMOVED: stop_typing cleanup - no longer needed
+    
+      // Remove test listeners
+      _socketService!.off('test_event');
+      _socketService!.off('test_sender_event');
+      _socketService!.off('test_recipient_event');
+    
+    // Remove online status listeners
+    _socketService!.off('user_online');
+    _socketService!.off('user_offline');
+    
+    // Remove other listeners
+    _socketService!.off('connect');
+    _socketService!.off('disconnect');
+    _socketService!.off('error');
+    _socketService!.off('join_error');
+    
+    AppLogger.info('🔵 ChatPage: Socket listeners cleaned up successfully');
+  }
+
   void _reportScamAlert() {
     // Navigate to report page
     Navigator.push(
@@ -408,26 +503,40 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('🔵 Socket already connected, reusing existing connection');
       }
       
-      // Add a small delay to ensure socket is connected
-      await Future.delayed(const Duration(milliseconds: 1000));
+      // Wait for socket to be fully connected with a proper ID
+      int attempts = 0;
+      while (!_socketService!.isConnected || _socketService!.socketId == null) {
+        if (attempts > 10) {
+          AppLogger.error('❌ Socket connection timeout after 10 attempts');
+          break;
+        }
+        AppLogger.info('🔵 Waiting for socket connection... Attempt ${attempts + 1}');
+        await Future.delayed(const Duration(milliseconds: 500));
+        attempts++;
+      }
       
       AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');
       AppLogger.info('🔵 Socket ID: ${_socketService!.socketId}');
       
-      if (_socketService!.isConnected) {
-        // Join the private chat room
-        AppLogger.info('🔵 Joining private chat room: ${widget.conversationId}');
-        _socketService!.joinPrivateChat(widget.conversationId);
+        if (_socketService!.isConnected && _socketService!.socketId != null) {
+          // Join the conversation room (WhatsApp/Telegram style)
+          final actualConversationId = _getActualConversationId();
+          AppLogger.info('🔵 Joining conversation room: $actualConversationId');
+          _socketService!.joinConversationRoom(actualConversationId);
         
         // Register listeners after socket is connected and room is joined
+        AppLogger.info('🔵 Socket is connected with ID, registering listeners...');
         _registerSocketListeners();
         AppLogger.info('🔵 Socket listeners registered');
       } else {
-        AppLogger.error('❌ Socket not connected after initialization');
+        AppLogger.error('❌ Socket not properly connected after waiting');
+        AppLogger.error('❌ Socket state: ${_socketService!.isConnected}');
+        AppLogger.error('❌ Socket ID: ${_socketService!.socketId}');
         
-        // Try to register listeners anyway in case socket connects later
+        // Try to register listeners anyway as fallback
+        AppLogger.info('🔵 Attempting to register listeners as fallback...');
         _registerSocketListeners();
-        AppLogger.info('🔵 Socket listeners registered (socket not connected)');
+        AppLogger.info('🔵 Socket listeners registered (fallback)');
       }
     } else {
       AppLogger.error('❌ User or token is null');
@@ -442,12 +551,30 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       return;
     }
     
-    AppLogger.info('🔵 Registering socket listeners in chat page');
+    AppLogger.info('🔵 ===== STARTING SOCKET LISTENER REGISTRATION =====');
     AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');
+    AppLogger.info('🔵 Socket ID: ${_socketService!.socketId}');
+    AppLogger.info('🔵 Current user ID: $_currentUserId');
+    AppLogger.info('🔵 Conversation ID: ${widget.conversationId}');
+    AppLogger.info('🔵 Mounted: $mounted');
+    
+    // Prevent multiple registrations
+    if (_listenersRegistered) {
+      AppLogger.info('🔵 Listeners already registered, skipping...');
+      return;
+    }
+    
+    try {
+      AppLogger.info('🔵 Registering core socket listeners...');
     
     // Test if socket service is working by adding a test listener
     _socketService!.on('test_event', (data) {
       AppLogger.info('🧪 Test event received: $data');
+    });
+    
+    // Add a simple test listener for any event
+    _socketService!.on('test_simple', (data) {
+      AppLogger.info('🧪 SIMPLE TEST: Event received: $data');
     });
     
     // Add listener for all events
@@ -455,11 +582,37 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.info('🔵 Socket connected event received');
       AppLogger.info('🔵 Re-joining private chat room after reconnection');
       _socketService!.joinPrivateChat(widget.conversationId);
+      
+      // Note: Don't re-register listeners here as it would cause infinite recursion
+      // Listeners are already registered and will work after reconnection
+      AppLogger.info('🔵 Socket reconnected, existing listeners should work');
     });
     
     // Add a test listener to see if sender is receiving any events
     _socketService!.on('test_sender_event', (data) {
       AppLogger.info('🧪 SENDER: Test event received: $data');
+    });
+    
+    // Add a test listener to see if recipient is receiving any events
+    _socketService!.on('test_recipient_event', (data) {
+      AppLogger.info('🧪 RECIPIENT: Test event received: $data');
+    });
+    
+    // Listen for conversation room events
+    _socketService!.on('conversation_joined', (data) {
+      AppLogger.info('🔵 ChatPage: Successfully joined conversation room');
+      AppLogger.info('🔵 Conversation ID: ${data['conversationId']}');
+      AppLogger.info('🔵 Room name: ${data['roomName']}');
+      
+      // Store the server-provided conversation ID for use in game events
+      _serverConversationId = data['conversationId'] as String?;
+      AppLogger.info('🔵 Stored server conversation ID: $_serverConversationId');
+      AppLogger.info('🔵 This conversation ID will now be used for all game events');
+    });
+    
+    _socketService!.on('conversation_left', (data) {
+      AppLogger.info('🔵 ChatPage: Left conversation room');
+      AppLogger.info('🔵 Conversation ID: ${data['conversationId']}');
     });
     
     _socketService!.on('disconnect', (data) {
@@ -526,6 +679,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       if (!mounted) return;
       AppLogger.info('🟢 User came online in chat: $data');
       final userId = data['userId'] as String?;
+      AppLogger.info('🟢 Online user ID: $userId');
+      AppLogger.info('🟢 Current conversation ID: ${widget.conversationId}');
       
       if (userId == widget.conversationId) {
         AppLogger.info('🔵 Updating online status for current chat participant');
@@ -533,6 +688,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           // Update the widget's isOnline state
           // Note: This will require a widget rebuild to reflect the change
         });
+      } else {
+        AppLogger.info('🟢 Online event for different user, ignoring');
       }
     });
 
@@ -540,6 +697,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       if (!mounted) return;
       AppLogger.info('🔴 User went offline in chat: $data');
       final userId = data['userId'] as String?;
+      AppLogger.info('🔴 Offline user ID: $userId');
+      AppLogger.info('🔴 Current conversation ID: ${widget.conversationId}');
       
       if (userId == widget.conversationId) {
         AppLogger.info('🔵 Updating offline status for current chat participant');
@@ -547,6 +706,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           // Update the widget's isOnline state
           // Note: This will require a widget rebuild to reflect the change
         });
+      } else {
+        AppLogger.info('🔴 Offline event for different user, ignoring');
       }
     });
 
@@ -676,7 +837,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     _privateMessageListener = (data) async {
       if (!mounted) return;
-      AppLogger.info('🔍 Debugging received event: private_message - Data: $data');
+      
+      // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
+      final eventConversationId = data['conversationId'] as String?;
+      final actualConversationId = _getActualConversationId();
+      
+      // If event doesn't have conversationId, allow it (for backward compatibility)
+      if (eventConversationId != null && eventConversationId != actualConversationId) {
+        AppLogger.info('🔍 Ignoring private_message for different conversation: $eventConversationId (current: $actualConversationId)');
+        return;
+      }
+      
+      AppLogger.info('🔍 Processing private_message for current conversation: $actualConversationId');
+      AppLogger.info('🔍 Message data: $data');
       try {
         // Decrypt message if it's encrypted
         Map<String, dynamic> decryptedData = data;
@@ -790,49 +963,69 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         // Error processing received message
       }
     };
+    AppLogger.info('🔵 Registering private_message listener...');
     _socketService!.on('private_message', _privateMessageListener!);
+    AppLogger.info('🔵 Private_message listener registered successfully');
 
     // Add typing indicator listeners with debounce
     _typingListener = (data) {
       if (!mounted) return;
-      AppLogger.info('🔵 Received typing event from: ${data['from']}, expected: ${widget.conversationId}');
+      
+      // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
+      final eventConversationId = data['conversationId'] as String?;
+      final actualConversationId = _getActualConversationId();
+      
+      // If event doesn't have conversationId, allow it (for backward compatibility)
+      if (eventConversationId != null && eventConversationId != actualConversationId) {
+        AppLogger.info('🔍 Ignoring typing event for different conversation: $eventConversationId (current: $actualConversationId)');
+        return;
+      }
+      
+      AppLogger.info('🔵 Processing typing event - conversationId: $eventConversationId, current: $actualConversationId');
+      AppLogger.info('🔵 Typing from: ${data['from']}, isTyping: ${data['isTyping']}');
+      
       if (data['from'] == widget.conversationId) {
-        _typingDebounce?.cancel();
-        _typingDebounce = Timer(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            setState(() {
-              _otherUserTyping = true;
-            });
-            context.read<ConversationBloc>().add(ConversationUpdated(
-              conversationId: widget.conversationId,
-              isTyping: true,
-              updatedAt: DateTime.now(),
-            ));
-          }
-        });
+        final isTyping = data['isTyping'] as bool? ?? true; // Default to true for backward compatibility
+        
+        if (isTyping) {
+          // User started typing
+          _typingDebounce?.cancel();
+          _typingDebounce = Timer(const Duration(milliseconds: 300), () {
+            if (mounted) {
+              AppLogger.info('🔵 Setting other user typing to true');
+              setState(() {
+                _otherUserTyping = true;
+              });
+              // Also update the ConversationBloc state
+              context.read<ConversationBloc>().add(ConversationUpdated(
+                conversationId: widget.conversationId,
+                isTyping: true,
+                updatedAt: DateTime.now(),
+              ));
+            }
+          });
+        } else {
+          // User stopped typing (isTyping: false) - this is the new backend behavior
+          _typingDebounce?.cancel();
+          AppLogger.info('🔵 Setting other user typing to false (stop_typing via typing event)');
+          setState(() {
+            _otherUserTyping = false;
+          });
+          // Also update the ConversationBloc state
+          context.read<ConversationBloc>().add(ConversationUpdated(
+            conversationId: widget.conversationId,
+            isTyping: false,
+            updatedAt: DateTime.now(),
+          ));
+        }
       }
     };
+    AppLogger.info('🔵 Registering typing listener...');
     _socketService!.on('typing', _typingListener!);
+    AppLogger.info('🔵 Typing listener registered successfully');
 
-    _stopTypingListener = (data) {
-      if (!mounted) return;
-      if (data['from'] == widget.conversationId) {
-        _typingDebounce?.cancel();
-        _typingDebounce = Timer(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            setState(() {
-              _otherUserTyping = false;
-            });
-            context.read<ConversationBloc>().add(ConversationUpdated(
-              conversationId: widget.conversationId,
-              isTyping: false,
-              updatedAt: DateTime.now(),
-            ));
-          }
-        });
-      }
-    };
-    _socketService!.on('stop_typing', _stopTypingListener!);
+    // REMOVED: stop_typing listener - backend now sends stop_typing as typing event with isTyping: false
+    AppLogger.info('🔵 Note: stop_typing events are now handled by the typing listener with isTyping: false');
 
     // Add individual message status listeners for backward compatibility
     _messageDeliveredListener = (data) {
@@ -872,7 +1065,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _socketService!.on('message_read', _messageReadListener!);
 
     // Game event listeners - added after existing listeners to avoid conflicts
-    _socketService!.on('game_invite', (data) {
+    AppLogger.info('🔵 Registering game_invite listener...');
+    _gameInviteListener = (data) {
       if (!mounted) return;
       
       AppLogger.info('🎮 ChatPage: game_invite event received');
@@ -881,6 +1075,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
       AppLogger.info('🎮 - Mounted: $mounted');
       
+      // Log invite details for debugging
+      final fromUserId = data['fromUserId'] as String? ?? data['from'] as String? ?? '';
+      AppLogger.info('🎮 - FromUserId: $fromUserId');
+      AppLogger.info('🎮 - ConversationId: ${widget.conversationId}');
+      
       try {
         final gamesBloc = context.read<GamesBloc>();
         AppLogger.info('🎮 - GamesBloc instance: ${gamesBloc.hashCode}');
@@ -888,7 +1087,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         
         final gameInvite = GameInvite(
           gameType: data['gameType'] as String? ?? 'truth_or_thrill',
-          fromUserId: data['fromUserId'] as String? ?? data['from'] as String? ?? '',
+          fromUserId: fromUserId,
           fromUserName: data['fromUserName'] as String?,
           status: GameInviteStatus.pending,
           createdAt: DateTime.now(),
@@ -901,7 +1100,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.error('❌ ChatPage: Failed to process game invite: $e');
         AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
       }
-    });
+    };
+    _socketService!.on('game_invite', _gameInviteListener!);
 
     _socketService!.on('game_invite_sent', (data) {
       if (!mounted) return;
@@ -933,7 +1133,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       }
     });
 
-    _socketService!.on('game_started', (data) {
+    AppLogger.info('🔵 Registering game_started listener...');
+    _gameStartedListener = (data) {
       if (!mounted) return;
       
       AppLogger.info('🎮 ChatPage: game_started event received');
@@ -941,6 +1142,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.info('🎮 - Current user ID: $_currentUserId');
       AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
       AppLogger.info('🎮 - Mounted: $mounted');
+      
+      // Log sessionId for debugging
+      final sessionId = data['sessionId'] as String? ?? '';
+      AppLogger.info('🎮 - SessionId: $sessionId');
+      AppLogger.info('🎮 - ConversationId: ${widget.conversationId}');
+      
       AppLogger.info('🎮 - SENDER/RECEIVER: This is the ${_currentUserId == data['currentTurn']['userId'] ? 'SENDER' : 'RECEIVER'}');
       
       try {
@@ -958,7 +1165,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.error('❌ ChatPage: Failed to process game started: $e');
         AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
       }
-    });
+    };
+    _socketService!.on('game_started', _gameStartedListener!);
 
     _socketService!.on('game_turn_switched', (data) {
       if (!mounted) return;
@@ -999,7 +1207,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       }
     });
 
-    _socketService!.on('game_choice_made', (data) {
+    // Debug: Log before registering game_choice_made listener
+    AppLogger.info('🔍 ChatPage: About to register game_choice_made listener');
+    AppLogger.info('🔍 ChatPage: Socket connected: ${_socketService!.isConnected}');
+    AppLogger.info('🔍 ChatPage: Socket ID: ${_socketService!.socketId}');
+    
+    AppLogger.info('🔵 Registering game_choice_made listener...');
+    _gameChoiceMadeListener = (data) {
+      AppLogger.info('🎮 ===== GAME_CHOICE_MADE EVENT RECEIVED =====');
       if (!mounted) return;
       
       AppLogger.info('🎮 ChatPage: game_choice_made event received');
@@ -1007,30 +1222,43 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.info('🎮 - Current user ID: $_currentUserId');
       AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
       AppLogger.info('🎮 - Mounted: $mounted');
+      AppLogger.info('🎮 - Socket connected: ${_socketService!.isConnected}');
+      AppLogger.info('🎮 - Socket ID: ${_socketService!.socketId}');
+      
+      // Log sessionId for debugging
+      final sessionId = data['sessionId'] as String? ?? '';
+      final madeBy = data['madeBy'] as String? ?? '';
+      AppLogger.info('🎮 - SessionId: $sessionId');
+      AppLogger.info('🎮 - MadeBy: $madeBy');
+      AppLogger.info('🎮 - Current user is recipient: ${madeBy != _currentUserId}');
       
       try {
         final gamesBloc = context.read<GamesBloc>();
         AppLogger.info('🎮 - GamesBloc instance: ${gamesBloc.hashCode}');
         AppLogger.info('🎮 - Current GamesBloc state: ${gamesBloc.state.runtimeType}');
-        AppLogger.info('🎮 - sessionId: ${data['sessionId']}');
+        AppLogger.info('🎮 - Current GamesBloc state details: ${gamesBloc.state}');
         AppLogger.info('🎮 - choice: ${data['choice']}');
-        AppLogger.info('🎮 - madeBy: ${data['madeBy']}');
         
         final selectedPrompt = Prompt.fromJson(data['selectedPrompt'] as Map<String, dynamic>);
         AppLogger.info('🎮 - selectedPrompt: ${selectedPrompt.toJson()}');
         
         gamesBloc.add(GameChoiceMade(
-          sessionId: data['sessionId'] as String? ?? '',
+          sessionId: sessionId,
           choice: data['choice'] as String? ?? '',
           selectedPrompt: selectedPrompt,
-          madeBy: data['madeBy'] as String? ?? '',
+          madeBy: madeBy,
         ));
         AppLogger.info('✅ ChatPage: GameChoiceMade event added to GamesBloc');
       } catch (e) {
         AppLogger.error('❌ ChatPage: Failed to process game choice made: $e');
         AppLogger.error('❌ ChatPage: Error stack trace: ${StackTrace.current}');
       }
-    });
+    };
+    _socketService!.on('game_choice_made', _gameChoiceMadeListener!);
+    
+    // Debug: Log after registering game_choice_made listener
+    AppLogger.info('🔍 ChatPage: game_choice_made listener registered successfully');
+    AppLogger.info('🔍 ChatPage: All core listeners registered - testing socket functionality');
 
     _socketService!.on('game_invite_accepted', (data) {
       if (!mounted) return;
@@ -1067,6 +1295,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Log all registered listeners for debugging
     AppLogger.info('🔍 ChatPage: All socket listeners registered, logging registered listeners...');
     _socketService!.logRegisteredListeners();
+    
+    // Additional debug: Check if game_choice_made listener is specifically registered
+    AppLogger.info('🔍 ChatPage: Checking if game_choice_made listener is registered...');
+    AppLogger.info('🔍 ChatPage: Socket connected: ${_socketService!.isConnected}');
+    AppLogger.info('🔍 ChatPage: Socket ID: ${_socketService!.socketId}');
+    AppLogger.info('🔍 ChatPage: Current user ID: $_currentUserId');
+    AppLogger.info('🔍 ChatPage: Conversation ID: ${widget.conversationId}');
+    
+    // Mark listeners as registered
+    _listenersRegistered = true;
+    AppLogger.info('🔵 ===== SOCKET LISTENER REGISTRATION COMPLETED =====');
+    } catch (e) {
+      AppLogger.error('❌ CRITICAL ERROR in _registerSocketListeners: $e');
+      AppLogger.error('❌ Stack trace: ${StackTrace.current}');
+    }
   }
 
   void _showImagePicker() {
@@ -1355,6 +1598,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'isDisappearing': isDisappearing,
             'disappearingTime': disappearingTime,
             'metadata': expiresAt != null ? {'expiresAt': expiresAt} : null,
+            'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
           };
           _socketService!.emit('private_message', messageData);
           
@@ -1874,7 +2118,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     priorMessages: _getRecentMessages(),
                     onSuggestionSelected: _onConversationStarterSelected,
                     currentUserId: _currentUserId ?? '',
-                    isOtherUserOnline: widget.isOnline,
+                    isOtherUserOnline: true, // Always show games - remove online check
+                    serverConversationId: _serverConversationId, // Pass server-provided conversation ID
                   );
                 },
               ),
@@ -2300,17 +2545,26 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           setState(() => _isTyping = true);
                           final otherUserId = _getOtherUserId();
                           AppLogger.info('🔵 Emitting typing event to: $otherUserId');
-                          _socketService?.emit('typing', {'to': otherUserId});
+                          _socketService?.emit('typing', {
+                            'to': otherUserId,
+                            'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
+                          });
                         } else if (_isTyping && text.isEmpty) {
                           setState(() => _isTyping = false);
                           final otherUserId = _getOtherUserId();
-                          _socketService?.emit('stop_typing', {'to': otherUserId});
+                          _socketService?.emit('stop_typing', {
+                            'to': otherUserId,
+                            'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
+                          });
                         }
                       },
                       onEditingComplete: () {
                         setState(() => _isTyping = false);
                         final otherUserId = _getOtherUserId();
-                        _socketService?.emit('stop_typing', {'to': otherUserId});
+                        _socketService?.emit('stop_typing', {
+                          'to': otherUserId,
+                          'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
+                        });
                       },
                     ),
                   ),
@@ -2562,6 +2816,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   String _formatOnlineStatus() {
+    AppLogger.info('🔵 _formatOnlineStatus: widget.isOnline = ${widget.isOnline}');
+    AppLogger.info('🔵 _formatOnlineStatus: widget.lastSeen = ${widget.lastSeen}');
+    
     if (widget.isOnline) {
       return 'Online';
     } else if (widget.lastSeen != null) {
@@ -2592,6 +2849,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildAvatar() {
     final size = MediaQuery.of(context).size;
     final avatarSize = (size.width * 0.08).clamp(32.0, 40.0); // Smaller avatar
+    
+    AppLogger.info('🔵 Building avatar for ${widget.participantName}: isOnline = ${widget.isOnline}');
     
     return CustomAvatar(
       name: widget.participantName,
@@ -2701,6 +2960,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'messageType': 'text',
             'status': 'sent',
             'createdAt': DateTime.now().toIso8601String(),
+            'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
           };
           
           AppLogger.info('🔵 Sending regular message: ${messageData.toString()}');
@@ -2763,7 +3023,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
     setState(() => _isTyping = false);
     final otherUserId = _getOtherUserId();
-    _socketService?.emit('stop_typing', {'to': otherUserId});
+    _socketService?.emit('stop_typing', {
+      'to': otherUserId,
+      'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
+    });
   }
 
   List<String> _getRecentMessages() {
@@ -2848,5 +3111,30 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     AppLogger.info('🔵 _getOtherUserId(): widget.conversationId = ${widget.conversationId}');
     AppLogger.info('🔵 _getOtherUserId(): _currentUserId = $_currentUserId');
     return widget.conversationId;
+  }
+
+  String _getActualConversationId() {
+    // Use server-provided conversation ID if available
+    if (_serverConversationId != null && _serverConversationId!.isNotEmpty) {
+      AppLogger.info('🔵 Using server-provided conversation ID: $_serverConversationId');
+      return _serverConversationId!;
+    }
+    
+    // Fallback: Generate the actual conversation ID in the format: user1_user2 (sorted alphabetically)
+    if (_currentUserId == null || _currentUserId!.isEmpty) {
+      AppLogger.warning('⚠️ Cannot generate conversation ID: current user ID is null or empty');
+      AppLogger.warning('⚠️ Falling back to widget.conversationId: ${widget.conversationId}');
+      return widget.conversationId; // Fallback to other user's ID
+    }
+    
+    final otherUserId = widget.conversationId;
+    final userIds = [_currentUserId!, otherUserId];
+    userIds.sort(); // Sort alphabetically to ensure consistent format
+    
+    final actualConversationId = '${userIds[0]}_${userIds[1]}';
+    AppLogger.info('🔵 Generated fallback conversation ID: $actualConversationId');
+    AppLogger.info('🔵 From user IDs: $_currentUserId and $otherUserId');
+    
+    return actualConversationId;
   }
 } 
