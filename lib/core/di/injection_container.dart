@@ -34,6 +34,9 @@ import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/conversation_starter_service.dart';
 import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/core/services/games_service.dart';
+import 'package:nookly/core/services/heartbeat_service.dart';
+import 'package:nookly/core/services/conversation_key_cache.dart';
+import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/data/repositories/games_repository_impl.dart';
 
 final GetIt sl = GetIt.instance;
@@ -46,6 +49,9 @@ Future<void> init() async {
   // Services
   sl.registerLazySingleton<AuthHandler>(() => AuthHandler());
   sl.registerLazySingleton<UserCacheService>(() => UserCacheService());
+  sl.registerLazySingleton<HeartbeatService>(() => HeartbeatService());
+  sl.registerLazySingleton<ConversationKeyCache>(() => ConversationKeyCache());
+  sl.registerLazySingleton<LocationService>(() => LocationService(sl<AuthRepository>()));
 
   // Repositories
   sl.registerLazySingleton<AuthRepository>(

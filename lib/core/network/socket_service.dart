@@ -175,8 +175,20 @@ class SocketService {
       'conversationId': message['to'], // NOTE: This should be the actual conversation ID, not receiver ID
     };
     
-    AppLogger.info('Sending private message: ${messageData.toString()}');
+    AppLogger.info('📤 [EMIT] private_message event');
+    AppLogger.info('📤 [EMIT] Socket ID: ${_socket!.id}');
+    AppLogger.info('📤 [EMIT] From user: ${_userId}');
+    AppLogger.info('📤 [EMIT] To: ${message['to']}');
+    AppLogger.info('📤 [EMIT] Message type: ${message['messageType'] ?? message['type'] ?? 'text'}');
+    AppLogger.info('📤 [EMIT] Content: ${message['content']}');
+    AppLogger.info('📤 [EMIT] Is encrypted: ${message['encryptedContent'] != null}');
+    AppLogger.info('📤 [EMIT] Conversation ID: ${messageData['conversationId']}');
+    AppLogger.info('📤 [EMIT] Full message data: ${messageData.toString()}');
+    AppLogger.info('📤 [EMIT] Timestamp: ${DateTime.now().toIso8601String()}');
+    
     _socket!.emit('private_message', messageData);
+    
+    AppLogger.info('✅ [EMIT] private_message event emitted successfully');
   }
 
   /// Send encrypted message
@@ -232,10 +244,22 @@ class SocketService {
         }
       };
       
-      AppLogger.info('🔵 Sending encrypted message to: $receiverId');
-      AppLogger.info('🔵 Message data: ${messageData.toString()}');
+      AppLogger.info('📤 [EMIT] private_message event (ENCRYPTED)');
+      AppLogger.info('📤 [EMIT] Socket ID: ${_socket!.id}');
+      AppLogger.info('📤 [EMIT] From user: ${_userId}');
+      AppLogger.info('📤 [EMIT] To: $receiverId');
+      AppLogger.info('📤 [EMIT] Message type: $messageType');
+      AppLogger.info('📤 [EMIT] Content: [ENCRYPTED]');
+      AppLogger.info('📤 [EMIT] Encrypted content length: ${encryptedData['encryptedContent']?.length ?? 0}');
+      AppLogger.info('📤 [EMIT] Encryption IV: ${encryptedData['iv']}');
+      AppLogger.info('📤 [EMIT] Encryption auth tag: ${encryptedData['authTag']}');
+      AppLogger.info('📤 [EMIT] Conversation ID: ${messageData['conversationId']}');
+      AppLogger.info('📤 [EMIT] Full encrypted message data: ${messageData.toString()}');
+      AppLogger.info('📤 [EMIT] Timestamp: ${DateTime.now().toIso8601String()}');
+      
       _socket!.emit('private_message', messageData);
-      AppLogger.info('✅ Encrypted message emitted successfully');
+      
+      AppLogger.info('✅ [EMIT] Encrypted private_message event emitted successfully');
     } catch (error) {
       AppLogger.error('❌ Error sending encrypted message: $error');
       AppLogger.error('❌ Error stack trace: ${StackTrace.current}');
@@ -481,12 +505,26 @@ class SocketService {
 
     // Private message events - CRITICAL: This was missing and causing disappearing images to not be received
     _socket!.on('private_message', (data) {
-      AppLogger.info('🔔 SocketService: Received private_message, emitting to event bus');
-      AppLogger.info('🔔 SocketService: Message data: $data');
-      AppLogger.info('🔔 SocketService: Message type: ${data['messageType'] ?? data['type']}');
-      AppLogger.info('🔔 SocketService: Is disappearing: ${data['isDisappearing']}');
-      AppLogger.info('🔔 SocketService: Event bus subscriber count: ${GlobalEventBus().getSubscriberCount('private_message')}');
+      AppLogger.info('📥 [RECEIVE] private_message event received');
+      AppLogger.info('📥 [RECEIVE] Socket ID: ${_socket!.id}');
+      AppLogger.info('📥 [RECEIVE] Current user ID: $_userId');
+      AppLogger.info('📥 [RECEIVE] From: ${data['from'] ?? data['sender']}');
+      AppLogger.info('📥 [RECEIVE] To: ${data['to'] ?? data['receiver']}');
+      AppLogger.info('📥 [RECEIVE] Message type: ${data['messageType'] ?? data['type'] ?? 'text'}');
+      AppLogger.info('📥 [RECEIVE] Content: ${data['content']}');
+      AppLogger.info('📥 [RECEIVE] Is encrypted: ${data['encryptedContent'] != null}');
+      AppLogger.info('📥 [RECEIVE] Is disappearing: ${data['isDisappearing']}');
+      AppLogger.info('📥 [RECEIVE] Disappearing time: ${data['disappearingTime']}');
+      AppLogger.info('📥 [RECEIVE] Conversation ID: ${data['conversationId'] ?? data['conversation_id'] ?? data['roomId'] ?? data['room_id']}');
+      AppLogger.info('📥 [RECEIVE] Message ID: ${data['_id'] ?? data['id']}');
+      AppLogger.info('📥 [RECEIVE] Timestamp: ${data['timestamp'] ?? data['createdAt']}');
+      AppLogger.info('📥 [RECEIVE] Full message data: $data');
+      AppLogger.info('📥 [RECEIVE] Event bus subscriber count: ${GlobalEventBus().getSubscriberCount('private_message')}');
+      AppLogger.info('📥 [RECEIVE] Timestamp received: ${DateTime.now().toIso8601String()}');
+      
       GlobalEventBus().emit('private_message', data);
+      
+      AppLogger.info('✅ [RECEIVE] private_message event forwarded to event bus');
     });
 
     // Typing events

@@ -321,9 +321,20 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     
     // Listen for private_message events via event bus
     GlobalEventBus().on('private_message', (data) async {
-      AppLogger.info('🔵 Inbox: Received private_message event via event bus');
-      AppLogger.info('🔵 Inbox: Event data: $data');
-      AppLogger.info('🔵 Inbox: Available fields: ${data.keys.toList()}');
+      AppLogger.info('📥 [INBOX] private_message event received via event bus');
+      AppLogger.info('📥 [INBOX] Current user ID: ${_currentUser?.id}');
+      AppLogger.info('📥 [INBOX] From: ${data['from'] ?? data['sender']}');
+      AppLogger.info('📥 [INBOX] To: ${data['to'] ?? data['receiver']}');
+      AppLogger.info('📥 [INBOX] Message type: ${data['messageType'] ?? data['type'] ?? 'text'}');
+      AppLogger.info('📥 [INBOX] Content: ${data['content']}');
+      AppLogger.info('📥 [INBOX] Is encrypted: ${data['encryptedContent'] != null}');
+      AppLogger.info('📥 [INBOX] Is disappearing: ${data['isDisappearing']}');
+      AppLogger.info('📥 [INBOX] Disappearing time: ${data['disappearingTime']}');
+      AppLogger.info('📥 [INBOX] Message ID: ${data['_id'] ?? data['id']}');
+      AppLogger.info('📥 [INBOX] Timestamp: ${data['timestamp'] ?? data['createdAt']}');
+      AppLogger.info('📥 [INBOX] Full event data: $data');
+      AppLogger.info('📥 [INBOX] Available fields: ${data.keys.toList()}');
+      AppLogger.info('📥 [INBOX] Event timestamp: ${DateTime.now().toIso8601String()}');
       
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
@@ -442,6 +453,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             final apiCacheService = ApiCacheService();
             apiCacheService.invalidateCache('unified_conversations_${_currentUser!.id}');
             AppLogger.info('🔵 Unified cache invalidated due to new message received');
+            
+            // Note: Conversation key cache is NOT invalidated here because
+            // the same conversation is being updated, not a new conversation created
           }
           
           AppLogger.info('🔵 Updated unread count: ${updatedConversation.unreadCount}');
@@ -787,19 +801,22 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   // REMOVED: _formatOnlineStatus method - not being used
 
   String _formatTimestamp(DateTime timestamp) {
+    // Convert UTC timestamp to local time (like chat page does)
+    final localTimestamp = timestamp.toLocal();
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final messageDate = DateTime(timestamp.year, timestamp.month, timestamp.day);
+    final messageDate = DateTime(localTimestamp.year, localTimestamp.month, localTimestamp.day);
 
     if (messageDate == today) {
-      return DateFormat('h:mm a').format(timestamp);
+      // Use 24-hour format to match chat page format
+      return DateFormat('HH:mm').format(localTimestamp);
     } else if (messageDate == yesterday) {
       return 'Yesterday';
-    } else if (now.difference(timestamp).inDays < 7) {
-      return DateFormat('EEEE').format(timestamp);
+    } else if (now.difference(localTimestamp).inDays < 7) {
+      return DateFormat('EEEE').format(localTimestamp);
     } else {
-      return DateFormat('MMM d').format(timestamp);
+      return DateFormat('MMM d').format(localTimestamp);
     }
   }
 

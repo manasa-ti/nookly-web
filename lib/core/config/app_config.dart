@@ -3,7 +3,7 @@ import 'environment_manager.dart';
 
 class AppConfig {
   static const String appName = 'Nookly';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.0.2';
   
   // API Configuration
   static String get baseUrl => EnvironmentManager.baseUrl;

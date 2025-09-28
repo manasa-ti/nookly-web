@@ -8,6 +8,7 @@ import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
 import 'package:nookly/data/models/auth/delete_account_request_model.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:nookly/core/config/app_config.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -146,9 +147,9 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Version 1.0.0',
-                  style: TextStyle(
+                Text(
+                  'Version ${AppConfig.appVersion}',
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontFamily: 'Nunito',
                     fontSize: 16,

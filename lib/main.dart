@@ -3,9 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/deep_link_service.dart';
-import 'package:nookly/core/network/network_service.dart';
+import 'package:nookly/core/services/heartbeat_service.dart';
+import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
-import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/bloc/received_likes/received_likes_bloc.dart';
 import 'package:nookly/presentation/bloc/chat/chat_bloc.dart';
@@ -16,12 +16,9 @@ import 'package:nookly/presentation/bloc/report/report_bloc.dart';
 import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/presentation/pages/splash/splash_screen.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
-import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
-import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
 import 'package:nookly/presentation/widgets/auth_wrapper.dart';
 import 'package:logger/logger.dart';
-import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 import 'package:nookly/core/theme/app_theme.dart';
 
@@ -52,6 +49,16 @@ void main() async {
   
   // Initialize Deep Link Service
   DeepLinkService().initialize();
+  
+  // Initialize Heartbeat Service
+  final heartbeatService = di.sl<HeartbeatService>();
+  heartbeatService.initialize();
+  logger.i('Heartbeat service initialized');
+  
+  // Update location on app launch (silent failure)
+  final locationService = di.sl<LocationService>();
+  locationService.updateLocationOnAppLaunch();
+  logger.i('Location update initiated on app launch');
   
   runApp(const MyApp());
   logger.i('Application started');

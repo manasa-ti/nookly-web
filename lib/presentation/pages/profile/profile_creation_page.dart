@@ -14,8 +14,11 @@ import 'package:intl/intl.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
+import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/main.dart';
 import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:get_it/get_it.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -45,6 +48,8 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   List<String> _availablePhysicalActiveness = [];
   List<String> _availableAvailability = [];
   bool _usedFallbackObjectives = false;
+  Position? _userLocation;
+  bool _isGettingLocation = false;
 
   final List<String> _sexOptions = ['Man', 'Woman', 'Other'];
   final List<String> _wishToFindOptions = ['Man', 'Woman', 'Any'];
@@ -193,7 +198,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     }
   }
 
-  void _onNextStep() {
+  Future<void> _onNextStep() async {
     if (_currentStep < 6) {
       bool isValid = false;
       
@@ -251,7 +256,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         );
       }
     } else {
-      _onSaveProfile();
+      await _onSaveProfile();
     }
   }
 
@@ -284,7 +289,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     }
   }
 
-  void _onSaveProfile() {
+  Future<void> _onSaveProfile() async {
     if (_formKey.currentState!.validate()) {
       // Final age verification before saving profile
       if (_selectedDate != null) {
@@ -323,6 +328,31 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         );
         return;
       }
+
+      // Get user location if not already obtained
+      if (_userLocation == null) {
+        setState(() {
+          _isGettingLocation = true;
+        });
+
+        final locationService = GetIt.instance<LocationService>();
+        _userLocation = await locationService.getLocationForProfileCreation();
+
+        setState(() {
+          _isGettingLocation = false;
+        });
+
+        if (_userLocation == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permission is required to create your profile. Please enable location access in settings.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 5),
+            ),
+          );
+          return;
+        }
+      }
       
       final user = User(
         id: '', // This will be set by the backend
@@ -330,8 +360,8 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         age: DateTime.now().difference(_selectedDate!).inDays ~/ 365,
         sex: _selectedSex == 'Man' ? 'm' : _selectedSex == 'Woman' ? 'f' : 'other',
         seekingGender: _selectedWishToFind == 'Man' ? 'm' : _selectedWishToFind == 'Woman' ? 'f' : 'any',
-        location: const {
-          'coordinates': [0.0, 0.0], // [longitude, latitude]
+        location: {
+          'coordinates': [_userLocation!.longitude, _userLocation!.latitude], // [longitude, latitude]
         },
         preferredAgeRange: {
           'lower_limit': _ageRange.start.round(),
@@ -450,7 +480,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         },
         child: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, profileState) {
-            final isLoading = profileState is ProfileLoading;
+            final isLoading = profileState is ProfileLoading || _isGettingLocation;
             
             return Form(
               key: _formKey,
@@ -467,7 +497,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                 ),
                 child: Stepper(
                   currentStep: _currentStep,
-                  onStepContinue: isLoading ? null : _onNextStep,
+                  onStepContinue: isLoading ? null : () async => await _onNextStep(),
                   onStepCancel: isLoading ? null : _onPreviousStep,
                   controlsBuilder: (context, details) {
                     return Padding(

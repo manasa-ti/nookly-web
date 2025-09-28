@@ -3,6 +3,7 @@ import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/repositories/conversation_repository.dart';
 // Removed MatchesRepository dependency - now using unified API
 import 'package:nookly/core/services/api_cache_service.dart';
+import 'package:nookly/core/services/conversation_key_cache.dart';
 import 'package:nookly/core/utils/logger.dart';
 
 part 'inbox_event.dart';
@@ -56,6 +57,11 @@ class InboxBloc extends Bloc<InboxEvent, InboxState> {
       final apiCacheService = ApiCacheService();
       apiCacheService.invalidateCache('unified_conversations_$_currentUserId');
       AppLogger.info('🔵 InboxBloc: Unified cache invalidated before refresh');
+      
+      // Also invalidate conversation key cache to ensure fresh keys
+      // This handles cases where new conversations might have different keys
+      ConversationKeyCache().clearCache();
+      AppLogger.info('🔵 InboxBloc: Conversation key cache cleared before refresh');
       
       // Force refresh by calling the same logic as LoadInbox
       await _onLoadInbox(LoadInbox(), emit);

@@ -3,6 +3,7 @@ import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/utils/e2ee_utils.dart';
+import 'package:nookly/core/services/conversation_key_cache.dart';
 
 class KeyManagementService {
   final AuthRepository _authRepository;
@@ -15,15 +16,39 @@ class KeyManagementService {
     try {
       AppLogger.info('🔵 Getting conversation key for: $targetUserId');
       
-      // If we have the key from the unified API response, use it directly
+      // Priority 1: If we have the key from the unified API response, use it directly
       if (conversationKeyFromApi != null && conversationKeyFromApi.isNotEmpty) {
         AppLogger.info('✅ Using conversation key from unified API response');
         AppLogger.info('🔵 Server key (first 20 chars): ${conversationKeyFromApi.substring(0, conversationKeyFromApi.length > 20 ? 20 : conversationKeyFromApi.length)}...');
+        
+        // Store in cache for future use
+        ConversationKeyCache().storeConversationKey(targetUserId, conversationKeyFromApi);
         return conversationKeyFromApi;
       }
       
-      // Fallback: Make API call to get the key
-      AppLogger.info('🔵 No key from unified API, making separate API request');
+      // Priority 2: Check cache first (try both conversation ID and participant ID lookups)
+      String? cachedKey;
+      
+      // Try direct conversation ID lookup first
+      cachedKey = ConversationKeyCache().getConversationKey(targetUserId);
+      
+      // If not found, try participant ID lookup
+      if (cachedKey == null) {
+        final currentUser = await _authRepository.getCurrentUser();
+        cachedKey = ConversationKeyCache().getConversationKeyByParticipant(
+          targetUserId, 
+          currentUserId: currentUser?.id
+        );
+      }
+      
+      if (cachedKey != null && cachedKey.isNotEmpty) {
+        AppLogger.info('✅ Using cached conversation key');
+        AppLogger.info('🔵 Cached key (first 20 chars): ${cachedKey.substring(0, cachedKey.length > 20 ? 20 : cachedKey.length)}...');
+        return cachedKey;
+      }
+      
+      // Priority 3: Fallback to API call (should rarely happen now)
+      AppLogger.info('🔵 No cached key found, making separate API request');
       final token = await _authRepository.getToken();
       if (token == null) {
         throw Exception('No authentication token available');
@@ -49,6 +74,9 @@ class KeyManagementService {
         final encryptionKey = data['encryptionKey'] as String;
         AppLogger.info('✅ Retrieved conversation key for user: $targetUserId');
         AppLogger.info('🔵 Server key (first 20 chars): ${encryptionKey.substring(0, encryptionKey.length > 20 ? 20 : encryptionKey.length)}...');
+        
+        // Store in cache for future use
+        ConversationKeyCache().storeConversationKey(targetUserId, encryptionKey);
         return encryptionKey;
       } else {
         throw Exception('Failed to get conversation key: ${response.statusCode}');

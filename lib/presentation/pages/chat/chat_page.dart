@@ -846,6 +846,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _eventBusPrivateMessageListener = (data) async {
       if (!mounted) return;
       
+      AppLogger.info('📥 [CHAT PAGE] private_message event received via event bus');
+      AppLogger.info('📥 [CHAT PAGE] Current user ID: $_currentUserId');
+      AppLogger.info('📥 [CHAT PAGE] Widget conversation ID: ${widget.conversationId}');
+      AppLogger.info('📥 [CHAT PAGE] From: ${data['from'] ?? data['sender']}');
+      AppLogger.info('📥 [CHAT PAGE] To: ${data['to'] ?? data['receiver']}');
+      AppLogger.info('📥 [CHAT PAGE] Message type: ${data['messageType'] ?? data['type'] ?? 'text'}');
+      AppLogger.info('📥 [CHAT PAGE] Content: ${data['content']}');
+      AppLogger.info('📥 [CHAT PAGE] Is encrypted: ${data['encryptedContent'] != null}');
+      AppLogger.info('📥 [CHAT PAGE] Is disappearing: ${data['isDisappearing']}');
+      AppLogger.info('📥 [CHAT PAGE] Disappearing time: ${data['disappearingTime']}');
+      AppLogger.info('📥 [CHAT PAGE] Message ID: ${data['_id'] ?? data['id']}');
+      AppLogger.info('📥 [CHAT PAGE] Timestamp: ${data['timestamp'] ?? data['createdAt']}');
+      AppLogger.info('📥 [CHAT PAGE] Full event data: $data');
+      AppLogger.info('📥 [CHAT PAGE] Event timestamp: ${DateTime.now().toIso8601String()}');
+      
       // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
       final eventConversationId = data['conversationId'] as String?;
       final actualConversationId = _getActualConversationId();
@@ -1673,7 +1688,22 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'metadata': expiresAt != null ? {'expiresAt': expiresAt} : null,
             'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
           };
+          
+          AppLogger.info('📤 [CHAT PAGE] Emitting private_message (IMAGE)');
+          AppLogger.info('📤 [CHAT PAGE] From: ${_currentUserId}');
+          AppLogger.info('📤 [CHAT PAGE] To: ${widget.conversationId}');
+          AppLogger.info('📤 [CHAT PAGE] Message type: image');
+          AppLogger.info('📤 [CHAT PAGE] Content: $imageUrl');
+          AppLogger.info('📤 [CHAT PAGE] Is disappearing: $isDisappearing');
+          AppLogger.info('📤 [CHAT PAGE] Disappearing time: $disappearingTime');
+          AppLogger.info('📤 [CHAT PAGE] Conversation ID: ${_getActualConversationId()}');
+          AppLogger.info('📤 [CHAT PAGE] Message ID: $messageId');
+          AppLogger.info('📤 [CHAT PAGE] Full message data: ${messageData.toString()}');
+          AppLogger.info('📤 [CHAT PAGE] Timestamp: ${DateTime.now().toIso8601String()}');
+          
           _socketService!.emit('private_message', messageData);
+          
+          AppLogger.info('✅ [CHAT PAGE] private_message (IMAGE) emitted successfully');
           
           // Create message for local state with metadata
           final messageJson = {
@@ -2241,6 +2271,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
                   // Emit bulk events if there are messages to update
                   if (_socketService != null) {
+                    // TODO: Temporarily commented out bulk_message_delivered processing
+                    /*
                     if (messagesToDeliver.isNotEmpty) {
                       final timestamp = DateTime.now().toIso8601String();
                       AppLogger.info('🔵 Emitting bulk_message_delivered for messages: ${messagesToDeliver.join(', ')}');
@@ -2260,7 +2292,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         AppLogger.error('❌ Failed to emit bulk_message_delivered event: $e');
                       }
                     }
+                    */
 
+                    // TODO: Temporarily commented out bulk_message_read processing
+                    /*
                     if (messagesToRead.isNotEmpty) {
                       final timestamp = DateTime.now().toIso8601String();
                       AppLogger.info('🔵 Emitting bulk_message_read for messages: ${messagesToRead.join(', ')}');
@@ -2282,6 +2317,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         AppLogger.error('❌ Failed to emit bulk_message_read event: $e');
                       }
                     }
+                    */
                   }
                 } else if (state is ConversationLeft) {
                   // Navigate back when conversation is left (for initiator)
@@ -3037,9 +3073,20 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
           };
           
-          AppLogger.info('🔵 Sending regular message: ${messageData.toString()}');
+          AppLogger.info('📤 [CHAT PAGE] Emitting private_message (TEXT - FALLBACK)');
+          AppLogger.info('📤 [CHAT PAGE] From: ${_currentUserId}');
+          AppLogger.info('📤 [CHAT PAGE] To: ${widget.conversationId}');
+          AppLogger.info('📤 [CHAT PAGE] Message type: text');
+          AppLogger.info('📤 [CHAT PAGE] Content: $finalContent');
+          AppLogger.info('📤 [CHAT PAGE] Is encrypted: false (fallback)');
+          AppLogger.info('📤 [CHAT PAGE] Conversation ID: ${_getActualConversationId()}');
+          AppLogger.info('📤 [CHAT PAGE] Message ID: ${messageData['_id']}');
+          AppLogger.info('📤 [CHAT PAGE] Full message data: ${messageData.toString()}');
+          AppLogger.info('📤 [CHAT PAGE] Timestamp: ${DateTime.now().toIso8601String()}');
+          
           _socketService!.emit('private_message', messageData);
-          AppLogger.info('✅ Regular message sent successfully');
+          
+          AppLogger.info('✅ [CHAT PAGE] private_message (TEXT - FALLBACK) emitted successfully');
         }
         
         // Create message data for local state

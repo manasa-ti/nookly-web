@@ -11,6 +11,7 @@ import 'package:nookly/domain/repositories/auth_repository.dart'; // Still neede
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/api_cache_service.dart';
+import 'package:nookly/core/services/conversation_key_cache.dart';
 import 'package:nookly/core/utils/e2ee_utils.dart'; 
 
 class ConversationRepositoryImpl implements ConversationRepository {
@@ -72,6 +73,20 @@ class ConversationRepositoryImpl implements ConversationRepository {
             try {
               conversationKey = ConversationKey.fromJson(itemMap['conversationKey'] as Map<String, dynamic>);
               AppLogger.info('🔵 ConversationRepository: Parsed conversation key for conversation: ${userJson['_id']}');
+              
+              // Store conversation key in cache to prevent redundant API calls
+              if (conversationKey.encryptionKey.isNotEmpty) {
+                final participantId = userJson['_id'] as String;
+                
+                // Store with proper conversation ID format (inbox format: currentUserId_participantId)
+                final conversationId = '${currentUserId}_$participantId';
+                ConversationKeyCache().storeConversationKey(
+                  conversationId, 
+                  conversationKey.encryptionKey,
+                  participantId: participantId
+                );
+                AppLogger.info('💾 ConversationRepository: Stored conversation key in cache for conversation: $conversationId');
+              }
             } catch (e) {
               AppLogger.error('❌ ConversationRepository: Error parsing conversation key: $e');
             }
