@@ -27,7 +27,6 @@ import 'package:dio/dio.dart';
 import 'dart:io';
 import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/services/image_url_service.dart';
-import 'package:nookly/core/events/global_event_bus.dart';
 
 import 'package:nookly/presentation/widgets/disappearing_time_selector.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
@@ -181,9 +180,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void dispose() {
         // NEW: Leave conversation room (WhatsApp/Telegram style)
         if (_socketService != null) {
-          final actualConversationId = _getActualConversationId();
-          AppLogger.info('🔵 ChatPage: Leaving conversation room: $actualConversationId');
-          _socketService!.leaveConversationRoom(actualConversationId);
+          // Room management removed - using direct socket listeners with filtering
         }
     
     // Dispose DisappearingImageManager
@@ -192,9 +189,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Don't clear _processedMessageIds here anymore
     // _processedMessageIds.clear();
     
-    // Remove event bus listeners before disposing
+    // Remove direct socket listeners before disposing
     if (_eventBusPrivateMessageListener != null) {
-      GlobalEventBus().off('private_message', _eventBusPrivateMessageListener!);
+      _socketService!.offSpecific('private_message', _eventBusPrivateMessageListener!);
     }
     
     // Remove specific socket listeners before disposing
@@ -241,8 +238,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       _socketService!.off('game_choice_made');
       _socketService!.off('game_invite_accepted');
       
-      // Leave the private chat room
-      _socketService!.leavePrivateChat(widget.conversationId);
+      // Room management removed - using direct socket listeners with filtering
     }
     
     // Reset the listeners registered flag
@@ -527,9 +523,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       
         if (_socketService!.isConnected && _socketService!.socketId != null) {
           // Join the conversation room (WhatsApp/Telegram style)
-          final actualConversationId = _getActualConversationId();
-          AppLogger.info('🔵 Joining conversation room: $actualConversationId');
-          _socketService!.joinConversationRoom(actualConversationId);
+          // Room management removed - using direct socket listeners with filtering
         
         // Register listeners after socket is connected and room is joined
         AppLogger.info('🔵 Socket is connected with ID, registering listeners...');
@@ -587,8 +581,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Add listener for all events
     _socketService!.on('connect', (data) {
       AppLogger.info('🔵 Socket connected event received');
-      AppLogger.info('🔵 Re-joining private chat room after reconnection');
-      _socketService!.joinPrivateChat(widget.conversationId);
+      AppLogger.info('🔵 Room management removed - using direct socket listeners with filtering');
       
       // Note: Don't re-register listeners here as it would cause infinite recursion
       // Listeners are already registered and will work after reconnection
@@ -842,11 +835,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Debounce timer for typing events
     Timer? _typingDebounce;
     
-    // Subscribe to private_message events via event bus
+    // Subscribe to private_message events via direct socket listener
     _eventBusPrivateMessageListener = (data) async {
       if (!mounted) return;
       
-      AppLogger.info('📥 [CHAT PAGE] private_message event received via event bus');
+      AppLogger.info('📥 [CHAT PAGE] private_message event received via direct socket listener');
       AppLogger.info('📥 [CHAT PAGE] Current user ID: $_currentUserId');
       AppLogger.info('📥 [CHAT PAGE] Widget conversation ID: ${widget.conversationId}');
       AppLogger.info('📥 [CHAT PAGE] From: ${data['from'] ?? data['sender']}');
@@ -1009,64 +1002,101 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.error('❌ Error stack trace: ${StackTrace.current}');
       }
     };
-    GlobalEventBus().on('private_message', _eventBusPrivateMessageListener!);
-    AppLogger.info('🔵 Private_message event bus listener registered successfully');
-    AppLogger.info('🔵 Event bus subscriber count: ${GlobalEventBus().getSubscriberCount('private_message')}');
+    _socketService!.on('private_message', _eventBusPrivateMessageListener!);
+    AppLogger.info('🔵 Private_message direct socket listener registered successfully');
 
-    // Add typing indicator listeners with debounce via event bus
-    GlobalEventBus().on('typing', (data) {
+    // Add typing indicator listeners with debounce via direct socket listener
+    _socketService!.on('typing', (data) {
       if (!mounted) return;
       
-      // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
+      // COMPREHENSIVE LOGGING - Let's see exactly what we receive
+      AppLogger.info('====== TYPING EVENT RECEIVED ======');
+      AppLogger.info('📥 Full event data: $data');
+      AppLogger.info('📥 Event keys: ${data.keys.toList()}');
+      AppLogger.info('📥 Raw isTyping value: ${data['isTyping']} (type: ${data['isTyping'].runtimeType})');
+      AppLogger.info('📥 Raw from value: ${data['from']} (type: ${data['from'].runtimeType})');
+      AppLogger.info('📥 Raw to value: ${data['to']} (type: ${data['to'].runtimeType})');
+      AppLogger.info('📥 Raw conversationId: ${data['conversationId']}');
+      
       final eventConversationId = data['conversationId'] as String?;
       final actualConversationId = _getActualConversationId();
+      final fromUserId = data['from'] as String?;
+      final toUserId = data['to'] as String?;
+      final isTyping = data['isTyping'] as bool?;
       
-      // If event doesn't have conversationId, allow it (for backward compatibility)
+      AppLogger.info('🔍 Parsed values:');
+      AppLogger.info('  - eventConversationId: $eventConversationId');
+      AppLogger.info('  - actualConversationId: $actualConversationId');
+      AppLogger.info('  - fromUserId: $fromUserId');
+      AppLogger.info('  - toUserId: $toUserId');
+      AppLogger.info('  - isTyping: $isTyping (null means field missing)');
+      AppLogger.info('  - _currentUserId: $_currentUserId');
+      AppLogger.info('  - widget.conversationId (participant): ${widget.conversationId}');
+      AppLogger.info('  - widget.participantName: ${widget.participantName}');
+      
+      // Filter events by conversation ID
       if (eventConversationId != null && eventConversationId != actualConversationId) {
-        AppLogger.info('🔍 Ignoring typing event for different conversation: $eventConversationId (current: $actualConversationId)');
+        AppLogger.info('❌ IGNORING: Event is for different conversation');
         return;
       }
       
-      AppLogger.info('🔵 Processing typing event - conversationId: $eventConversationId, current: $actualConversationId');
-      AppLogger.info('🔵 Typing from: ${data['from']}, isTyping: ${data['isTyping']}');
+      // The 'from' field contains the user who is typing
+      // We should only show typing indicator if the OTHER user is typing, not ourselves
+      if (fromUserId == _currentUserId) {
+        AppLogger.info('❌ IGNORING: This is our own typing event (from == currentUserId)');
+        return;
+      }
       
-      if (data['from'] == widget.conversationId) {
-        final isTyping = data['isTyping'] as bool? ?? true; // Default to true for backward compatibility
-        
-        if (isTyping) {
-          // User started typing
-          _typingDebounce?.cancel();
-          _typingDebounce = Timer(const Duration(milliseconds: 300), () {
-            if (mounted) {
-              AppLogger.info('🔵 Setting other user typing to true');
-              setState(() {
-                _otherUserTyping = true;
-              });
-              // Also update the ConversationBloc state
-              context.read<ConversationBloc>().add(ConversationUpdated(
-                conversationId: widget.conversationId,
-                isTyping: true,
-                updatedAt: DateTime.now(),
-              ));
-            }
-          });
-        } else {
-          // User stopped typing (isTyping: false) - this is the new backend behavior
-          _typingDebounce?.cancel();
-          AppLogger.info('🔵 Setting other user typing to false (stop_typing via typing event)');
+      // Verify the typing event is from the participant we're chatting with
+      if (fromUserId != widget.conversationId) {
+        AppLogger.info('❌ IGNORING: Typing is from user $fromUserId, but we\'re chatting with ${widget.conversationId}');
+        return;
+      }
+      
+      // At this point, we know:
+      // 1. The event is for the current conversation
+      // 2. It's from the other user (not us)
+      // 3. It's from the participant we're chatting with
+      
+      AppLogger.info('✅ VALID TYPING EVENT from ${widget.participantName}');
+      
+      if (isTyping == true) {
+        AppLogger.info('🟢 OTHER USER STARTED TYPING');
+        _typingDebounce?.cancel();
+        _typingDebounce = Timer(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            AppLogger.info('💚 Setting _otherUserTyping = true, will show: "${widget.participantName} is typing..."');
+            setState(() {
+              _otherUserTyping = true;
+            });
+            context.read<ConversationBloc>().add(ConversationUpdated(
+              conversationId: widget.conversationId,
+              isTyping: true,
+              updatedAt: DateTime.now(),
+            ));
+          }
+        });
+      } else if (isTyping == false) {
+        AppLogger.info('🔴 OTHER USER STOPPED TYPING');
+        _typingDebounce?.cancel();
+        if (mounted) {
+          AppLogger.info('💔 Setting _otherUserTyping = false, will hide typing indicator');
           setState(() {
             _otherUserTyping = false;
           });
-          // Also update the ConversationBloc state
           context.read<ConversationBloc>().add(ConversationUpdated(
             conversationId: widget.conversationId,
             isTyping: false,
             updatedAt: DateTime.now(),
           ));
         }
+      } else {
+        AppLogger.warning('⚠️ isTyping field is null or missing in event data!');
       }
+      
+      AppLogger.info('====== END TYPING EVENT ======');
     });
-    AppLogger.info('🔵 Typing event bus listener registered successfully');
+    AppLogger.info('🔵 Typing direct socket listener registered successfully');
 
     // REMOVED: stop_typing listener - backend now sends stop_typing as typing event with isTyping: false
     AppLogger.info('🔵 Note: stop_typing events are now handled by the typing listener with isTyping: false');
@@ -1108,12 +1138,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     };
     _socketService!.on('message_read', _messageReadListener!);
 
-    // Game event listeners via event bus
-    AppLogger.info('🔵 Registering game_invite event bus listener...');
-    GlobalEventBus().on('game_invite', (data) {
+    // Game event listeners via direct socket listeners
+    AppLogger.info('🔵 Registering game_invite direct socket listener...');
+    _socketService!.on('game_invite', (data) {
       if (!mounted) return;
       
-      AppLogger.info('🎮 ChatPage: game_invite event received via event bus');
+      // Filter by conversation ID - only process if for current conversation
+      final eventConversationId = data['conversationId'] as String?;
+      final currentConversationId = _getActualConversationId();
+      
+      if (eventConversationId != null && eventConversationId != currentConversationId) {
+        AppLogger.info('🔍 Ignoring game_invite for different conversation: $eventConversationId (current: $currentConversationId)');
+        return;
+      }
+      
+      AppLogger.info('🎮 ChatPage: game_invite event received via direct socket listener');
       AppLogger.info('🎮 - Data: $data');
       AppLogger.info('🎮 - Current user ID: $_currentUserId');
       AppLogger.info('🎮 - Conversation ID: ${widget.conversationId}');
@@ -2651,29 +2690,49 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       minLines: 1, // Start with single line
                       textCapitalization: TextCapitalization.sentences,
                       onChanged: (text) {
+                        AppLogger.info('⌨️ TEXT FIELD CHANGED: length=${text.length}, _isTyping=$_isTyping, _socketService=${_socketService != null ? "initialized" : "NULL"}');
+                        
                         if (!_isTyping && text.isNotEmpty) {
                           setState(() => _isTyping = true);
                           final otherUserId = _getOtherUserId();
-                          AppLogger.info('🔵 Emitting typing event to: $otherUserId');
-                          _socketService?.emit('typing', {
-                            'to': otherUserId,
-                            'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
-                          });
+                          final conversationId = _getActualConversationId();
+                          AppLogger.info('🟢 EMITTING TYPING START: to=$otherUserId, conversationId=$conversationId, isTyping=true');
+                          
+                          if (_socketService != null) {
+                            _socketService!.emit('typing', {
+                              'to': otherUserId,
+                              'conversationId': conversationId,
+                              'isTyping': true,
+                            });
+                          } else {
+                            AppLogger.error('❌ CANNOT EMIT: _socketService is NULL');
+                          }
                         } else if (_isTyping && text.isEmpty) {
                           setState(() => _isTyping = false);
                           final otherUserId = _getOtherUserId();
-                          _socketService?.emit('stop_typing', {
-                            'to': otherUserId,
-                            'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
-                          });
+                          final conversationId = _getActualConversationId();
+                          AppLogger.info('🔴 EMITTING TYPING STOP (text empty): to=$otherUserId, conversationId=$conversationId, isTyping=false');
+                          
+                          if (_socketService != null) {
+                            _socketService!.emit('typing', {
+                              'to': otherUserId,
+                              'conversationId': conversationId,
+                              'isTyping': false,
+                            });
+                          } else {
+                            AppLogger.error('❌ CANNOT EMIT: _socketService is NULL');
+                          }
                         }
                       },
                       onEditingComplete: () {
                         setState(() => _isTyping = false);
                         final otherUserId = _getOtherUserId();
-                        _socketService?.emit('stop_typing', {
+                        final conversationId = _getActualConversationId();
+                        AppLogger.info('🔴 EMITTING TYPING STOP (editing complete): to=$otherUserId, conversationId=$conversationId, isTyping=false');
+                        _socketService?.emit('typing', {
                           'to': otherUserId,
-                          'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
+                          'conversationId': conversationId,
+                          'isTyping': false,
                         });
                       },
                     ),
@@ -3144,9 +3203,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
     setState(() => _isTyping = false);
     final otherUserId = _getOtherUserId();
-    _socketService?.emit('stop_typing', {
+    final conversationId = _getActualConversationId();
+    AppLogger.info('🔴 EMITTING TYPING STOP (after sending message): to=$otherUserId, conversationId=$conversationId, isTyping=false');
+    _socketService?.emit('typing', {
       'to': otherUserId,
-      'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
+      'conversationId': conversationId,
+      'isTyping': false,
     });
   }
 

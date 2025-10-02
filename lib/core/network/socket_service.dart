@@ -7,7 +7,6 @@ import 'package:nookly/core/utils/e2ee_utils.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/di/injection_container.dart';
-import 'package:nookly/core/events/global_event_bus.dart';
 
 class SocketService {
   factory SocketService({KeyManagementService? keyManagementService}) => 
@@ -64,92 +63,6 @@ class SocketService {
     _socket!.connect();
   }
 
-  void joinPrivateChat(String otherUserId) {
-    AppLogger.info('🔵 Attempting to join private chat room with user: $otherUserId');
-    AppLogger.info('🔵 Current user ID: $_userId');
-    AppLogger.info('🔵 Socket connected: ${_socket?.connected}');
-    AppLogger.info('🔵 Socket ID: ${_socket?.id}');
-    
-    if (_socket == null || !_socket!.connected) {
-      AppLogger.error('Cannot join private chat: Socket not connected');
-      return;
-    }
-    
-    if (_userId == null) {
-      AppLogger.error('Cannot join private chat: Current user ID is null');
-      return;
-    }
-    
-    AppLogger.info('Joining private chat room with other user: $otherUserId');
-    _socket!.emit('join_private_chat', {
-      'otherUserId': otherUserId,
-      'currentUserId': _userId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-  }
-
-  void leavePrivateChat(String otherUserId) {
-    AppLogger.info('🔵 Leaving private chat room with user: $otherUserId');
-    
-    if (_socket == null || !_socket!.connected) {
-      AppLogger.error('Cannot leave private chat: Socket not connected');
-      return;
-    }
-    
-    if (_userId == null) {
-      AppLogger.error('Cannot leave private chat: Current user ID is null');
-      return;
-    }
-    
-    AppLogger.info('Leaving private chat room with other user: $otherUserId');
-    _socket!.emit('leave_private_chat', {'otherUserId': otherUserId});
-  }
-
-  // NEW: WhatsApp/Telegram style room management
-  void joinConversationRoom(String conversationId) {
-    AppLogger.info('🔵 Joining conversation room: $conversationId');
-    AppLogger.info('🔵 Current user ID: $_userId');
-    AppLogger.info('🔵 Socket connected: ${_socket?.connected}');
-    AppLogger.info('🔵 Socket ID: ${_socket?.id}');
-    
-    if (_socket == null || !_socket!.connected) {
-      AppLogger.error('❌ Cannot join conversation room: Socket not connected');
-      return;
-    }
-    
-    if (_userId == null) {
-      AppLogger.error('❌ Cannot join conversation room: Current user ID is null');
-      return;
-    }
-    
-    AppLogger.info('🔵 Emitting join_conversation event for: $conversationId');
-    _socket!.emit('join_conversation', {
-      'conversationId': conversationId,
-      'userId': _userId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-  }
-
-  void leaveConversationRoom(String conversationId) {
-    AppLogger.info('🔵 Leaving conversation room: $conversationId');
-    
-    if (_socket == null || !_socket!.connected) {
-      AppLogger.error('❌ Cannot leave conversation room: Socket not connected');
-      return;
-    }
-    
-    if (_userId == null) {
-      AppLogger.error('❌ Cannot leave conversation room: Current user ID is null');
-      return;
-    }
-    
-    AppLogger.info('🔵 Emitting leave_conversation event for: $conversationId');
-    _socket!.emit('leave_conversation', {
-      'conversationId': conversationId,
-      'userId': _userId,
-      'timestamp': DateTime.now().toIso8601String(),
-    });
-  }
 
   void sendMessage(Map<String, dynamic> message) {
     if (_socket == null || !_socket!.connected) {
@@ -172,7 +85,7 @@ class SocketService {
       ...message,
       'from': _userId,
       'timestamp': DateTime.now().toIso8601String(),
-      'conversationId': message['to'], // NOTE: This should be the actual conversation ID, not receiver ID
+      'conversationId': _generateConversationId(message['to']), // Use sorted conversation ID format
     };
     
     AppLogger.info('📤 [EMIT] private_message event');
@@ -235,7 +148,7 @@ class SocketService {
         'content': '[ENCRYPTED]', // Placeholder for backward compatibility
         'messageType': messageType,
         'timestamp': DateTime.now().toIso8601String(),
-        'conversationId': receiverId, // NOTE: This should be the actual conversation ID, not receiver ID
+        'conversationId': _generateConversationId(receiverId), // Use sorted conversation ID format
         'encryptedContent': encryptedData['encryptedContent'],
         'encryptionMetadata': {
           'iv': encryptedData['iv'],
@@ -395,36 +308,6 @@ class SocketService {
       _socket!.emit('join', _userId);
     });
 
-    _socket!.on('roomJoined', (data) {
-      AppLogger.info('✅ Joined room: $data');
-      AppLogger.info('🔵 Room details: ${data.toString()}');
-    });
-
-    _socket!.on('private_chat_joined', (data) {
-      AppLogger.info('✅ Joined private chat room: $data');
-      AppLogger.info('🔵 Room details: ${data.toString()}');
-      AppLogger.info('🔵 Socket ID: ${_socket!.id}');
-      AppLogger.info('🔵 Current user ID: $_userId');
-    });
-
-    _socket!.on('private_chat_left', (data) {
-      AppLogger.info('✅ Left private chat room: $data');
-      AppLogger.info('🔵 Room details: ${data.toString()}');
-    });
-
-    // NEW: WhatsApp/Telegram style room management listeners
-    _socket!.on('conversation_joined', (data) {
-      AppLogger.info('✅ Joined conversation room: $data');
-      AppLogger.info('🔵 Conversation ID: ${data['conversationId']}');
-      AppLogger.info('🔵 Room name: ${data['roomName']}');
-      AppLogger.info('🔵 Timestamp: ${data['timestamp']}');
-    });
-
-    _socket!.on('conversation_left', (data) {
-      AppLogger.info('✅ Left conversation room: $data');
-      AppLogger.info('🔵 Conversation ID: ${data['conversationId']}');
-      AppLogger.info('🔵 Timestamp: ${data['timestamp']}');
-    });
 
     _socket!.on('message_delivered', (data) {
       AppLogger.info('🔵 Received message_delivered event: $data');
@@ -492,101 +375,10 @@ class SocketService {
       _handleUserOnlineStatus(data, false);
     });
 
-    // Global event bus listeners for key events
-    _setupGlobalEventBusListeners();
     
     AppLogger.info('✅ Socket listeners setup complete');
   }
 
-  /// Setup global event bus listeners for key events
-  /// This allows multiple pages to receive the same events without conflicts
-  void _setupGlobalEventBusListeners() {
-    AppLogger.info('🔔 Setting up global event bus listeners');
-
-    // Private message events - CRITICAL: This was missing and causing disappearing images to not be received
-    _socket!.on('private_message', (data) {
-      AppLogger.info('📥 [RECEIVE] private_message event received');
-      AppLogger.info('📥 [RECEIVE] Socket ID: ${_socket!.id}');
-      AppLogger.info('📥 [RECEIVE] Current user ID: $_userId');
-      AppLogger.info('📥 [RECEIVE] From: ${data['from'] ?? data['sender']}');
-      AppLogger.info('📥 [RECEIVE] To: ${data['to'] ?? data['receiver']}');
-      AppLogger.info('📥 [RECEIVE] Message type: ${data['messageType'] ?? data['type'] ?? 'text'}');
-      AppLogger.info('📥 [RECEIVE] Content: ${data['content']}');
-      AppLogger.info('📥 [RECEIVE] Is encrypted: ${data['encryptedContent'] != null}');
-      AppLogger.info('📥 [RECEIVE] Is disappearing: ${data['isDisappearing']}');
-      AppLogger.info('📥 [RECEIVE] Disappearing time: ${data['disappearingTime']}');
-      AppLogger.info('📥 [RECEIVE] Conversation ID: ${data['conversationId'] ?? data['conversation_id'] ?? data['roomId'] ?? data['room_id']}');
-      AppLogger.info('📥 [RECEIVE] Message ID: ${data['_id'] ?? data['id']}');
-      AppLogger.info('📥 [RECEIVE] Timestamp: ${data['timestamp'] ?? data['createdAt']}');
-      AppLogger.info('📥 [RECEIVE] Full message data: $data');
-      AppLogger.info('📥 [RECEIVE] Event bus subscriber count: ${GlobalEventBus().getSubscriberCount('private_message')}');
-      AppLogger.info('📥 [RECEIVE] Timestamp received: ${DateTime.now().toIso8601String()}');
-      
-      GlobalEventBus().emit('private_message', data);
-      
-      AppLogger.info('✅ [RECEIVE] private_message event forwarded to event bus');
-    });
-
-    // Typing events
-    _socket!.on('typing', (data) {
-      AppLogger.info('🔔 SocketService: Received typing, emitting to event bus');
-      GlobalEventBus().emit('typing', data);
-    });
-
-    _socket!.on('typing_stopped', (data) {
-      AppLogger.info('🔔 SocketService: Received typing_stopped, emitting to event bus');
-      GlobalEventBus().emit('typing_stopped', data);
-    });
-
-    // Game events
-    _socket!.on('game_invite', (data) {
-      AppLogger.info('🔔 SocketService: Received game_invite, emitting to event bus');
-      GlobalEventBus().emit('game_invite', data);
-    });
-
-    _socket!.on('game_invite_accepted', (data) {
-      AppLogger.info('🔔 SocketService: Received game_invite_accepted, emitting to event bus');
-      GlobalEventBus().emit('game_invite_accepted', data);
-    });
-
-    _socket!.on('game_invite_rejected', (data) {
-      AppLogger.info('🔔 SocketService: Received game_invite_rejected, emitting to event bus');
-      GlobalEventBus().emit('game_invite_rejected', data);
-    });
-
-    _socket!.on('game_started', (data) {
-      AppLogger.info('🔔 SocketService: Received game_started, emitting to event bus');
-      GlobalEventBus().emit('game_started', data);
-    });
-
-    _socket!.on('game_turn_switched', (data) {
-      AppLogger.info('🔔 SocketService: Received game_turn_switched, emitting to event bus');
-      GlobalEventBus().emit('game_turn_switched', data);
-    });
-
-    _socket!.on('game_choice_made', (data) {
-      AppLogger.info('🔔 SocketService: Received game_choice_made, emitting to event bus');
-      GlobalEventBus().emit('game_choice_made', data);
-    });
-
-    _socket!.on('game_ended', (data) {
-      AppLogger.info('🔔 SocketService: Received game_ended, emitting to event bus');
-      GlobalEventBus().emit('game_ended', data);
-    });
-
-    // Message status events
-    _socket!.on('message_delivered', (data) {
-      AppLogger.info('🔔 SocketService: Received message_delivered, emitting to event bus');
-      GlobalEventBus().emit('message_delivered', data);
-    });
-
-    _socket!.on('message_read', (data) {
-      AppLogger.info('🔔 SocketService: Received message_read, emitting to event bus');
-      GlobalEventBus().emit('message_read', data);
-    });
-
-    AppLogger.info('✅ Global event bus listeners setup complete');
-  }
 
   void disconnect() {
     if (_socket != null) {
@@ -670,6 +462,14 @@ class SocketService {
 
   bool get isSocketConnected => _socket?.connected ?? false;
 
+  /// Generate sorted conversation ID for consistent format
+  String _generateConversationId(String otherUserId) {
+    if (_userId == null) return otherUserId;
+    final ids = [_userId!, otherUserId];
+    ids.sort();
+    return '${ids[0]}_${ids[1]}';
+  }
+
   /// Handle user online/offline status changes
   void _handleUserOnlineStatus(dynamic data, bool isOnline) {
     try {
@@ -704,6 +504,7 @@ class SocketService {
     final gameInviteData = {
       'gameType': gameType,
       'otherUserId': otherUserId,
+      'conversationId': _generateConversationId(otherUserId),
     };
     
     AppLogger.info('🎮 Sending game invite: ${gameInviteData.toString()}');
@@ -724,6 +525,7 @@ class SocketService {
     final acceptData = {
       'gameType': gameType,
       'otherUserId': otherUserId,
+      'conversationId': _generateConversationId(otherUserId),
     };
     
     AppLogger.info('🎮 Accepting game invite: ${acceptData.toString()}');
@@ -745,6 +547,7 @@ class SocketService {
       'gameType': gameType,
       'fromUserId': fromUserId,
       'reason': reason ?? 'declined',
+      'conversationId': _generateConversationId(fromUserId),
     };
     
     AppLogger.info('🎮 Rejecting game invite: ${rejectData.toString()}');

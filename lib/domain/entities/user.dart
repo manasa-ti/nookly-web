@@ -78,21 +78,53 @@ class User extends Equatable {
         isObjectivesSet;
   }
 
+  // Helper method to parse int from dynamic value (handles Decimal128 from backend)
+  static int? _parseIntFromDynamic(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    if (value is Map<String, dynamic>) {
+      // Handle Decimal128 serialized as Map
+      if (value.containsKey('\$numberDecimal')) {
+        final decimalStr = value['\$numberDecimal'] as String?;
+        return int.tryParse(decimalStr ?? '');
+      }
+    }
+    return null;
+  }
+
+  // Helper method to parse double from dynamic value (handles Decimal128 from backend)
+  static double? _parseDoubleFromDynamic(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    if (value is Map<String, dynamic>) {
+      // Handle Decimal128 serialized as Map
+      if (value.containsKey('\$numberDecimal')) {
+        final decimalStr = value['\$numberDecimal'] as String?;
+        return double.tryParse(decimalStr ?? '');
+      }
+    }
+    return null;
+  }
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['_id'] as String,
       email: json['email'] as String,
       name: json['name'] as String?,
-      age: json['age'] as int?,
+      age: _parseIntFromDynamic(json['age']),
       sex: json['sex'] as String?,
       seekingGender: json['seekingGender'] as String?,
       location: json['location'] != null ? {
-        'latitude': (json['location']['coordinates'][0] as num?)?.toDouble() ?? 0.0,
-        'longitude': (json['location']['coordinates'][1] as num?)?.toDouble() ?? 0.0,
+        'latitude': _parseDoubleFromDynamic(json['location']['coordinates'][0]) ?? 0.0,
+        'longitude': _parseDoubleFromDynamic(json['location']['coordinates'][1]) ?? 0.0,
       } : null,
       preferredAgeRange: json['preferredAgeRange'] != null ? {
-        'lower_limit': json['preferredAgeRange']['lower_limit'] as int? ?? 18,
-        'upper_limit': json['preferredAgeRange']['upper_limit'] as int? ?? 80,
+        'lower_limit': _parseIntFromDynamic(json['preferredAgeRange']['lower_limit']) ?? 18,
+        'upper_limit': _parseIntFromDynamic(json['preferredAgeRange']['upper_limit']) ?? 80,
       } : null,
       hometown: json['hometown'] as String?,
       bio: json['bio'] as String?,
@@ -102,7 +134,7 @@ class User extends Equatable {
       physicalActiveness: (json['physical_activeness'] as List<dynamic>?)?.cast<String>(),
       availability: (json['availability'] as List<dynamic>?)?.cast<String>(),
       profilePic: json['profilePic'] as String?,
-      preferredDistanceRadius: json['preferred_distance_radius'] as int? ?? 40,
+      preferredDistanceRadius: _parseIntFromDynamic(json['preferred_distance_radius']) ?? 40,
       isOnline: json['isOnline'] as bool?,
       lastSeen: json['lastSeen'] as String?,
       connectionStatus: json['connectionStatus'] as String?,

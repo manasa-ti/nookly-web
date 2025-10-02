@@ -78,8 +78,10 @@ class ConversationRepositoryImpl implements ConversationRepository {
               if (conversationKey.encryptionKey.isNotEmpty) {
                 final participantId = userJson['_id'] as String;
                 
-                // Store with proper conversation ID format (inbox format: currentUserId_participantId)
-                final conversationId = '${currentUserId}_$participantId';
+                // Store with sorted conversation ID format (standardized: sorted userIds)
+                final userIds = [currentUserId, participantId];
+                userIds.sort();
+                final conversationId = '${userIds[0]}_${userIds[1]}';
                 ConversationKeyCache().storeConversationKey(
                   conversationId, 
                   conversationKey.encryptionKey,
