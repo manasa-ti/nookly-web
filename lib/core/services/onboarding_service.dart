@@ -69,6 +69,17 @@ class OnboardingService {
     }
   }
 
+  static Future<bool> isConversationStarterTutorialCompleted() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final isCompleted = prefs.getBool(_conversationStarterTutorialKey);
+      return isCompleted == true;
+    } catch (e) {
+      AppLogger.error('Error checking conversation starter tutorial completion status: $e');
+      return false; // Assume not completed if error
+    }
+  }
+
   static Future<void> markWelcomeTourCompleted() async {
     try {
       final prefs = await SharedPreferences.getInstance();

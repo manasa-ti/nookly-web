@@ -34,25 +34,51 @@ class GameInterfaceBar extends StatefulWidget {
 
 class _GameInterfaceBarState extends State<GameInterfaceBar> {
   bool _showGamesTooltip = false;
+  bool _conversationStarterCompleted = false;
 
   @override
   void initState() {
     super.initState();
     _checkGamesTutorial();
+    _checkConversationStarterCompletion();
+  }
+
+  void _checkConversationStarterCompletion() async {
+    final isCompleted = await OnboardingService.isConversationStarterTutorialCompleted();
+    setState(() {
+      _conversationStarterCompleted = isCompleted;
+    });
+    
+    // If conversation starter is completed, check if we should show games tooltip
+    if (isCompleted) {
+      _checkGamesTutorial();
+    }
   }
 
   void _checkGamesTutorial() async {
     final shouldShow = await OnboardingService.shouldShowGamesTutorial();
     print('🔵 GAMES TOOLTIP: shouldShowGamesTutorial returned: $shouldShow');
     print('🔵 GAMES TOOLTIP: mounted: $mounted');
-    if (shouldShow && mounted) {
+    print('🔵 GAMES TOOLTIP: conversation starter completed: $_conversationStarterCompleted');
+    
+    // Only show games tooltip if conversation starter tutorial is completed
+    if (shouldShow && mounted && _conversationStarterCompleted) {
       print('🔵 GAMES TOOLTIP: Setting _showGamesTooltip to true');
       setState(() {
         _showGamesTooltip = true;
       });
     } else {
-      print('🔵 GAMES TOOLTIP: Not showing tooltip - shouldShow: $shouldShow, mounted: $mounted');
+      print('🔵 GAMES TOOLTIP: Not showing tooltip - shouldShow: $shouldShow, mounted: $mounted, conversationStarterCompleted: $_conversationStarterCompleted');
     }
+  }
+
+  void _onConversationStarterCompleted() {
+    print('🔵 GAMES TOOLTIP: Conversation starter tutorial completed, checking games tutorial');
+    setState(() {
+      _conversationStarterCompleted = true;
+    });
+    // Check if we should show games tooltip now
+    _checkGamesTutorial();
   }
 
   Widget _buildPlayToBondButton() {
@@ -175,6 +201,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
           matchUserId: widget.matchUserId,
           priorMessages: widget.priorMessages,
           onSuggestionSelected: widget.onSuggestionSelected,
+          onTutorialCompleted: _onConversationStarterCompleted,
         ),
         
         const SizedBox(width: 16),
@@ -183,7 +210,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
         _showGamesTooltip
             ? ContextualTooltip(
                 message: 'Choose a game to play together and have fun getting to know each other!',
-                position: TooltipPosition.top,
+                position: TooltipPosition.bottom,
                 onDismiss: () {
                   print('🔵 GAMES TOOLTIP: Tooltip dismissed');
                   setState(() {

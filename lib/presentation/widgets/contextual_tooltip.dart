@@ -26,6 +26,8 @@ class _ContextualTooltipState extends State<ContextualTooltip>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
   bool _isVisible = true;
+  OverlayEntry? _overlayEntry;
+  final GlobalKey _childKey = GlobalKey();
 
   @override
   void initState() {
@@ -52,12 +54,33 @@ class _ContextualTooltipState extends State<ContextualTooltip>
     ));
 
     _animationController.forward();
+    
+    // Show overlay after the widget is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showOverlay();
+    });
   }
 
   @override
   void dispose() {
+    _removeOverlay();
     _animationController.dispose();
     super.dispose();
+  }
+
+  void _showOverlay() {
+    if (!mounted || _overlayEntry != null) return;
+    
+    _overlayEntry = OverlayEntry(
+      builder: (context) => _buildOverlayTooltip(),
+    );
+    
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeOverlay() {
+    _overlayEntry?.remove();
+    _overlayEntry = null;
   }
 
   void _dismiss() {
@@ -68,82 +91,101 @@ class _ContextualTooltipState extends State<ContextualTooltip>
     });
     
     _animationController.reverse().then((_) {
+      _removeOverlay();
       widget.onDismiss?.call();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    print('🔵 TOOLTIP: ContextualTooltip build called - _isVisible: $_isVisible');
-    if (!_isVisible) {
-      print('🔵 TOOLTIP: Not visible, returning child only');
-      return widget.child;
-    }
+    return Container(
+      key: _childKey,
+      child: widget.child,
+    );
+  }
 
-    print('🔵 TOOLTIP: Building tooltip with Stack');
-    return Stack(
-      clipBehavior: Clip.hardEdge, // Changed from Clip.none to prevent overflow
-      children: [
-        widget.child,
-        // Removed Positioned.fill GestureDetector to avoid competing with button taps
-        AnimatedBuilder(
-          animation: _animationController,
-          builder: (context, child) {
-            print('🔵 TOOLTIP: AnimatedBuilder building tooltip');
-            return _buildTooltip();
-          },
+  Widget _buildOverlayTooltip() {
+    if (!_isVisible) return const SizedBox.shrink();
+    
+    return Positioned.fill(
+      child: GestureDetector(
+        onTap: _dismiss,
+        child: Container(
+          color: Colors.transparent,
+          child: Stack(
+            children: [
+              _buildTooltip(),
+            ],
+          ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildTooltip() {
-    print('🔵 TOOLTIP: _buildTooltip called with position: ${widget.position}');
+    final RenderBox? renderBox = _childKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return const SizedBox.shrink();
+    
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    
+    Offset tooltipPosition;
+    Offset arrowPosition;
+    double arrowRotation;
+    
     switch (widget.position) {
       case TooltipPosition.top:
-        return Positioned(
-          bottom: 50,
-          left: 8,
-          right: 8,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: _buildTooltipContent(),
-            ),
-          ),
+        tooltipPosition = Offset(
+          position.dx + (size.width / 2) - 100, // Center the tooltip (200px width / 2)
+          position.dy - 100, // Position above the button with more space
         );
+        arrowPosition = Offset(
+          position.dx + (size.width / 2) - 8, // Center arrow horizontally
+          position.dy - 20, // Position arrow at bottom of tooltip
+        );
+        arrowRotation = 0; // Point down
+        break;
       case TooltipPosition.bottom:
-        return Positioned(
-          top: 50, // Position below the button (button is 44px + some margin)
-          left: 0,
-          right: 0,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: _buildTooltipContent(),
-            ),
-          ),
+        tooltipPosition = Offset(
+          position.dx + (size.width / 2) - 100, // Center the tooltip (200px width / 2)
+          position.dy + size.height + 20, // Position below the button with more space
         );
+        arrowPosition = Offset(
+          position.dx + (size.width / 2) - 8, // Center arrow horizontally
+          position.dy + size.height + 10, // Position arrow at top of tooltip
+        );
+        arrowRotation = 3.14159; // Point up (180 degrees)
+        break;
       case TooltipPosition.left:
-        return Positioned(
-          right: 50,
-          top: 8,
-          bottom: 8,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: ScaleTransition(
-              scale: _scaleAnimation,
-              child: _buildTooltipContent(),
-            ),
-          ),
+        tooltipPosition = Offset(
+          position.dx - 230, // Position to the left (200px width + 30px margin)
+          position.dy + (size.height / 2) - 40, // Center vertically
         );
+        arrowPosition = Offset(
+          position.dx - 10, // Position arrow at right edge of tooltip
+          position.dy + (size.height / 2) - 8, // Center arrow vertically
+        );
+        arrowRotation = -1.5708; // Point right (-90 degrees)
+        break;
       case TooltipPosition.right:
-        return Positioned(
-          left: 50,
-          top: 8,
-          bottom: 8,
+        tooltipPosition = Offset(
+          position.dx + size.width + 30, // Position to the right with margin
+          position.dy + (size.height / 2) - 40, // Center vertically
+        );
+        arrowPosition = Offset(
+          position.dx + size.width + 10, // Position arrow at left edge of tooltip
+          position.dy + (size.height / 2) - 8, // Center arrow vertically
+        );
+        arrowRotation = 1.5708; // Point left (90 degrees)
+        break;
+    }
+    
+    return Stack(
+      children: [
+        // Tooltip content
+        Positioned(
+          left: tooltipPosition.dx,
+          top: tooltipPosition.dy,
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: ScaleTransition(
@@ -151,82 +193,130 @@ class _ContextualTooltipState extends State<ContextualTooltip>
               child: _buildTooltipContent(),
             ),
           ),
-        );
-    }
+        ),
+        // Arrow pointer
+        if (widget.showArrow)
+          Positioned(
+            left: arrowPosition.dx,
+            top: arrowPosition.dy,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Transform.rotate(
+                angle: arrowRotation,
+                child: _buildArrow(),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _buildTooltipContent() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Calculate available space more conservatively
-        final availableWidth = constraints.maxWidth - 16; // Reduced padding
-        final maxWidth = availableWidth > 260 ? 260 : availableWidth;
-        final minWidth = availableWidth > 120 ? 120.0 : availableWidth * 0.8; // Dynamic min width
-        
-        return Center(
-          child: Container(
-            constraints: BoxConstraints(
-              maxWidth: maxWidth.toDouble(),
-              minWidth: minWidth.toDouble(),
+    return Container(
+      width: 200, // Fixed width to ensure visibility
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            widget.message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontFamily: 'Nunito',
+              color: Colors.black87,
+              height: 1.3,
+              fontWeight: FontWeight.w500,
             ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: Colors.grey.withOpacity(0.2),
-                width: 1,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: _dismiss,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(6),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
+              child: const Text(
+                'Got it!',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontFamily: 'Nunito',
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  decoration: TextDecoration.none,
                 ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  widget.message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontFamily: 'Nunito',
-                    color: Colors.black87,
-                    height: 1.3,
-                  ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: _dismiss,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.blue,
-                      borderRadius: BorderRadius.circular(5),
-                    ),
-                    child: const Text(
-                      'Got it!',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontFamily: 'Nunito',
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
-        );
-      },
+        ],
+      ),
     );
   }
+
+  Widget _buildArrow() {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: CustomPaint(
+        painter: ArrowPainter(),
+      ),
+    );
+  }
+}
+
+class ArrowPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    path.moveTo(size.width / 2, 0);
+    path.lineTo(size.width, size.height);
+    path.lineTo(0, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Draw border
+    final borderPaint = Paint()
+      ..color = Colors.grey.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
 enum TooltipPosition {

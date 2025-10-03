@@ -13,12 +13,14 @@ class ConversationStarterWidget extends StatelessWidget {
   final String matchUserId;
   final List<String>? priorMessages;
   final Function(String) onSuggestionSelected;
+  final VoidCallback? onTutorialCompleted;
 
   const ConversationStarterWidget({
     Key? key,
     required this.matchUserId,
     this.priorMessages,
     required this.onSuggestionSelected,
+    this.onTutorialCompleted,
   }) : super(key: key);
 
   @override
@@ -27,6 +29,7 @@ class ConversationStarterWidget extends StatelessWidget {
       matchUserId: matchUserId,
       priorMessages: priorMessages,
       onSuggestionSelected: onSuggestionSelected,
+      onTutorialCompleted: onTutorialCompleted,
     );
   }
 }
@@ -35,11 +38,13 @@ class _ConversationStarterContent extends StatefulWidget {
   final String matchUserId;
   final List<String>? priorMessages;
   final Function(String) onSuggestionSelected;
+  final VoidCallback? onTutorialCompleted;
 
   const _ConversationStarterContent({
     required this.matchUserId,
     this.priorMessages,
     required this.onSuggestionSelected,
+    this.onTutorialCompleted,
   });
 
   @override
@@ -99,6 +104,7 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
             _showTooltip = false;
           });
           OnboardingService.markConversationStarterTutorialCompleted();
+          widget.onTutorialCompleted?.call();
         },
         child: breakIceButton,
       );
