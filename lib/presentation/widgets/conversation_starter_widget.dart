@@ -6,6 +6,8 @@ import 'package:nookly/presentation/bloc/conversation_starter/conversation_start
 import 'package:nookly/presentation/bloc/conversation_starter/conversation_starter_state.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/services/conversation_starter_service.dart';
+import 'package:nookly/presentation/widgets/contextual_tooltip.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
 class ConversationStarterWidget extends StatelessWidget {
   final String matchUserId;
@@ -29,7 +31,7 @@ class ConversationStarterWidget extends StatelessWidget {
   }
 }
 
-class _ConversationStarterContent extends StatelessWidget {
+class _ConversationStarterContent extends StatefulWidget {
   final String matchUserId;
   final List<String>? priorMessages;
   final Function(String) onSuggestionSelected;
@@ -41,8 +43,30 @@ class _ConversationStarterContent extends StatelessWidget {
   });
 
   @override
+  State<_ConversationStarterContent> createState() => _ConversationStarterContentState();
+}
+
+class _ConversationStarterContentState extends State<_ConversationStarterContent> {
+  bool _showTooltip = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkTooltip();
+  }
+
+  void _checkTooltip() async {
+    final shouldShow = await OnboardingService.shouldShowConversationStarterTutorial();
+    if (shouldShow && mounted) {
+      setState(() {
+        _showTooltip = true;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final breakIceButton = GestureDetector(
       onTap: () => _showConversationStartersModal(context),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -65,6 +89,22 @@ class _ConversationStarterContent extends StatelessWidget {
         ],
       ),
     );
+
+    if (_showTooltip) {
+      return ContextualTooltip(
+        message: 'Use AI-generated conversation starters to break the ice',
+        position: TooltipPosition.bottom,
+        onDismiss: () {
+          setState(() {
+            _showTooltip = false;
+          });
+          OnboardingService.markConversationStarterTutorialCompleted();
+        },
+        child: breakIceButton,
+      );
+    }
+
+    return breakIceButton;
   }
 
   void _showConversationStartersModal(BuildContext context) {
@@ -80,13 +120,13 @@ class _ConversationStarterContent extends StatelessWidget {
         create: (context) => ConversationStarterBloc(
           conversationStarterService: sl<ConversationStarterService>(),
         )..add(GenerateConversationStarters(
-          matchUserId: matchUserId,
-          priorMessages: priorMessages,
+          matchUserId: widget.matchUserId,
+          priorMessages: widget.priorMessages,
         )),
         child: _ConversationStartersModal(
-          matchUserId: matchUserId,
-          priorMessages: priorMessages,
-          onSuggestionSelected: onSuggestionSelected,
+          matchUserId: widget.matchUserId,
+          priorMessages: widget.priorMessages,
+          onSuggestionSelected: widget.onSuggestionSelected,
         ),
       ),
     );

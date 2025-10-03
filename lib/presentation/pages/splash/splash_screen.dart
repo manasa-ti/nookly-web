@@ -6,7 +6,9 @@ import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
+import 'package:nookly/presentation/pages/onboarding/welcome_tour_page.dart';
 import 'package:nookly/core/services/deep_link_service.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -85,24 +87,58 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is Authenticated) {
-          if (state.user.isProfileComplete) {
-            // Navigate to home page if profile is complete and clear navigation stack
+          // Check if welcome tour should be shown
+          final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
+          print('🔵 SPLASH: shouldShowWelcomeTour = $shouldShowWelcomeTour');
+          
+          if (shouldShowWelcomeTour) {
+            print('🔵 SPLASH: Showing welcome tour');
+            // Show welcome tour first
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
-                builder: (context) => const HomePage(),
+                builder: (context) => WelcomeTourPage(
+                  onComplete: () {
+                    // After welcome tour, navigate based on profile completion
+                    if (state.user.isProfileComplete) {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const HomePage(),
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                          builder: (context) => const ProfileCreationPage(),
+                        ),
+                      );
+                    }
+                  },
+                ),
               ),
               (route) => false, // Remove all previous routes
             );
           } else {
-            // Navigate to profile creation if profile is incomplete and clear navigation stack
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (context) => const ProfileCreationPage(),
-              ),
-              (route) => false, // Remove all previous routes
-            );
+            print('🔵 SPLASH: Welcome tour already completed, navigating directly');
+            // Welcome tour already completed, navigate directly
+            if (state.user.isProfileComplete) {
+              // Navigate to home page if profile is complete and clear navigation stack
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const HomePage(),
+                ),
+                (route) => false, // Remove all previous routes
+              );
+            } else {
+              // Navigate to profile creation if profile is incomplete and clear navigation stack
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (context) => const ProfileCreationPage(),
+                ),
+                (route) => false, // Remove all previous routes
+              );
+            }
           }
         } else if (state is Unauthenticated) {
           Navigator.of(context).pushAndRemoveUntil(

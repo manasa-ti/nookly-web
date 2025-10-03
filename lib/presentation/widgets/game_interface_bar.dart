@@ -6,9 +6,11 @@ import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/presentation/bloc/games/games_state.dart';
 import 'package:nookly/presentation/widgets/conversation_starter_widget.dart';
 import 'package:nookly/presentation/widgets/game_board_widget.dart';
+import 'package:nookly/presentation/widgets/contextual_tooltip.dart';
 import 'package:nookly/domain/entities/game_session.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
-class GameInterfaceBar extends StatelessWidget {
+class GameInterfaceBar extends StatefulWidget {
   final String matchUserId;
   final List<String>? priorMessages;
   final Function(String) onSuggestionSelected;
@@ -25,6 +27,56 @@ class GameInterfaceBar extends StatelessWidget {
     required this.isOtherUserOnline,
     this.serverConversationId,
   }) : super(key: key);
+
+  @override
+  State<GameInterfaceBar> createState() => _GameInterfaceBarState();
+}
+
+class _GameInterfaceBarState extends State<GameInterfaceBar> {
+  bool _showGamesTooltip = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkGamesTutorial();
+  }
+
+  void _checkGamesTutorial() async {
+    final shouldShow = await OnboardingService.shouldShowGamesTutorial();
+    print('🔵 GAMES TOOLTIP: shouldShowGamesTutorial returned: $shouldShow');
+    print('🔵 GAMES TOOLTIP: mounted: $mounted');
+    if (shouldShow && mounted) {
+      print('🔵 GAMES TOOLTIP: Setting _showGamesTooltip to true');
+      setState(() {
+        _showGamesTooltip = true;
+      });
+    } else {
+      print('🔵 GAMES TOOLTIP: Not showing tooltip - shouldShow: $shouldShow, mounted: $mounted');
+    }
+  }
+
+  Widget _buildPlayToBondButton() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.games,
+          color: Colors.white.withOpacity(0.8),
+          size: 20,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          'Play to Bond',
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.9),
+            fontSize: 14,
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,7 +117,7 @@ class GameInterfaceBar extends StatelessWidget {
   Widget _buildContent(BuildContext context, GamesState state) {
     AppLogger.info('🎮 GameInterfaceBar: Building content with state: ${state.runtimeType}');
     AppLogger.info('🎮 GameInterfaceBar: State details: $state');
-    AppLogger.info('🎮 GameInterfaceBar: Other user online: $isOtherUserOnline');
+    AppLogger.info('🎮 GameInterfaceBar: Other user online: ${widget.isOtherUserOnline}');
     
     // Show game board if game is active (regardless of online status)
     if (state is GameActive) {
@@ -73,7 +125,7 @@ class GameInterfaceBar extends StatelessWidget {
       AppLogger.info('🎮 GameInterfaceBar: GameSession details: sessionId=${state.gameSession.sessionId}, gameType=${state.gameSession.gameType.displayName}, currentTurn=${state.gameSession.currentTurn.userId}');
       return GameBoardWidget(
         gameSession: state.gameSession,
-        currentUserId: currentUserId,
+        currentUserId: widget.currentUserId,
         onGameAction: (action) => _handleGameAction(context, action, state.gameSession),
       );
     }
@@ -84,7 +136,7 @@ class GameInterfaceBar extends StatelessWidget {
       AppLogger.info('🎮 GameInterfaceBar: GameSession details: sessionId=${state.gameSession.sessionId}, gameType=${state.gameSession.gameType.displayName}, currentTurn=${state.gameSession.currentTurn.userId}');
       return GameBoardWidget(
         gameSession: state.gameSession,
-        currentUserId: currentUserId,
+        currentUserId: widget.currentUserId,
         onGameAction: (action) => _handleGameAction(context, action, state.gameSession),
         isTurnCompleted: true, // Pass flag to indicate turn is completed
       );
@@ -107,7 +159,7 @@ class GameInterfaceBar extends StatelessWidget {
     }
 
     // Only show conversation starters and games if other user is online
-    if (isOtherUserOnline) {
+    if (widget.isOtherUserOnline) {
       return _buildNormalInterface(context);
     } else {
       return _buildOfflineInterface(context);
@@ -115,53 +167,61 @@ class GameInterfaceBar extends StatelessWidget {
   }
 
   Widget _buildNormalInterface(BuildContext context) {
+    print('🔵 GAMES TOOLTIP: _buildNormalInterface called, _showGamesTooltip: $_showGamesTooltip');
     return Row(
       children: [
         // Conversation Starters
         ConversationStarterWidget(
-          matchUserId: matchUserId,
-          priorMessages: priorMessages,
-          onSuggestionSelected: onSuggestionSelected,
+          matchUserId: widget.matchUserId,
+          priorMessages: widget.priorMessages,
+          onSuggestionSelected: widget.onSuggestionSelected,
         ),
         
         const SizedBox(width: 16),
         
         // Play to Bond - always show when other user is online
-        GestureDetector(
-          onTap: () {
-            // Handle authentication at action level
-            if (currentUserId.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Please wait while we connect...'),
-                  duration: Duration(seconds: 2),
+        _showGamesTooltip
+            ? ContextualTooltip(
+                message: 'Choose a game to play together and have fun getting to know each other!',
+                position: TooltipPosition.top,
+                onDismiss: () {
+                  print('🔵 GAMES TOOLTIP: Tooltip dismissed');
+                  setState(() {
+                    _showGamesTooltip = false;
+                  });
+                  OnboardingService.markGamesTutorialCompleted();
+                },
+                child: GestureDetector(
+                  onTap: () {
+                    if (widget.currentUserId.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please wait while we connect...'),
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                      return;
+                    }
+                    context.read<GamesBloc>().add(const ShowGameMenu());
+                  },
+                  child: _buildPlayToBondButton(),
                 ),
-              );
-              return;
-            }
-            context.read<GamesBloc>().add(const ShowGameMenu());
-          },
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.games,
-                color: Colors.white.withOpacity(0.8),
-                size: 20,
+              )
+            : GestureDetector(
+                onTap: () {
+                  if (widget.currentUserId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please wait while we connect...'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    return;
+                  }
+                  context.read<GamesBloc>().add(const ShowGameMenu());
+                },
+                child: _buildPlayToBondButton(),
               ),
-              const SizedBox(width: 6),
-              Text(
-                'Play to Bond',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
         
         const SizedBox(width: 20),
         
@@ -543,25 +603,25 @@ class GameInterfaceBar extends StatelessWidget {
       case 'select_truth':
         context.read<GamesBloc>().add(SelectGameChoice(
           choice: 'truth',
-          currentUserId: currentUserId,
+          currentUserId: widget.currentUserId,
           conversationId: _getActualConversationId(), // Pass actual conversation ID for room-based broadcasting
         ));
         break;
       case 'select_thrill':
         context.read<GamesBloc>().add(SelectGameChoice(
           choice: 'thrill',
-          currentUserId: currentUserId,
+          currentUserId: widget.currentUserId,
           conversationId: _getActualConversationId(), // Pass actual conversation ID for room-based broadcasting
         ));
         break;
       case 'send_invite':
         // matchUserId should be the other user's ID, but let's verify
-        AppLogger.info('🎮 Sending game invite to: $matchUserId');
+        AppLogger.info('🎮 Sending game invite to: ${widget.matchUserId}');
         AppLogger.info('🎮 Game type: ${gameSession.gameType.apiValue}');
-        AppLogger.info('🎮 Current user ID: $currentUserId');
+        AppLogger.info('🎮 Current user ID: ${widget.currentUserId}');
         context.read<GamesBloc>().add(SendGameInvite(
           gameType: gameSession.gameType.apiValue,
-          otherUserId: matchUserId,
+          otherUserId: widget.matchUserId,
           conversationId: _getActualConversationId(),
         ));
         break;
@@ -580,23 +640,23 @@ class GameInterfaceBar extends StatelessWidget {
 
   String _getActualConversationId() {
     // Use server-provided conversation ID if available
-    if (serverConversationId != null && serverConversationId!.isNotEmpty) {
-      AppLogger.info('🔵 GameInterfaceBar: Using server-provided conversation ID: $serverConversationId');
-      return serverConversationId!;
+    if (widget.serverConversationId != null && widget.serverConversationId!.isNotEmpty) {
+      AppLogger.info('🔵 GameInterfaceBar: Using server-provided conversation ID: ${widget.serverConversationId}');
+      return widget.serverConversationId!;
     }
     
     // Fallback: Generate the actual conversation ID in the format: user1_user2 (sorted alphabetically)
-    if (currentUserId.isEmpty || matchUserId.isEmpty) {
+    if (widget.currentUserId.isEmpty || widget.matchUserId.isEmpty) {
       AppLogger.error('❌ Cannot generate conversation ID: user IDs are empty');
-      return matchUserId; // Fallback to other user's ID
+      return widget.matchUserId; // Fallback to other user's ID
     }
     
-    final userIds = [currentUserId, matchUserId];
+    final userIds = [widget.currentUserId, widget.matchUserId];
     userIds.sort(); // Sort alphabetically to ensure consistent format
     
     final actualConversationId = '${userIds[0]}_${userIds[1]}';
     AppLogger.info('🔵 GameInterfaceBar: Generated fallback conversation ID: $actualConversationId');
-    AppLogger.info('🔵 From user IDs: $currentUserId and $matchUserId');
+    AppLogger.info('🔵 From user IDs: ${widget.currentUserId} and ${widget.matchUserId}');
     
     return actualConversationId;
   }

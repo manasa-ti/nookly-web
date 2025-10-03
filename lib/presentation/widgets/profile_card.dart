@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/presentation/widgets/matching_tutorial_overlay.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
 // Custom compact chip for profile card
 class ProfileInterestChip extends StatelessWidget {
@@ -52,6 +54,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
   late Animation<double> _animation;
   double _dragOffset = 0;
   bool _isDragging = false;
+  bool _showHeartTooltip = false;
 
   @override
   void initState() {
@@ -61,6 +64,26 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
+    _checkHeartTooltip();
+  }
+
+  void _checkHeartTooltip() async {
+    final shouldShow = await OnboardingService.shouldShowMatchingTutorial();
+    if (shouldShow && mounted) {
+      setState(() {
+        _showHeartTooltip = true;
+      });
+    }
+  }
+
+  void _onHeartPressed() {
+    if (_showHeartTooltip) {
+      setState(() {
+        _showHeartTooltip = false;
+      });
+      OnboardingService.markMatchingTutorialCompleted();
+    }
+    widget.onSwipeRight();
   }
 
   @override
@@ -204,12 +227,14 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                             ),
                           ),
                           // Connect button at the end of the row with size constraint
-                          SizedBox(
+                          // Wrap in a container that provides space for tooltip
+                          Container(
                             width: 44,
                             height: 44,
+                            margin: const EdgeInsets.only(bottom: 20),
                             child: AnimatedConnectButton(
-                              key: ValueKey('connect_${widget.profile['id']}'), // Add unique key based on profile ID
-                              onTap: widget.onSwipeRight,
+                              key: ValueKey('connect_${widget.profile['id']}'),
+                              onTap: _onHeartPressed,
                             ),
                           ),
                         ],
@@ -245,6 +270,21 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                     ],
                   ),
                 ),
+                
+                // Matching tutorial overlay
+                if (_showHeartTooltip)
+                  MatchingTutorialOverlay(
+                    onComplete: () {
+                      setState(() {
+                        _showHeartTooltip = false;
+                      });
+                    },
+                    onSkip: () {
+                      setState(() {
+                        _showHeartTooltip = false;
+                      });
+                    },
+                  ),
               ],
             ),
           );

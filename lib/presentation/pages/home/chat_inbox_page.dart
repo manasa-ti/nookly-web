@@ -14,6 +14,8 @@ import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/presentation/widgets/game_invite_indicator.dart';
+import 'package:nookly/presentation/widgets/messaging_tutorial_overlay.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/core/services/games_service.dart';
@@ -34,6 +36,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   bool _isLoadingCurrentUser = true;
   String? _initializationError;
   SocketService? _socketService;
+  bool _showMessagingTutorial = false;
   // REMOVED: _pendingGameInvites - not needed for notification-based architecture
   
   // Store listener references for proper cleanup
@@ -51,6 +54,16 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _initializeChatInbox();
+    _checkMessagingTutorial();
+  }
+
+  void _checkMessagingTutorial() async {
+    final shouldShow = await OnboardingService.shouldShowMessagingTutorial();
+    if (shouldShow && mounted) {
+      setState(() {
+        _showMessagingTutorial = true;
+      });
+    }
   }
 
   @override
@@ -977,8 +990,10 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       return const Center(child: Text('Bloc not initialized.'));
     }
 
-    return Container(
-      color: const Color(0xFF234481),
+    return Stack(
+      children: [
+        Container(
+          color: const Color(0xFF234481),
       child: BlocProvider.value(
         value: _inboxBloc!,
         child: BlocBuilder<InboxBloc, InboxState>(
@@ -1123,7 +1138,24 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             return const Center(child: Text('Something went wrong.')); // Fallback for unhandled state
           },
         ),
-      ),
+          ),
+        ),
+        
+        // Messaging tutorial overlay
+        if (_showMessagingTutorial)
+          MessagingTutorialOverlay(
+            onComplete: () {
+              setState(() {
+                _showMessagingTutorial = false;
+              });
+            },
+            onSkip: () {
+              setState(() {
+                _showMessagingTutorial = false;
+              });
+            },
+          ),
+      ],
     );
   }
 } 

@@ -56,6 +56,11 @@ class GameBoardWidget extends StatelessWidget {
           
           const SizedBox(height: 12),
           
+          // Turn indicator
+          _buildTurnIndicator(),
+          
+          const SizedBox(height: 8),
+          
           // Game content based on type and state
           if (gameSession.gameType == GameType.truthOrThrill) ...[
             if (_isGamePending()) ...[
@@ -288,6 +293,41 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
+  Widget _buildTurnIndicator() {
+    String turnText;
+    Color indicatorColor;
+    
+    if (_isGamePending()) {
+      turnText = 'Game pending';
+      indicatorColor = Colors.orange.withOpacity(0.8);
+    } else if (_isCurrentUserTurn()) {
+      turnText = 'Your turn';
+      indicatorColor = Colors.green.withOpacity(0.8);
+    } else {
+      turnText = 'Your partner\'s turn';
+      indicatorColor = Colors.blue.withOpacity(0.8);
+    }
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      decoration: BoxDecoration(
+        color: indicatorColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        turnText,
+        textAlign: TextAlign.center,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          fontFamily: 'Nunito',
+        ),
+      ),
+    );
+  }
+
   Widget _buildNextTurnButton() {
     return Container(
       width: double.infinity,
@@ -302,7 +342,7 @@ class GameBoardWidget extends StatelessWidget {
           ),
         ),
         child: const Text(
-          'Your turn',
+          'Done',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w600,

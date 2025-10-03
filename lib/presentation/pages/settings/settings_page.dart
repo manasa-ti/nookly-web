@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:nookly/core/config/app_config.dart';
 import 'package:nookly/core/utils/logger.dart';
-import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
-import 'package:nookly/presentation/bloc/auth/auth_event.dart';
-import 'package:nookly/presentation/bloc/auth/auth_state.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
 import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -70,6 +65,34 @@ class SettingsPage extends StatelessWidget {
             title: 'About',
             onTap: () {
               // TODO: Implement about page
+            },
+          ),
+          // Debug section
+          const Divider(),
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: Text(
+              'Debug',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          _SettingsItem(
+            icon: Icons.refresh,
+            title: 'Reset Onboarding',
+            onTap: () async {
+              await OnboardingService.resetWelcomeTour();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Onboarding reset! Restart app to see welcome tour.'),
+                    duration: Duration(seconds: 3),
+                  ),
+                );
+              }
             },
           ),
           _SettingsItem(

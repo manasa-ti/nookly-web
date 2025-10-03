@@ -10,6 +10,8 @@ import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
+import 'package:nookly/presentation/pages/onboarding/welcome_tour_page.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,7 +26,6 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
   bool _isEmailLoading = false; // Track email sign in loading
-  bool _isGoogleLoading = false; // Track Google sign in loading
 
   @override
   void dispose() {
@@ -37,7 +38,6 @@ class _LoginPageState extends State<LoginPage> {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() {
         _isEmailLoading = true;
-        _isGoogleLoading = false;
       });
       context.read<AuthBloc>().add(
             SignInWithEmailAndPassword(
@@ -57,13 +57,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _onGoogleSignInPressed() {
-    setState(() {
-      _isGoogleLoading = true;
-      _isEmailLoading = false;
-    });
-    context.read<AuthBloc>().add(SignInWithGoogle());
-  }
 
 
 
@@ -73,35 +66,69 @@ class _LoginPageState extends State<LoginPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF234481),
       body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
+        listener: (context, state) async {
           if (state is Authenticated) {
             setState(() {
               _isEmailLoading = false;
-              _isGoogleLoading = false;
             });
-            if (state.user.isProfileComplete) {
-              // Navigate to home page and clear navigation stack
+            
+            // Check if welcome tour should be shown
+            final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
+            print('🔵 LOGIN: shouldShowWelcomeTour = $shouldShowWelcomeTour');
+            
+            if (shouldShowWelcomeTour) {
+              print('🔵 LOGIN: Showing welcome tour');
+              // Show welcome tour first
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const HomePage(),
+                  builder: (context) => WelcomeTourPage(
+                    onComplete: () {
+                      // After welcome tour, navigate based on profile completion
+                      if (state.user.isProfileComplete) {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const HomePage(),
+                          ),
+                        );
+                      } else {
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => const ProfileCreationPage(),
+                          ),
+                        );
+                      }
+                    },
+                  ),
                 ),
                 (route) => false, // Remove all previous routes
               );
             } else {
-              // Navigate to profile creation and clear navigation stack
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfileCreationPage(),
-                ),
-                (route) => false, // Remove all previous routes
-              );
+              print('🔵 LOGIN: Welcome tour already completed, navigating directly');
+              // Welcome tour already completed, navigate directly
+              if (state.user.isProfileComplete) {
+                // Navigate to home page and clear navigation stack
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HomePage(),
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
+              } else {
+                // Navigate to profile creation and clear navigation stack
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileCreationPage(),
+                  ),
+                  (route) => false, // Remove all previous routes
+                );
+              }
             }
           } else if (state is EmailVerificationRequired) {
             setState(() {
               _isEmailLoading = false;
-              _isGoogleLoading = false;
             });
             // Navigate to email verification page
             Navigator.push(
@@ -116,7 +143,6 @@ class _LoginPageState extends State<LoginPage> {
           } else if (state is AuthError) {
             setState(() {
               _isEmailLoading = false;
-              _isGoogleLoading = false;
             });
             
             // Provide user-friendly error messages for common issues
