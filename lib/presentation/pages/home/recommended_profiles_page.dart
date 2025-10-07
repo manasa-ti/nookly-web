@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/widgets/profile_card.dart';
+import 'package:nookly/presentation/widgets/matching_tutorial_dialog.dart';
 import 'package:nookly/core/services/filter_preferences_service.dart';
+import 'package:nookly/core/services/onboarding_service.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});
@@ -15,6 +17,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   final ScrollController _scrollController = ScrollController();
   bool _isLoadingMore = false;
   bool _isInitialLoad = false;
+  bool _tutorialDialogShown = false; // Prevent duplicate dialogs
 
   @override
   void initState() {
@@ -88,6 +91,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     print('🔵 DEBUG: Loaded filters - Physical Activeness: $physicalActivenessFilters, Availability: $availabilityFilters');
     
     context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
+      skip: 0, // Explicitly set skip to 0 for initial load
       physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
       availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
     ));
@@ -98,6 +102,34 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     super.didChangeDependencies();
     // This will be called when the page is rebuilt, including after navigation
     // We don't need to reload here as it would cause infinite loops
+  }
+
+  Future<void> _showMatchingTutorialIfNeeded() async {
+    if (_tutorialDialogShown) return;
+    
+    try {
+      final shouldShow = await OnboardingService.shouldShowMatchingTutorial();
+      if (shouldShow && mounted) {
+        _tutorialDialogShown = true;
+        
+        // Use post frame callback to ensure the dialog shows after the UI is built
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false, // Prevent dismissing by tapping outside
+              builder: (context) => MatchingTutorialDialog(
+                onComplete: () {
+                  print('🔵 MATCHING TUTORIAL: Dialog completed');
+                },
+              ),
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print('🔵 MATCHING TUTORIAL: Error showing tutorial: $e');
+    }
   }
 
   @override
@@ -129,6 +161,9 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                 _isInitialLoad = false;
               });
               print('🔵 DEBUG: Reset _isInitialLoad flag');
+              
+              // Show matching tutorial dialog after initial load
+              _showMatchingTutorialIfNeeded();
             }
           }
         },
@@ -180,11 +215,27 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             final isTablet = MediaQuery.of(context).size.width > 600;
             final listPadding = isTablet ? EdgeInsets.all(32.0) : EdgeInsets.all(MediaQuery.of(context).size.width * 0.04);
             
-            return ListView.builder(
-              controller: _scrollController,
-              padding: listPadding,
-              itemCount: state.profiles.length + (_isLoadingMore ? 1 : 0),
-              itemBuilder: (context, index) {
+            return RefreshIndicator(
+              onRefresh: () async {
+                print('🔵 DEBUG: Pull to refresh triggered');
+                
+                // Load filter preferences for refresh
+                final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
+                final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
+                
+                // Force fresh load by explicitly setting skip to 0
+                context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
+                  skip: 0, // Explicitly set skip to 0 for fresh load
+                  physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
+                  availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
+                ));
+              },
+              child: ListView.builder(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()), // Fix iOS pull-to-refresh for short lists
+                padding: listPadding,
+                itemCount: state.profiles.length + (_isLoadingMore ? 1 : 0),
+                itemBuilder: (context, index) {
                 if (index == state.profiles.length) {
                   if (_isLoadingMore) {
                     return const Center(
@@ -232,6 +283,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                   },
                 );
               },
+              ),
             );
           }
           

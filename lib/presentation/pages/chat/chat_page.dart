@@ -1605,6 +1605,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Future<void> _sendImageMessage(String imagePath, {bool isDisappearing = true, int disappearingTime = 5}) async {
     if (_socketService != null && _currentUserId != null) {
+      // Validate conversation ID and user IDs
+      if (widget.conversationId.trim().isEmpty) {
+        AppLogger.error('❌ Cannot send image: Conversation ID is null or empty');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: Invalid conversation. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      if (_currentUserId == widget.conversationId) {
+        AppLogger.error('❌ Cannot send image: Cannot send image to yourself');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: Cannot send image to yourself.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
       try {
         // Show upload status
         setState(() {
@@ -1856,6 +1879,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _pickFile() async {
+    // Validate conversation ID and user IDs
+    if (widget.conversationId.trim().isEmpty) {
+      AppLogger.error('❌ Cannot send file: Conversation ID is null or empty');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Invalid conversation. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    if (_currentUserId == widget.conversationId) {
+      AppLogger.error('❌ Cannot send file: Cannot send file to yourself');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Cannot send file to yourself.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     // In a real app, this would use file_picker
     // For now, we'll just send a mock file
     setState(() {
@@ -1882,6 +1928,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   }
 
   Future<void> _recordVoiceMessage() async {
+    // Validate conversation ID and user IDs
+    if (widget.conversationId.trim().isEmpty) {
+      AppLogger.error('❌ Cannot send voice message: Conversation ID is null or empty');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Invalid conversation. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    if (_currentUserId == widget.conversationId) {
+      AppLogger.error('❌ Cannot send voice message: Cannot send voice message to yourself');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Error: Cannot send voice message to yourself.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
     // In a real app, this would use record package
     // For now, we'll just send a mock voice message
     context.read<ConversationBloc>().add(
@@ -3100,6 +3169,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _messageController.clear();
 
     if (_socketService != null && _currentUserId != null) {
+      // Validate conversation ID and user IDs
+      if (widget.conversationId.trim().isEmpty) {
+        AppLogger.error('❌ Cannot send message: Conversation ID is null or empty');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: Invalid conversation. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
+      if (_currentUserId == widget.conversationId) {
+        AppLogger.error('❌ Cannot send message: Cannot send message to yourself');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: Cannot send message to yourself.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      
       try {
         AppLogger.info('🔵 Attempting to send message to: ${widget.conversationId}');
         AppLogger.info('🔵 Socket connected: ${_socketService!.isConnected}');

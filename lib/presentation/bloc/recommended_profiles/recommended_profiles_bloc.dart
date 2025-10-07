@@ -31,6 +31,8 @@ class DislikeProfile extends RecommendedProfilesEvent {
   DislikeProfile(this.profileId);
 }
 
+class ResetPagination extends RecommendedProfilesEvent {}
+
 // States
 abstract class RecommendedProfilesState {}
 
@@ -59,6 +61,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     on<LoadRecommendedProfiles>(_onLoadRecommendedProfiles);
     on<LikeProfile>(_onLikeProfile);
     on<DislikeProfile>(_onDislikeProfile);
+    on<ResetPagination>(_onResetPagination);
   }
 
   Future<void> _onLoadRecommendedProfiles(
@@ -66,8 +69,8 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     Emitter<RecommendedProfilesState> emit,
   ) async {
     try {
-      // If skip is 0, it's a fresh load, otherwise it's pagination
-      final isFreshLoad = event.skip == 0;
+      // If skip is 0 or explicitly set to 0, it's a fresh load, otherwise it's pagination
+      final isFreshLoad = event.skip == 0 || (event.skip == null && _currentSkip == 0);
       
       print('🔵 DEBUG: LoadRecommendedProfiles event - skip: ${event.skip}, isFreshLoad: $isFreshLoad, currentSkip: $_currentSkip');
       
@@ -189,6 +192,14 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
       // Optionally show a subtle error message without blocking
       emit(RecommendedProfilesError('Failed to dislike profile, but you can continue browsing'));
     }
+  }
+
+  Future<void> _onResetPagination(
+    ResetPagination event,
+    Emitter<RecommendedProfilesState> emit,
+  ) async {
+    print('🔵 DEBUG: ResetPagination event received');
+    _currentSkip = 0;
   }
 
   void resetPagination() {

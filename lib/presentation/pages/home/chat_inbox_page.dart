@@ -1068,7 +1068,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                           conversation.participantName,
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
                             fontSize: isTablet ? 18.0 : null,
                           ),
                         ),
@@ -1087,8 +1087,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: hasUnread ? Colors.white : Colors.grey[400],
                                       fontSize: isTablet ? 16.0 : null,
+                                      fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
                                     ),
                                   )
                                 : Text(

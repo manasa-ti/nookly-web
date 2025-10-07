@@ -70,13 +70,24 @@ class SocketService {
       return;
     }
     
+    if (_userId == null) {
+      AppLogger.error('Cannot send message: Current user ID is null');
+      return;
+    }
+    
     if (!message.containsKey('to')) {
       AppLogger.error('Cannot send message: Recipient ID (to) is required');
       return;
     }
     
-    if (_userId == null) {
-      AppLogger.error('Cannot send message: Current user ID is null');
+    final receiverId = message['to'];
+    if (receiverId == null || receiverId.toString().trim().isEmpty) {
+      AppLogger.error('Cannot send message: Recipient ID (to) is null or empty');
+      return;
+    }
+    
+    if (_userId == receiverId) {
+      AppLogger.error('Cannot send message: Cannot send message to yourself');
       return;
     }
     
@@ -122,6 +133,16 @@ class SocketService {
     if (_userId == null) {
       AppLogger.error('❌ Cannot send encrypted message: Current user ID is null');
       throw Exception('Current user ID is null');
+    }
+    
+    if (receiverId.trim().isEmpty) {
+      AppLogger.error('❌ Cannot send encrypted message: Receiver ID is null or empty');
+      throw Exception('Receiver ID is null or empty');
+    }
+    
+    if (_userId == receiverId) {
+      AppLogger.error('❌ Cannot send encrypted message: Cannot send message to yourself');
+      throw Exception('Cannot send message to yourself');
     }
 
     if (_keyManagementService == null) {
@@ -464,7 +485,21 @@ class SocketService {
 
   /// Generate sorted conversation ID for consistent format
   String _generateConversationId(String otherUserId) {
-    if (_userId == null) return otherUserId;
+    if (_userId == null) {
+      AppLogger.error('❌ Cannot generate conversation ID: Current user ID is null');
+      throw Exception('Current user ID is null');
+    }
+    
+    if (otherUserId.trim().isEmpty) {
+      AppLogger.error('❌ Cannot generate conversation ID: Other user ID is null or empty');
+      throw Exception('Other user ID is null or empty');
+    }
+    
+    if (_userId == otherUserId) {
+      AppLogger.error('❌ Cannot generate conversation ID: Cannot create conversation with yourself');
+      throw Exception('Cannot create conversation with yourself');
+    }
+    
     final ids = [_userId!, otherUserId];
     ids.sort();
     return '${ids[0]}_${ids[1]}';

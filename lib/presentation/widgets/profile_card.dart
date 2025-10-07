@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
-import 'package:nookly/presentation/widgets/matching_tutorial_overlay.dart';
-import 'package:nookly/core/services/onboarding_service.dart';
 
 // Custom compact chip for profile card
 class ProfileInterestChip extends StatelessWidget {
@@ -52,10 +50,6 @@ class ProfileCard extends StatefulWidget {
 class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  double _dragOffset = 0;
-  bool _isDragging = false;
-  bool _showHeartTooltip = false;
-
   @override
   void initState() {
     super.initState();
@@ -64,25 +58,9 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
       vsync: this,
     );
     _animation = Tween<double>(begin: 0, end: 1).animate(_controller);
-    _checkHeartTooltip();
-  }
-
-  void _checkHeartTooltip() async {
-    final shouldShow = await OnboardingService.shouldShowMatchingTutorial();
-    if (shouldShow && mounted) {
-      setState(() {
-        _showHeartTooltip = true;
-      });
-    }
   }
 
   void _onHeartPressed() {
-    if (_showHeartTooltip) {
-      setState(() {
-        _showHeartTooltip = false;
-      });
-      OnboardingService.markMatchingTutorialCompleted();
-    }
     widget.onSwipeRight();
   }
 
@@ -138,7 +116,6 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final cardWidth = size.width * 0.9;
 
     return GestureDetector(
       // TEMPORARILY DISABLED: Swipe gesture handlers commented out for future use
@@ -270,21 +247,6 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                     ],
                   ),
                 ),
-                
-                // Matching tutorial overlay
-                if (_showHeartTooltip)
-                  MatchingTutorialOverlay(
-                    onComplete: () {
-                      setState(() {
-                        _showHeartTooltip = false;
-                      });
-                    },
-                    onSkip: () {
-                      setState(() {
-                        _showHeartTooltip = false;
-                      });
-                    },
-                  ),
               ],
             ),
           );
