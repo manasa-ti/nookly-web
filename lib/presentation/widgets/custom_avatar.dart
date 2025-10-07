@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class CustomAvatar extends StatelessWidget {
   final String? name;
@@ -63,29 +63,34 @@ class CustomAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Debug logging for online status
-    print('🔵 CustomAvatar for "$name": isOnline = $isOnline');
+    print('🔵 CustomAvatar for "$name": isOnline = $isOnline, imageUrl = $imageUrl');
     
     return Stack(
       children: [
-        Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: _getBackgroundColor(),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              _getInitial(),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: size * 0.32, // Reduced from 0.4 to 0.32 for smaller letter
-                fontWeight: FontWeight.w500,
-                fontFamily: 'Nunito',
+        // Profile picture or initials fallback
+        if (imageUrl != null && imageUrl!.isNotEmpty)
+          CachedNetworkImage(
+            imageUrl: imageUrl!,
+            width: size,
+            height: size,
+            imageBuilder: (context, imageProvider) => Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                image: DecorationImage(
+                  image: imageProvider,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
-        ),
+            placeholder: (context, url) => _buildInitialsAvatar(),
+            errorWidget: (context, url, error) => _buildInitialsAvatar(),
+          )
+        else
+          _buildInitialsAvatar(),
+        
+        // Online status indicator
         if (isOnline)
           Positioned(
             right: 0,
@@ -96,10 +101,36 @@ class CustomAvatar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.green,
                 shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white,
+                  width: 2,
+                ),
               ),
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildInitialsAvatar() {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: _getBackgroundColor(),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          _getInitial(),
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: size * 0.32, // Reduced from 0.4 to 0.32 for smaller letter
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Nunito',
+          ),
+        ),
+      ),
     );
   }
 } 

@@ -5,6 +5,7 @@ import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:nookly/presentation/widgets/message_bubble.dart';
 import 'package:nookly/presentation/widgets/game_interface_bar.dart';
+import 'package:nookly/presentation/pages/profile/profile_view_page.dart';
 import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/presentation/bloc/games/games_state.dart';
@@ -2280,35 +2281,45 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Row(
-          children: [
-            _buildAvatar(),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                  Text(
-                    widget.participantName,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0),
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                  Text(
-                    _formatOnlineStatus(),
-                    style: TextStyle(
-                      color: widget.isOnline ? const Color(0xFF4CAF50) : Colors.grey,
-                      fontSize: 12,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-              ],
+        title: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ProfileViewPage(userId: widget.conversationId),
               ),
-            ),
-          ],
+            );
+          },
+          child: Row(
+            children: [
+              _buildAvatarOnly(),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    Text(
+                      widget.participantName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0),
+                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                    Text(
+                      _formatOnlineStatus(),
+                      style: TextStyle(
+                        color: widget.isOnline ? const Color(0xFF4CAF50) : Colors.grey,
+                        fontSize: 12,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                ],
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -3084,7 +3095,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
   }
 
-  Widget _buildAvatar() {
+  Widget _buildAvatarOnly() {
     final size = MediaQuery.of(context).size;
     final avatarSize = (size.width * 0.08).clamp(32.0, 40.0); // Smaller avatar
     

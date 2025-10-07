@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/received_likes/received_likes_bloc.dart';
-
 import 'package:nookly/presentation/widgets/profile_card.dart';
+import 'package:nookly/presentation/pages/profile/profile_view_page.dart';
 
 class ReceivedLikesPage extends StatefulWidget {
   const ReceivedLikesPage({super.key});
@@ -108,7 +108,12 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
                     );
                   },
                   onTap: () {
-                    // Profile detail dialog removed - functionality can be added back if needed
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileViewPage(userId: like.id),
+                      ),
+                    );
                   },
                 );
               },

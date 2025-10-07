@@ -6,6 +6,7 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/bloc/inbox/inbox_bloc.dart';
 import 'package:nookly/presentation/pages/chat/chat_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_view_page.dart';
 import 'package:intl/intl.dart';
 import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/services/api_cache_service.dart';
@@ -924,10 +925,20 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
 
   Widget _buildAvatar(Conversation conversation) {
     print('🔵 Building avatar for ${conversation.participantName}: isOnline = ${conversation.isOnline}');
-    return CustomAvatar(
-      name: conversation.participantName,
-      size: 46,
-      isOnline: conversation.isOnline,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfileViewPage(userId: conversation.participantId),
+          ),
+        );
+      },
+      child: CustomAvatar(
+        name: conversation.participantName,
+        size: 46,
+        isOnline: conversation.isOnline,
+      ),
     );
   }
 

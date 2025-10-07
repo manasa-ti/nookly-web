@@ -594,4 +594,73 @@ class AuthRepositoryImpl implements AuthRepository {
       throw Exception('Failed to resend OTP: ${e.response?.data?['message'] ?? e.message}');
     }
   }
+
+  @override
+  Future<User?> getUserProfile(String userId) async {
+    final token = await getToken();
+    
+    if (token == null) {
+      AppLogger.warning('getUserProfile called but no token found');
+      return null;
+    }
+
+    try {
+      AppLogger.info('🔵 getUserProfile: Fetching profile for userId: $userId');
+      final response = await NetworkService.dio.get('/users/profile/$userId');
+      final userData = response.data;
+      AppLogger.info('Raw API response for user $userId: $userData');
+      
+      // Validate user data
+      if (userData == null) {
+        AppLogger.warning('getUserProfile: API returned null data for userId: $userId');
+        return null;
+      }
+
+      // Create a map with default values for missing fields
+      final Map<String, dynamic> safeUserData = {
+        '_id': userData['_id'] ?? userId,
+        'email': userData['email'] ?? '',
+        'name': userData['name'] ?? '',
+        'age': userData['age'],
+        'sex': userData['sex'],
+        'seekingGender': userData['seeking_gender'],
+        'location': userData['location'],
+        'preferredAgeRange': userData['preferred_age_range'],
+        'hometown': userData['hometown'] ?? '',
+        'bio': userData['bio'] ?? '',
+        'interests': userData['interests'] ?? [],
+        'objectives': userData['objectives'] ?? [],
+        'personality_type': userData['personality_type'] ?? [],
+        'physical_activeness': userData['physical_activeness'] ?? [],
+        'availability': userData['availability'] ?? [],
+        'profilePic': userData['profile_pic'] ?? '',
+        'preferred_distance_radius': userData['preferred_distance_radius'] ?? 40,
+        'isOnline': userData['isOnline'],
+        'lastSeen': userData['lastSeen'],
+        'connectionStatus': userData['connectionStatus'],
+        'last_active': userData['last_active'],
+      };
+
+      AppLogger.info('Processed user data for $userId: $safeUserData');
+      
+      final user = User.fromJson(safeUserData);
+      AppLogger.info('Created User object for $userId with isProfileComplete: ${user.isProfileComplete}');
+      
+      return user;
+    } on DioException catch (e) {
+      AppLogger.error(
+        'Failed to get user profile for userId: $userId',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Failed to get user profile: ${e.response?.data?['message'] ?? e.message}');
+    } catch (e) {
+      AppLogger.error(
+        'Unexpected error getting user profile for userId: $userId',
+        e,
+        StackTrace.current,
+      );
+      throw Exception('Failed to get user profile: An unexpected error occurred: $e');
+    }
+  }
 } 

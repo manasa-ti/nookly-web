@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/widgets/profile_card.dart';
 import 'package:nookly/presentation/widgets/matching_tutorial_dialog.dart';
+import 'package:nookly/presentation/pages/profile/profile_view_page.dart';
 import 'package:nookly/core/services/filter_preferences_service.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 
@@ -279,7 +280,12 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                     );
                   },
                   onTap: () {
-                    // Disabled full screen view
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ProfileViewPage(userId: profile.id),
+                      ),
+                    );
                   },
                 );
               },
