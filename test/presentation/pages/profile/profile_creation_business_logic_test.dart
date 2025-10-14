@@ -187,8 +187,8 @@ void main() {
           'bio': 'This is my bio',
           'interests': ['Deep Conversations', 'Travel'],
         };
-        expect(profileDetailsValid['bio']!.isNotEmpty, isTrue);
-        expect(profileDetailsValid['interests']!.isNotEmpty, isTrue);
+        expect((profileDetailsValid['bio'] as String).isNotEmpty, isTrue);
+        expect((profileDetailsValid['interests'] as List).isNotEmpty, isTrue);
 
         // Step 3: Objectives
         final objectivesValid = {
@@ -380,7 +380,7 @@ void main() {
     group('Content Moderation', () {
       test('should validate bio content length', () {
         const shortBio = 'Hi';
-        const longBio = 'A' * 1000;
+        final longBio = 'A' * 1000;
         const normalBio = 'This is a normal bio with reasonable length';
 
         expect(shortBio.length, lessThan(10));

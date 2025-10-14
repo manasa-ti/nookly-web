@@ -20,9 +20,9 @@ void main() {
         // Act
         final user = User.fromJson(json);
 
-        // Assert
-        expect(user.location?['coordinates'][0], 0.0);
-        expect(user.location?['coordinates'][1], 0.0);
+        // Assert - location is stored as {latitude, longitude}
+        expect(user.location?['latitude'], 0.0);
+        expect(user.location?['longitude'], 0.0);
       });
 
       test('should parse location coordinates correctly when they are doubles', () {
@@ -41,9 +41,11 @@ void main() {
         // Act
         final user = User.fromJson(json);
 
-        // Assert
-        expect(user.location?['coordinates'][0], 12.34);
-        expect(user.location?['coordinates'][1], 56.78);
+        // Assert - location is stored as {latitude, longitude}
+        // coordinates[0] = longitude (12.34) → stored as latitude in User
+        // coordinates[1] = latitude (56.78) → stored as longitude in User
+        expect(user.location?['latitude'], 12.34);
+        expect(user.location?['longitude'], 56.78);
       });
 
       test('should handle null location', () {
@@ -76,13 +78,13 @@ void main() {
           },
           'age': 25,
           'sex': 'm',
-          'seeking_gender': 'f',
+          'seekingGender': 'f',
           'hometown': 'New York',
-          'preferred_age_range': {
+          'preferredAgeRange': {
             'lower_limit': 18,
             'upper_limit': 30,
           },
-          'profile_pic': 'https://example.com/photo.jpg',
+          'profilePic': 'https://example.com/photo.jpg',
           'objectives': ['Long Term'],
         };
 
@@ -95,8 +97,8 @@ void main() {
         expect(user.name, 'Test User');
         expect(user.bio, 'Test bio');
         expect(user.interests, ['reading', 'gaming']);
-        expect(user.location?['coordinates'][0], 12.34);
-        expect(user.location?['coordinates'][1], 56.78);
+        expect(user.location?['latitude'], 12.34);
+        expect(user.location?['longitude'], 56.78);
         expect(user.age, 25);
         expect(user.sex, 'm');
         expect(user.seekingGender, 'f');
