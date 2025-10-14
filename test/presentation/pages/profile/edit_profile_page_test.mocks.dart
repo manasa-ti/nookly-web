@@ -250,6 +250,15 @@ class MockAuthRepository extends _i1.Mock implements _i9.AuthRepository {
       ) as _i10.Future<_i3.User?>);
 
   @override
+  _i10.Future<_i3.User?> getUserProfile(String? userId) => (super.noSuchMethod(
+        Invocation.method(
+          #getUserProfile,
+          [userId],
+        ),
+        returnValue: _i10.Future<_i3.User?>.value(),
+      ) as _i10.Future<_i3.User?>);
+
+  @override
   _i10.Future<void> updateUserProfile(_i3.User? user) => (super.noSuchMethod(
         Invocation.method(
           #updateUserProfile,

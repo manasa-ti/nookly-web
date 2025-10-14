@@ -136,24 +136,24 @@ class LeaveConversation extends ConversationEvent {
   List<Object?> get props => [conversationId];
 }
 
-// TODO: Uncomment when call feature is re-implemented
-// class StartAudioCall extends ConversationEvent {
-//   final String conversationId;
+// Call events
+class StartAudioCall extends ConversationEvent {
+  final String conversationId;
 
-//   const StartAudioCall({required this.conversationId});
+  const StartAudioCall({required this.conversationId});
 
-//   @override
-//   List<Object?> get props => [conversationId];
-// }
+  @override
+  List<Object?> get props => [conversationId];
+}
 
-// class StartVideoCall extends ConversationEvent {
-//   final String conversationId;
+class StartVideoCall extends ConversationEvent {
+  final String conversationId;
 
-//   const StartVideoCall({required this.conversationId});
+  const StartVideoCall({required this.conversationId});
 
-//   @override
-//   List<Object?> get props => [conversationId];
-// }
+  @override
+  List<Object?> get props => [conversationId];
+}
 
 // class EndCall extends ConversationEvent {
 //   final String conversationId;
