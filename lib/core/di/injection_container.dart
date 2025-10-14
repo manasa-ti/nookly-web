@@ -4,6 +4,7 @@ import 'package:nookly/data/repositories/auth_repository_impl.dart';
 import 'package:nookly/data/repositories/chat_repository_impl.dart';
 import 'package:nookly/data/repositories/conversation_repository_impl.dart';
 import 'package:nookly/data/repositories/matches_repository_impl.dart';
+import 'package:nookly/data/repositories/notification_repository.dart';
 import 'package:nookly/data/repositories/purchased_features_repository_impl.dart';
 import 'package:nookly/data/repositories/received_likes_repository_impl.dart';
 import 'package:nookly/data/repositories/recommended_profiles_repository_impl.dart';
@@ -90,6 +91,11 @@ Future<void> init() async {
     () => ConversationStarterRepositoryImpl(sl()),
   );
   
+  // Notification Repository
+  sl.registerLazySingleton<NotificationRepository>(
+    () => NotificationRepository(),
+  );
+  
   // E2EE Services
   sl.registerLazySingleton<KeyManagementService>(
     () => KeyManagementService(sl<AuthRepository>()),
@@ -106,7 +112,10 @@ Future<void> init() async {
   
   // Blocs
   sl.registerFactory(
-    () => AuthBloc(authRepository: sl()),
+    () => AuthBloc(
+      authRepository: sl(),
+      notificationRepository: sl(),
+    ),
   );
   
   sl.registerFactory(

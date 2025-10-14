@@ -4,12 +4,17 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/core/services/user_cache_service.dart';
+import 'package:nookly/data/repositories/notification_repository.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
+  final NotificationRepository _notificationRepository;
 
-  AuthBloc({required AuthRepository authRepository})
-      : _authRepository = authRepository,
+  AuthBloc({
+    required AuthRepository authRepository,
+    required NotificationRepository notificationRepository,
+  })  : _authRepository = authRepository,
+        _notificationRepository = notificationRepository,
         super(AuthInitial()) {
     on<SignInWithEmailAndPassword>(_onSignInWithEmailAndPassword);
     on<SignUpWithEmailAndPassword>(_onSignUpWithEmailAndPassword);
@@ -50,6 +55,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         // User is authenticated
         final user = _mapUserModelToEntity(authResponse.user);
+        
+        // Register device for push notifications
+        await _notificationRepository.registerDevice();
+        
         emit(Authenticated(user));
       }
     } catch (e) {
@@ -81,6 +90,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         // User is already authenticated (email verification not required)
         final user = _mapUserModelToEntity(authResponse.user);
+        
+        // Register device for push notifications
+        await _notificationRepository.registerDevice();
+        
         emit(Authenticated(user));
       }
     } catch (e) {
@@ -99,6 +112,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       userCacheService.invalidateCache();
       
       final user = await _authRepository.signInWithGoogle();
+      
+      // Register device for push notifications
+      await _notificationRepository.registerDevice();
+      
       emit(Authenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -111,6 +128,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Unregister device from push notifications
+      await _notificationRepository.unregisterDevice();
+      
       await _authRepository.signOut();
       emit(Unauthenticated());
     } catch (e) {
@@ -124,6 +144,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Unregister device from push notifications
+      await _notificationRepository.unregisterDevice();
       await _authRepository.signOut();
       emit(AuthError('Invalid Token: ${event.reason}'));
     } catch (e) {
@@ -168,6 +190,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final user = await _authRepository.getCurrentUser();
       if (user != null) {
+        // Register device for push notifications (in case not registered)
+        await _notificationRepository.registerDevice();
+        
         emit(Authenticated(user));
       } else {
         emit(Unauthenticated());
