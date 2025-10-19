@@ -253,6 +253,14 @@ class CallManagerService {
       final token = tokens['caller']['token'];
       final receiver = response['receiver'];
       
+      AppLogger.info('🔍 Initiate call response structure:');
+      AppLogger.info('🔍 - receiver: $receiver');
+      AppLogger.info('🔍 - callSession: $callSession');
+      
+      if (receiver == null) {
+        AppLogger.warning('⚠️ [CALL] Backend response missing receiver data');
+      }
+      
       _isInCall = true;
       _currentRoomId = roomId;
 
@@ -266,8 +274,8 @@ class CallManagerService {
               roomId: roomId,
               authToken: token,
               isAudioCall: callType == 'audio',
-              participantName: receiver['name'] ?? receiverName,
-              participantAvatar: receiver['profilePicture'] ?? receiverAvatar,
+              participantName: receiver?['name'] ?? receiverName,
+              participantAvatar: receiver?['profilePicture'] ?? receiverAvatar,
               onCallEnded: () {
                 endCall();
               },
@@ -311,6 +319,14 @@ class CallManagerService {
       
       final caller = response['caller'];
       
+      AppLogger.info('🔍 Accept call response structure:');
+      AppLogger.info('🔍 - caller: $caller');
+      AppLogger.info('🔍 - callSession: $callSession');
+      
+      if (caller == null) {
+        AppLogger.warning('⚠️ [CALL] Backend response missing caller data');
+      }
+      
       _isInCall = true;
       _currentRoomId = roomId;
 
@@ -324,8 +340,8 @@ class CallManagerService {
               roomId: roomId,
               authToken: token,
               isAudioCall: callSession['callType'] == 'audio',
-              participantName: caller['name'] ?? 'Call Participant',
-              participantAvatar: caller['profilePicture'],
+              participantName: caller?['name'] ?? 'Call Participant',
+              participantAvatar: caller?['profilePicture'],
               onCallEnded: () {
                 endCall();
               },

@@ -49,10 +49,10 @@ class MatchesRepositoryImpl implements MatchesRepository {
         throw Exception('Failed to load matched profiles: Status ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('DioError fetching matched profiles: ${e.response?.data ?? e.message}');
+      AppLogger.info('DioError fetching matched profiles: ${e.response?.data ?? e.message}');
       throw Exception('Failed to load matched profiles: ${e.response?.data?['message'] ?? e.message}');
     } catch (e) {
-      print('Error fetching matched profiles: $e');
+      AppLogger.info('Error fetching matched profiles: $e');
       throw Exception('Failed to load matched profiles: An unexpected error occurred.');
     }
   }

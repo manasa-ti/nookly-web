@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/domain/entities/conversation_starter.dart';
@@ -114,7 +115,7 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
   }
 
   void _showConversationStartersModal(BuildContext context) {
-    print('DEBUGGING STARTERS: Opening modal and triggering API call');
+    AppLogger.info('DEBUGGING STARTERS: Opening modal and triggering API call');
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF234481),
@@ -189,7 +190,7 @@ class _ConversationStartersModal extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Break the Ice',
+                        'Break Ice',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,

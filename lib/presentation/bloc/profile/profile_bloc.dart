@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
@@ -308,13 +309,13 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
   Future<void> _onSaveProfile(SaveProfile event, Emitter<ProfileState> emit) async {
     try {
-      print('ProfileBloc: Starting to save profile');
+      AppLogger.info('ProfileBloc: Starting to save profile');
       emit(ProfileLoading());
       await _authRepository.updateUserProfile(event.user);
-      print('ProfileBloc: Profile saved successfully');
+      AppLogger.info('ProfileBloc: Profile saved successfully');
       emit(ProfileSaved(event.user));
     } catch (e) {
-      print('ProfileBloc: Error saving profile: $e');
+      AppLogger.info('ProfileBloc: Error saving profile: $e');
       emit(ProfileError(e.toString()));
     }
   }

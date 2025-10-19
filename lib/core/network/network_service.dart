@@ -14,12 +14,12 @@ class NetworkService {
 
   static String get baseUrl {
     final url = _customBaseUrl ?? EnvironmentManager.baseUrl;
-    print('debug disappearing: NetworkService baseUrl getter called, returning: $url');
+    AppLogger.info('debug disappearing: NetworkService baseUrl getter called, returning: $url');
     return url;
   }
 
   static void setBaseUrl(String url) {
-    print('debug disappearing: Setting NetworkService baseUrl to: $url');
+    AppLogger.info('debug disappearing: Setting NetworkService baseUrl to: $url');
     _customBaseUrl = url;
     _dio = null; // Force recreation of Dio instance with new baseUrl
   }
@@ -29,8 +29,8 @@ class NetworkService {
   }
 
   static Dio get dio {
-    print('debug disappearing: Getting Dio instance');
-    print('debug disappearing: Current baseUrl: $baseUrl');
+    AppLogger.info('debug disappearing: Getting Dio instance');
+    AppLogger.info('debug disappearing: Current baseUrl: $baseUrl');
     
     _dio ??= Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -52,35 +52,35 @@ class NetworkService {
         logPrint: (obj) {
           // Add custom logging with emojis for better filtering
           if (obj.toString().contains('REQUEST')) {
-            print('🌐 HTTP_REQUEST: $obj');
+            AppLogger.info('🌐 HTTP_REQUEST: $obj');
           } else if (obj.toString().contains('RESPONSE')) {
-            print('✅ HTTP_RESPONSE: $obj');
+            AppLogger.info('✅ HTTP_RESPONSE: $obj');
           } else if (obj.toString().contains('ERROR')) {
-            print('❌ HTTP_ERROR: $obj');
+            AppLogger.info('❌ HTTP_ERROR: $obj');
           } else {
-            print('📡 HTTP_LOG: $obj');
+            AppLogger.info('📡 HTTP_LOG: $obj');
           }
         },
       ))
       ..interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) async {
           try {
-            print('debug disappearing: Interceptor onRequest - URL: ${options.uri}');
+            AppLogger.info('debug disappearing: Interceptor onRequest - URL: ${options.uri}');
             // Get token from SharedPreferences
             _prefs ??= await SharedPreferences.getInstance();
             final token = _prefs?.getString('token');
             
             // TEMP LOG: Print auth token before API call
             if (token != null) {
-              print('🔑 NetworkService: Auth token for ${options.uri}: $token');
+              AppLogger.info('🔑 NetworkService: Auth token for ${options.uri}: $token');
               options.headers['Authorization'] = 'Bearer $token';
             } else {
-              print('🔑 NetworkService: No auth token found for ${options.uri}');
+              AppLogger.info('🔑 NetworkService: No auth token found for ${options.uri}');
             }
             
             return handler.next(options);
           } catch (e) {
-            print('debug disappearing: Interceptor onRequest error: $e');
+            AppLogger.info('debug disappearing: Interceptor onRequest error: $e');
             return handler.reject(
               DioException(
                 requestOptions: options,
@@ -90,11 +90,11 @@ class NetworkService {
           }
         },
         onResponse: (response, handler) {
-          print('debug disappearing: Interceptor onResponse - Status: ${response.statusCode}');
+          AppLogger.info('debug disappearing: Interceptor onResponse - Status: ${response.statusCode}');
           return handler.next(response);
         },
         onError: (DioException e, handler) {
-          print('debug disappearing: Interceptor onError - Error: ${e.message}');
+          AppLogger.info('debug disappearing: Interceptor onError - Error: ${e.message}');
           if (e.type == DioExceptionType.connectionTimeout ||
               e.type == DioExceptionType.receiveTimeout) {
             return handler.reject(

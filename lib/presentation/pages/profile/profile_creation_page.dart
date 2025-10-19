@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
@@ -246,7 +247,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           _currentStep++;
         });
       } else {
-        print('ProfileCreationPage: Validation failed for step $_currentStep');
+        AppLogger.info('ProfileCreationPage: Validation failed for step $_currentStep');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_getValidationErrorMessage()),
@@ -429,10 +430,10 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           Expanded(
             child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
-          print('ProfileCreationPage: Received state: ${state.runtimeType}');
+          AppLogger.info('ProfileCreationPage: Received state: ${state.runtimeType}');
           
           if (state is ProfileSaved) {
-            print('ProfileCreationPage: Profile saved successfully');
+            AppLogger.info('ProfileCreationPage: Profile saved successfully');
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const HomePage(),
@@ -440,11 +441,11 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
               (route) => false, // Remove all previous routes
             );
           } else if (state is ProfileError) {
-            print('ProfileCreationPage: Profile error: ${state.message}');
+            AppLogger.info('ProfileCreationPage: Profile error: ${state.message}');
             // Use a more explicit approach to ensure the SnackBar shows
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                print('ProfileCreationPage: Showing error SnackBar');
+                AppLogger.info('ProfileCreationPage: Showing error SnackBar');
                 try {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -454,7 +455,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                     ),
                   );
                 } catch (e) {
-                  print('ProfileCreationPage: Error showing SnackBar with context: $e');
+                  AppLogger.info('ProfileCreationPage: Error showing SnackBar with context: $e');
                   // Fallback to global ScaffoldMessenger
                   MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
                     SnackBar(
@@ -465,7 +466,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                   );
                 }
               } else {
-                print('ProfileCreationPage: Widget not mounted, cannot show SnackBar');
+                AppLogger.info('ProfileCreationPage: Widget not mounted, cannot show SnackBar');
                 // Fallback to global ScaffoldMessenger
                 MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
                   SnackBar(

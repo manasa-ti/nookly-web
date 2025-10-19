@@ -37,7 +37,7 @@ class GameMenuModal extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   const Text(
-                    'Play to Bond',
+                    'Play 2 Bond',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 18,

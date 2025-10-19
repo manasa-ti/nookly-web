@@ -4,7 +4,7 @@ class ScamAlertService {
   static final ScamAlertService _instance = ScamAlertService._internal();
   factory ScamAlertService() => _instance;
   ScamAlertService._internal() {
-    print('🔧 ScamAlertService initialized');
+    AppLogger.info('🔧 ScamAlertService initialized');
   }
 
   // Scam patterns and keywords
@@ -66,68 +66,68 @@ class ScamAlertService {
   ScamAlertType? analyzeMessage(String message, {int messageCount = 0}) {
     final lowerMessage = message.toLowerCase();
     
-    print('🔍 Analyzing message: "$message"');
-    print('🔍 Lowercase: "$lowerMessage"');
+    AppLogger.info('🔍 Analyzing message: "$message"');
+    AppLogger.info('🔍 Lowercase: "$lowerMessage"');
     
     // Check for video call avoidance (catfishing)
     if (_videoCallAvoidance.any((pattern) => lowerMessage.contains(pattern))) {
-      print('🚨 Catfishing pattern detected');
+      AppLogger.info('🚨 Catfishing pattern detected');
       return ScamAlertType.catfishing;
     }
 
     // Check for romance/financial scams
     for (final pattern in _scamPatterns['romance_financial']!) {
       if (lowerMessage.contains(pattern)) {
-        print('🚨 Romance/Financial pattern detected: "$pattern" in "$lowerMessage"');
+        AppLogger.info('🚨 Romance/Financial pattern detected: "$pattern" in "$lowerMessage"');
         return ScamAlertType.romanceFinancial;
       }
     }
 
     // Check for investment/crypto scams
     if (_scamPatterns['investment_crypto']!.any((pattern) => lowerMessage.contains(pattern))) {
-      print('🚨 Investment/Crypto pattern detected');
+      AppLogger.info('🚨 Investment/Crypto pattern detected');
       return ScamAlertType.investmentCrypto;
     }
 
     // Check for off-platform communication
     for (final pattern in _scamPatterns['off_platform']!) {
       if (lowerMessage.contains(pattern)) {
-        print('🚨 Off-platform pattern detected: "$pattern" in "$lowerMessage"');
+        AppLogger.info('🚨 Off-platform pattern detected: "$pattern" in "$lowerMessage"');
         return ScamAlertType.offPlatform;
       }
     }
 
     // Check for military impersonation
     if (_scamPatterns['military_impersonation']!.any((pattern) => lowerMessage.contains(pattern))) {
-      print('🚨 Military impersonation pattern detected');
+      AppLogger.info('🚨 Military impersonation pattern detected');
       return ScamAlertType.militaryImpersonation;
     }
 
     // Check for love bombing
     if (_scamPatterns['love_bombing']!.any((pattern) => lowerMessage.contains(pattern))) {
-      print('🚨 Love bombing pattern detected');
+      AppLogger.info('🚨 Love bombing pattern detected');
       return ScamAlertType.loveBombing;
     }
 
     // Check for personal info requests
     if (_scamPatterns['personal_info_request']!.any((pattern) => lowerMessage.contains(pattern))) {
-      print('🚨 Personal info request pattern detected');
+      AppLogger.info('🚨 Personal info request pattern detected');
       return ScamAlertType.personalInfoRequest;
     }
 
     // Check for advance fee scams
     if (_scamPatterns['advance_fee']!.any((pattern) => lowerMessage.contains(pattern))) {
-      print('🚨 Advance fee pattern detected');
+      AppLogger.info('🚨 Advance fee pattern detected');
       return ScamAlertType.advanceFee;
     }
 
     // Check for timing-based alerts
     if (messageCount >= 10) {
-      print('🚨 Video call verification suggested');
+      AppLogger.info('🚨 Video call verification suggested');
       return ScamAlertType.videoCallVerification;
     }
 
-    print('🔍 No scam pattern detected');
+    AppLogger.info('🔍 No scam pattern detected');
     return null;
   }
 

@@ -12,12 +12,12 @@ class OnboardingService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isCompleted = prefs.getBool(_welcomeTourKey);
-      print('🔵 ONBOARDING: shouldShowWelcomeTour - isCompleted: $isCompleted');
-      print('🔵 ONBOARDING: shouldShowWelcomeTour - returning: ${isCompleted != true}');
+      AppLogger.info('🔵 ONBOARDING: shouldShowWelcomeTour - isCompleted: $isCompleted');
+      AppLogger.info('🔵 ONBOARDING: shouldShowWelcomeTour - returning: ${isCompleted != true}');
       return isCompleted != true;
     } catch (e) {
       AppLogger.error('Error checking welcome tour status: $e');
-      print('🔵 ONBOARDING: Error occurred, returning true to show tour');
+      AppLogger.info('🔵 ONBOARDING: Error occurred, returning true to show tour');
       return true; // Show tour if error
     }
   }
@@ -26,12 +26,12 @@ class OnboardingService {
     try {
       final prefs = await SharedPreferences.getInstance();
       final isCompleted = prefs.getBool(_matchingTutorialKey);
-      print('🔵 ONBOARDING: shouldShowMatchingTutorial - isCompleted: $isCompleted');
-      print('🔵 ONBOARDING: shouldShowMatchingTutorial - returning: ${isCompleted != true}');
+      AppLogger.info('🔵 ONBOARDING: shouldShowMatchingTutorial - isCompleted: $isCompleted');
+      AppLogger.info('🔵 ONBOARDING: shouldShowMatchingTutorial - returning: ${isCompleted != true}');
       return isCompleted != true;
     } catch (e) {
       AppLogger.error('Error checking matching tutorial status: $e');
-      print('🔵 ONBOARDING: Error occurred, returning true to show tutorial');
+      AppLogger.info('🔵 ONBOARDING: Error occurred, returning true to show tutorial');
       return true; // Show tutorial if error
     }
   }
@@ -140,10 +140,10 @@ class OnboardingService {
       await prefs.remove(_gamesTutorialKey);
       await prefs.remove(_conversationStarterTutorialKey);
       AppLogger.info('All tutorials reset');
-      print('🔵 ONBOARDING: All tutorials reset successfully');
+      AppLogger.info('🔵 ONBOARDING: All tutorials reset successfully');
     } catch (e) {
       AppLogger.error('Error resetting tutorials: $e');
-      print('🔵 ONBOARDING: Error resetting tutorials: $e');
+      AppLogger.info('🔵 ONBOARDING: Error resetting tutorials: $e');
     }
   }
 
@@ -153,10 +153,10 @@ class OnboardingService {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_welcomeTourKey);
       AppLogger.info('Welcome tour reset');
-      print('🔵 ONBOARDING: Welcome tour reset successfully');
+      AppLogger.info('🔵 ONBOARDING: Welcome tour reset successfully');
     } catch (e) {
       AppLogger.error('Error resetting welcome tour: $e');
-      print('🔵 ONBOARDING: Error resetting welcome tour: $e');
+      AppLogger.info('🔵 ONBOARDING: Error resetting welcome tour: $e');
     }
   }
 }

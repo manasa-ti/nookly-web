@@ -129,6 +129,21 @@ PODS:
   - GTMSessionFetcher/Core (3.5.0)
   - GTMSessionFetcher/Full (3.5.0):
     - GTMSessionFetcher/Core
+  - HMSAnalyticsSDK (0.0.2)
+  - HMSBroadcastExtensionSDK (0.0.9)
+  - HMSHLSPlayerSDK (0.0.2):
+    - HMSAnalyticsSDK (= 0.0.2)
+  - HMSNoiseCancellationModels (1.0.0)
+  - HMSSDK (1.16.1):
+    - HMSAnalyticsSDK (= 0.0.2)
+    - HMSWebRTC (= 1.0.6171)
+  - hmssdk_flutter (1.10.6):
+    - Flutter
+    - HMSBroadcastExtensionSDK (= 0.0.9)
+    - HMSHLSPlayerSDK (= 0.0.2)
+    - HMSNoiseCancellationModels (= 1.0.0)
+    - HMSSDK (= 1.16.1)
+  - HMSWebRTC (1.0.6171)
   - image_picker_ios (0.0.1):
     - Flutter
   - integration_test (0.0.1):
@@ -144,6 +159,8 @@ PODS:
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
+  - permission_handler_apple (9.3.0):
+    - Flutter
   - PromisesObjC (2.4.0)
   - record_ios (1.0.0):
     - Flutter
@@ -169,10 +186,12 @@ DEPENDENCIES:
   - Flutter (from `Flutter`)
   - geolocator_apple (from `.symlinks/plugins/geolocator_apple/darwin`)
   - google_sign_in_ios (from `.symlinks/plugins/google_sign_in_ios/darwin`)
+  - hmssdk_flutter (from `.symlinks/plugins/hmssdk_flutter/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
+  - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - record_ios (from `.symlinks/plugins/record_ios/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite_darwin (from `.symlinks/plugins/sqflite_darwin/darwin`)
@@ -194,6 +213,12 @@ SPEC REPOS:
     - GoogleUtilities
     - GTMAppAuth
     - GTMSessionFetcher
+    - HMSAnalyticsSDK
+    - HMSBroadcastExtensionSDK
+    - HMSHLSPlayerSDK
+    - HMSNoiseCancellationModels
+    - HMSSDK
+    - HMSWebRTC
     - nanopb
     - PromisesObjC
     - SDWebImage
@@ -216,6 +241,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/geolocator_apple/darwin"
   google_sign_in_ios:
     :path: ".symlinks/plugins/google_sign_in_ios/darwin"
+  hmssdk_flutter:
+    :path: ".symlinks/plugins/hmssdk_flutter/ios"
   image_picker_ios:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   integration_test:
@@ -224,6 +251,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/just_audio/darwin"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
+  permission_handler_apple:
+    :path: ".symlinks/plugins/permission_handler_apple/ios"
   record_ios:
     :path: ".symlinks/plugins/record_ios/ios"
   shared_preferences_foundation:
@@ -256,11 +285,19 @@ SPEC CHECKSUMS:
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
   GTMAppAuth: f69bd07d68cd3b766125f7e072c45d7340dea0de
   GTMSessionFetcher: 5aea5ba6bd522a239e236100971f10cb71b96ab6
+  HMSAnalyticsSDK: 4d2a88a729b1eb42f3d25f217c28937ec318a5b7
+  HMSBroadcastExtensionSDK: d80fe325f6c928bd8e5176290b5a4b7ae15d6fbb
+  HMSHLSPlayerSDK: 6a54ad4d12f3dc2270d1ecd24019d71282a4f6a3
+  HMSNoiseCancellationModels: a3bda1405a16015632f4bcabd46ce48f35103b02
+  HMSSDK: 31e779fbf9c95335d88475a7f9f42fb077692e30
+  hmssdk_flutter: da118bf9558b0556b609cdc14540dca5514291ac
+  HMSWebRTC: f6f4f02a665fda6d9d8a5b223272045c3d9486fb
   image_picker_ios: c560581cceedb403a6ff17f2f816d7fea1421fc1
   integration_test: 252f60fa39af5e17c3aa9899d35d908a0721b573
   just_audio: a42c63806f16995daf5b219ae1d679deb76e6a79
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   record_ios: 1bbc430ab8406174d70332f23e06a3dc751239b4
   SDWebImage: f29024626962457f3470184232766516dee8dfea

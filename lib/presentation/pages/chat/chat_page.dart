@@ -347,7 +347,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   // Debug: Test scam detection
   void _testScamDetection() {
-    print('🧪 Testing scam detection...');
+    AppLogger.info('🧪 Testing scam detection...');
     final testMessages = [
       'Emergency has happened',  // Should trigger romanceFinancial
       'I need help with my bills',
@@ -357,7 +357,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     ];
     
     for (final message in testMessages) {
-      print('🧪 Testing: "$message"');
+      AppLogger.info('🧪 Testing: "$message"');
       _checkForScamAlert(message, true);
     }
   }

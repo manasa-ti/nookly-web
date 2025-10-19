@@ -21,11 +21,11 @@ class ConversationStarterRepositoryImpl implements ConversationStarterRepository
     List<String>? priorMessages,
   }) async {
     try {
-      print('DEBUGGING STARTERS: REPOSITORY - generateConversationStarters called');
-      print('DEBUGGING STARTERS: REPOSITORY - matchUserId: $matchUserId');
-      print('DEBUGGING STARTERS: REPOSITORY - numberOfSuggestions: $numberOfSuggestions');
-      print('DEBUGGING STARTERS: REPOSITORY - locale: $locale');
-      print('DEBUGGING STARTERS: REPOSITORY - priorMessages: $priorMessages');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - generateConversationStarters called');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - matchUserId: $matchUserId');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - numberOfSuggestions: $numberOfSuggestions');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - locale: $locale');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - priorMessages: $priorMessages');
       AppLogger.info('🔵 Generating conversation starters for user: $matchUserId');
       AppLogger.info('🔵 Request details: n=${numberOfSuggestions ?? 4}, locale=${locale ?? 'en-IN'}');
       AppLogger.info('🔵 Prior messages count: ${priorMessages?.length ?? 0}');
@@ -39,37 +39,37 @@ class ConversationStarterRepositoryImpl implements ConversationStarterRepository
         ),
       );
 
-      print('DEBUGGING STARTERS: REPOSITORY - Request object created');
-      print('DEBUGGING STARTERS: REPOSITORY - Request JSON: ${request.toJson()}');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Request object created');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Request JSON: ${request.toJson()}');
       AppLogger.info('🔵 Making API call to: /conversation-starters/generate');
       AppLogger.info('🔵 Request data: ${request.toJson()}');
 
-      print('DEBUGGING STARTERS: REPOSITORY - Making HTTP POST request');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Making HTTP POST request');
       final response = await _dio.post(
         '/conversation-starters/generate',
         data: request.toJson(),
       );
 
-      print('DEBUGGING STARTERS: REPOSITORY - HTTP response received');
-      print('DEBUGGING STARTERS: REPOSITORY - Status code: ${response.statusCode}');
-      print('DEBUGGING STARTERS: REPOSITORY - Response data: ${response.data}');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - HTTP response received');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Status code: ${response.statusCode}');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Response data: ${response.data}');
       AppLogger.info('🔵 API response status: ${response.statusCode}');
       AppLogger.info('🔵 API response data: ${response.data}');
 
       if (response.statusCode == 200) {
-        print('DEBUGGING STARTERS: REPOSITORY - Parsing response data');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Parsing response data');
         final responseData = models.ConversationStarterResponse.fromJson(response.data);
         
-        print('DEBUGGING STARTERS: REPOSITORY - Response parsed successfully');
-        print('DEBUGGING STARTERS: REPOSITORY - Suggestions count: ${responseData.suggestions.length}');
-        print('DEBUGGING STARTERS: REPOSITORY - Is fallback: ${responseData.isFallback}');
-        print('DEBUGGING STARTERS: REPOSITORY - Usage remaining: ${responseData.usage.remaining}');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Response parsed successfully');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Suggestions count: ${responseData.suggestions.length}');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Is fallback: ${responseData.isFallback}');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Usage remaining: ${responseData.usage.remaining}');
         AppLogger.info('✅ Conversation starters generated successfully');
         AppLogger.info('🔵 Suggestions count: ${responseData.suggestions.length}');
         AppLogger.info('🔵 Is fallback: ${responseData.isFallback}');
         AppLogger.info('🔵 Usage remaining: ${responseData.usage.remaining}');
 
-        print('DEBUGGING STARTERS: REPOSITORY - Updating local usage tracking');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Updating local usage tracking');
         // Update local usage tracking
         await _updateLocalUsage(ConversationStarterUsage(
           remaining: responseData.usage.remaining,
@@ -78,7 +78,7 @@ class ConversationStarterRepositoryImpl implements ConversationStarterRepository
           isDailyLimitReached: responseData.usage.remaining <= 0,
         ));
 
-        print('DEBUGGING STARTERS: REPOSITORY - Converting to domain entities');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Converting to domain entities');
         // Convert to domain entities
         final suggestions = responseData.suggestions.asMap().entries.map((entry) {
           return ConversationStarter(
@@ -89,15 +89,15 @@ class ConversationStarterRepositoryImpl implements ConversationStarterRepository
           );
         }).toList();
 
-        print('DEBUGGING STARTERS: REPOSITORY - Returning ${suggestions.length} suggestions');
+        AppLogger.info('DEBUGGING STARTERS: REPOSITORY - Returning ${suggestions.length} suggestions');
         return suggestions;
       } else {
         throw Exception('Failed to generate conversation starters: ${response.statusCode}');
       }
     } on DioException catch (e) {
-      print('DEBUGGING STARTERS: REPOSITORY - DioException caught: ${e.message}');
-      print('DEBUGGING STARTERS: REPOSITORY - DioException type: ${e.type}');
-      print('DEBUGGING STARTERS: REPOSITORY - DioException response: ${e.response?.data}');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - DioException caught: ${e.message}');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - DioException type: ${e.type}');
+      AppLogger.info('DEBUGGING STARTERS: REPOSITORY - DioException response: ${e.response?.data}');
       AppLogger.error('❌ DioException in generateConversationStarters: ${e.message}');
       
       if (e.response?.statusCode == 429) {

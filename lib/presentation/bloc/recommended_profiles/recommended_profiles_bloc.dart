@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/domain/entities/recommended_profile.dart';
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
@@ -72,16 +73,16 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
       // If skip is 0 or explicitly set to 0, it's a fresh load, otherwise it's pagination
       final isFreshLoad = event.skip == 0 || (event.skip == null && _currentSkip == 0);
       
-      print('🔵 DEBUG: LoadRecommendedProfiles event - skip: ${event.skip}, isFreshLoad: $isFreshLoad, currentSkip: $_currentSkip');
+      AppLogger.info('🔵 DEBUG: LoadRecommendedProfiles event - skip: ${event.skip}, isFreshLoad: $isFreshLoad, currentSkip: $_currentSkip');
       
       if (isFreshLoad) {
-        print('🔵 DEBUG: Emitting loading state for fresh load');
+        AppLogger.info('🔵 DEBUG: Emitting loading state for fresh load');
         emit(RecommendedProfilesLoading());
         _currentSkip = 0;
       }
       
       final skip = event.skip ?? _currentSkip;
-      print('🔵 PAGINATION: Loading profiles with skip: $skip, limit: ${event.limit ?? _defaultLimit}');
+      AppLogger.info('🔵 PAGINATION: Loading profiles with skip: $skip, limit: ${event.limit ?? _defaultLimit}');
       
       final profiles = await repository.getRecommendedProfiles(
         radius: event.radius,
@@ -94,28 +95,28 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
       // Update skip counter for next pagination
       _currentSkip = skip + (event.limit ?? _defaultLimit);
       final hasMore = profiles.length == (event.limit ?? _defaultLimit);
-      print('🔵 PAGINATION: Received ${profiles.length} profiles, hasMore: $hasMore, next skip: $_currentSkip');
-      print('🔵 DEBUG: Profile IDs received: ${profiles.map((p) => p.id).toList()}');
+      AppLogger.info('🔵 PAGINATION: Received ${profiles.length} profiles, hasMore: $hasMore, next skip: $_currentSkip');
+      AppLogger.info('🔵 DEBUG: Profile IDs received: ${profiles.map((p) => p.id).toList()}');
       
       if (isFreshLoad) {
         // Fresh load - replace all profiles
-        print('🔵 DEBUG: Emitting fresh load with ${profiles.length} profiles');
+        AppLogger.info('🔵 DEBUG: Emitting fresh load with ${profiles.length} profiles');
         emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
       } else {
         // Pagination - append to existing profiles
         final currentState = state;
         if (currentState is RecommendedProfilesLoaded) {
           final updatedProfiles = [...currentState.profiles, ...profiles];
-          print('🔵 DEBUG: Appending ${profiles.length} profiles to existing ${currentState.profiles.length} profiles');
-          print('🔵 DEBUG: Updated profile IDs: ${updatedProfiles.map((p) => p.id).toList()}');
+          AppLogger.info('🔵 DEBUG: Appending ${profiles.length} profiles to existing ${currentState.profiles.length} profiles');
+          AppLogger.info('🔵 DEBUG: Updated profile IDs: ${updatedProfiles.map((p) => p.id).toList()}');
           emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: hasMore));
         } else {
-          print('🔵 DEBUG: Current state is not loaded, emitting new state with ${profiles.length} profiles');
+          AppLogger.info('🔵 DEBUG: Current state is not loaded, emitting new state with ${profiles.length} profiles');
           emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
         }
       }
     } catch (e) {
-      print('🔵 DEBUG: Error loading profiles: $e');
+      AppLogger.info('🔵 DEBUG: Error loading profiles: $e');
       emit(RecommendedProfilesError(e.toString()));
     }
   }
@@ -140,7 +141,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
         await repository.likeProfile(event.profileId);
         
         // Reset pagination counter since backend list has changed
-        print('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to like');
+        AppLogger.info('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to like');
         _currentSkip = 0;
         
         // Only refresh if we have 0 profiles left (empty state)
@@ -151,7 +152,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     } catch (e) {
       // If backend call fails, we could optionally reload the list
       // For now, we'll just log the error to avoid blocking the user
-      print('Error liking profile: $e');
+      AppLogger.info('Error liking profile: $e');
       // Optionally show a subtle error message without blocking
       emit(RecommendedProfilesError('Failed to like profile, but you can continue browsing'));
     }
@@ -177,7 +178,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
         await repository.dislikeProfile(event.profileId);
         
         // Reset pagination counter since backend list has changed
-        print('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to dislike');
+        AppLogger.info('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to dislike');
         _currentSkip = 0;
         
         // Only refresh if we have 0 profiles left (empty state)
@@ -188,7 +189,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     } catch (e) {
       // If backend call fails, we could optionally reload the list
       // For now, we'll just log the error to avoid blocking the user
-      print('Error disliking profile: $e');
+      AppLogger.info('Error disliking profile: $e');
       // Optionally show a subtle error message without blocking
       emit(RecommendedProfilesError('Failed to dislike profile, but you can continue browsing'));
     }
@@ -198,7 +199,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     ResetPagination event,
     Emitter<RecommendedProfilesState> emit,
   ) async {
-    print('🔵 DEBUG: ResetPagination event received');
+    AppLogger.info('🔵 DEBUG: ResetPagination event received');
     _currentSkip = 0;
   }
 

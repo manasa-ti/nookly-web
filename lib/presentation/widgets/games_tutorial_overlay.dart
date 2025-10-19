@@ -142,7 +142,7 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           
                           // Title
                           const Text(
-                            'Play to Bond',
+                            'Play 2 Bond',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 24,

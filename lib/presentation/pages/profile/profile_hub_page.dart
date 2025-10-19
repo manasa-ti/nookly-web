@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:get_it/get_it.dart';
@@ -32,14 +33,14 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
     setState(() => _isLoading = true);
     try {
       final user = await _authRepository.getCurrentUser();
-      print('🔵 ProfileHub: Loaded user: ${user?.name} | ${user?.email}');
-      print('🔵 ProfileHub: User object: $user');
+      AppLogger.info('🔵 ProfileHub: Loaded user: ${user?.name} | ${user?.email}');
+      AppLogger.info('🔵 ProfileHub: User object: $user');
       setState(() {
         _user = user;
         _isLoading = false;
       });
     } catch (e) {
-      print('🔵 ProfileHub: Error loading user: $e');
+      AppLogger.info('🔵 ProfileHub: Error loading user: $e');
       setState(() {
         _user = null;
         _isLoading = false;
@@ -48,7 +49,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
   }
 
   Future<void> _openPrivacyPolicy() async {
-    print('🔵 Privacy button tapped!'); // Debug log
+    AppLogger.info('🔵 Privacy button tapped!'); // Debug log
     
     // Show immediate feedback that button was tapped
     if (mounted) {
@@ -62,19 +63,19 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
     
     const url = 'https://privacy-policy.nookly.app/';
     try {
-      print('🔵 Attempting to open URL: $url'); // Debug log
+      AppLogger.info('🔵 Attempting to open URL: $url'); // Debug log
       final uri = Uri.parse(url);
-      print('🔵 Parsed URI: $uri'); // Debug log
+      AppLogger.info('🔵 Parsed URI: $uri'); // Debug log
       
       final canLaunch = await canLaunchUrl(uri);
-      print('🔵 Can launch URL: $canLaunch'); // Debug log
+      AppLogger.info('🔵 Can launch URL: $canLaunch'); // Debug log
       
       if (canLaunch) {
-        print('🔵 Launching URL...'); // Debug log
+        AppLogger.info('🔵 Launching URL...'); // Debug log
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        print('🔵 URL launched successfully'); // Debug log
+        AppLogger.info('🔵 URL launched successfully'); // Debug log
       } else {
-        print('🔵 Cannot launch URL'); // Debug log
+        AppLogger.info('🔵 Cannot launch URL'); // Debug log
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -85,7 +86,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
         }
       }
     } catch (e) {
-      print('🔵 Error opening privacy policy: $e'); // Debug log
+      AppLogger.info('🔵 Error opening privacy policy: $e'); // Debug log
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

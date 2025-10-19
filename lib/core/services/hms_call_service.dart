@@ -136,12 +136,35 @@ class HMSCallService implements HMSUpdateListener {
       final callSession = response['callSession'];
       final tokens = response['tokens'];
       
+      AppLogger.info('🔍 Backend response structure:');
+      AppLogger.info('🔍 - Full response: $response');
+      AppLogger.info('🔍 - callSession: $callSession');
+      AppLogger.info('🔍 - tokens: $tokens');
+      
+      if (callSession == null) {
+        throw Exception('Backend response missing callSession');
+      }
+      
+      if (tokens == null) {
+        throw Exception('Backend response missing tokens');
+      }
+      
       _currentRoomId = callSession['hmsRoomId'] ?? callSession['roomId'];
       _currentAuthToken = tokens['caller']['token'];
       
-      AppLogger.info('🔑 Room ID: $_currentRoomId');
+      AppLogger.info('🔍 Parsed values:');
+      AppLogger.info('🔍 - Room ID: $_currentRoomId');
+      AppLogger.info('🔍 - Auth Token: $_currentAuthToken');
       
-      // Join the 100ms room
+      if (_currentRoomId == null) {
+        throw Exception('Backend response missing room ID (both hmsRoomId and roomId are null)');
+      }
+      
+      if (_currentAuthToken == null) {
+        throw Exception('Backend response missing auth token');
+      }
+      
+      // Now safe to use ! operator
       await joinRoom(_currentRoomId!, _currentAuthToken!);
       
       AppLogger.info('✅ Call initiated successfully');
@@ -164,21 +187,36 @@ class HMSCallService implements HMSUpdateListener {
     try {
       final response = await _callApiService!.acceptCall(roomId: roomId);
       
+      AppLogger.info('🔍 Accept call response structure:');
+      AppLogger.info('🔍 - Full response: $response');
+      
       final callSession = response['callSession'];
       
+      if (callSession == null) {
+        throw Exception('Backend response missing callSession for accept call');
+      }
+      
       // Handle both nested and direct token structures
-      String token;
+      String? token;
       if (response['token'] is Map) {
         token = response['token']['token'];
       } else {
         token = response['token'];
       }
       
+      AppLogger.info('🔍 Parsed accept call values:');
+      AppLogger.info('🔍 - Token: $token');
+      AppLogger.info('🔍 - Call type: ${callSession['callType']}');
+      
+      if (token == null) {
+        throw Exception('Backend response missing token for accept call');
+      }
+      
       _currentRoomId = roomId;
       _currentAuthToken = token;
       _isAudioCall = callSession['callType'] == 'audio';
       
-      // Join the 100ms room
+      // Now safe to use ! operator
       await joinRoom(_currentRoomId!, _currentAuthToken!);
       
       AppLogger.info('✅ Call accepted successfully');
@@ -197,7 +235,12 @@ class HMSCallService implements HMSUpdateListener {
     }
 
     try {
-      AppLogger.info('🚪 Joining 100ms room: $roomId');
+      AppLogger.info('🚪 ============================================');
+      AppLogger.info('🚪 JOINING ROOM');
+      AppLogger.info('🚪 - Room ID: $roomId');
+      AppLogger.info('🚪 - Is Audio Call: $_isAudioCall');
+      AppLogger.info('🚪 - SDK Initialized: $_isInitialized');
+      AppLogger.info('🚪 ============================================');
       
       if (!_isInitialized) {
         AppLogger.error('❌ HMS SDK not initialized!');
@@ -210,11 +253,13 @@ class HMSCallService implements HMSUpdateListener {
       
       // Reset state
       _clearVideoTracks();
+      AppLogger.info('🚪 Video tracks cleared');
       
       // Register listener
       _hmsSDK!.addUpdateListener(listener: this);
       AppLogger.info('🎧 HMS Update Listener registered');
       
+      AppLogger.info('🚪 Calling HMS join...');
       // Join the room
       await _hmsSDK!.join(
         config: HMSConfig(
@@ -227,6 +272,8 @@ class HMSCallService implements HMSUpdateListener {
       _currentRoomId = roomId;
       _currentAuthToken = authToken;
       
+      AppLogger.info('✅ HMS join() completed');
+      AppLogger.info('✅ In call: $_isInCall');
       AppLogger.info('✅ Successfully joined 100ms room: $roomId');
     } catch (e) {
       AppLogger.error('❌ Failed to join 100ms room: $e');
@@ -438,16 +485,20 @@ class HMSCallService implements HMSUpdateListener {
 
   /// Create local video view widget
   Widget createLocalVideoView() {
+    AppLogger.info('🎥 Creating local video view - State: $_localVideoState, Track: ${_localVideoTrack?.trackId}');
+    
     return StreamBuilder<void>(
       stream: videoStateStream,
       builder: (context, snapshot) {
         if (_isDisposed) {
+          AppLogger.warning('🎥 Local video unavailable - service disposed');
           return _buildVideoPlaceholder('Service disposed');
         }
 
         switch (_localVideoState) {
           case VideoTrackState.ready:
             if (_localVideoTrack != null) {
+              AppLogger.info('🎥 Local video ready - track ID: ${_localVideoTrack!.trackId}');
               return HMSVideoView(
                 track: _localVideoTrack!,
                 key: ValueKey('local_video_${_localVideoTrack!.trackId}'),
@@ -455,6 +506,7 @@ class HMSCallService implements HMSUpdateListener {
                 scaleType: ScaleType.SCALE_ASPECT_FILL,
               );
             }
+            AppLogger.warning('🎥 Local video state ready but track is null');
             return _buildVideoPlaceholder('Track unavailable');
             
           case VideoTrackState.initializing:
@@ -472,22 +524,27 @@ class HMSCallService implements HMSUpdateListener {
 
   /// Create remote video view widget
   Widget createRemoteVideoView() {
+    AppLogger.info('🎥 Creating remote video view - State: $_remoteVideoState, Track: ${_remoteVideoTrack?.trackId}');
+    
     return StreamBuilder<void>(
       stream: videoStateStream,
       builder: (context, snapshot) {
         if (_isDisposed) {
+          AppLogger.warning('🎥 Remote video unavailable - service disposed');
           return _buildVideoPlaceholder('Service disposed');
         }
 
         switch (_remoteVideoState) {
           case VideoTrackState.ready:
             if (_remoteVideoTrack != null) {
+              AppLogger.info('🎥 Remote video ready - track ID: ${_remoteVideoTrack!.trackId}');
               return HMSVideoView(
                 track: _remoteVideoTrack!,
                 key: ValueKey('remote_video_${_remoteVideoTrack!.trackId}'),
                 scaleType: ScaleType.SCALE_ASPECT_FILL,
               );
             }
+            AppLogger.warning('🎥 Remote video state ready but track is null');
             return _buildVideoPlaceholder('Participant video unavailable');
             
           case VideoTrackState.initializing:
@@ -634,24 +691,46 @@ class HMSCallService implements HMSUpdateListener {
   void onPeerUpdate({required HMSPeer peer, required HMSPeerUpdate update}) {
     if (_isDisposed) return;
     
-    AppLogger.info('👤 Peer update: ${peer.name} - Update: $update');
+    AppLogger.info('👤 ============================================');
+    AppLogger.info('👤 PEER UPDATE: ${peer.name}');
+    AppLogger.info('👤 - Update Type: $update');
+    AppLogger.info('👤 - Is Local: ${peer.isLocal}');
+    AppLogger.info('👤 - Peer ID: ${peer.peerId}');
+    AppLogger.info('👤 - Role: ${peer.role?.name ?? "unknown"}');
+    AppLogger.info('👤 - Video Track: ${peer.videoTrack != null ? "Available (${peer.videoTrack?.trackId})" : "NULL"}');
+    AppLogger.info('👤 - Audio Track: ${peer.audioTrack != null ? "Available (${peer.audioTrack?.trackId})" : "NULL"}');
+    AppLogger.info('👤 - Auxiliary Tracks: ${peer.auxiliaryTracks?.length ?? 0}');
+    AppLogger.info('👤 ============================================');
     
     switch (update) {
       case HMSPeerUpdate.peerJoined:
         if (!peer.isLocal) {
           _remotePeer = peer;
           onUserJoined?.call(peer.name);
-          AppLogger.info('✅ Remote peer joined: ${peer.name}');
+          AppLogger.info('✅ REMOTE PEER JOINED: ${peer.name}');
           
           if (peer.videoTrack != null) {
             _remoteVideoTrack = peer.videoTrack;
             _remoteVideoState = VideoTrackState.ready;
             _videoStateController.add(null);
-            AppLogger.info('📹 Remote video track available');
+            AppLogger.info('📹 ✅ Remote video track IMMEDIATELY available on join');
+            AppLogger.info('📹 ✅ Track ID: ${peer.videoTrack!.trackId}');
+            AppLogger.info('📹 ✅ Track source: ${peer.videoTrack!.source}');
+            AppLogger.info('📹 ✅ Track muted: ${peer.videoTrack!.isMute}');
+          } else {
+            AppLogger.warning('⚠️ Remote video track is NULL on peer join');
+            AppLogger.warning('⚠️ Will wait for trackAdded event');
+            _remoteVideoState = VideoTrackState.initializing;
+            _videoStateController.add(null);
           }
         } else {
           _localPeer = peer;
-          AppLogger.info('✅ Local peer joined: ${peer.name}');
+          AppLogger.info('✅ LOCAL PEER JOINED: ${peer.name}');
+          if (peer.videoTrack != null) {
+            AppLogger.info('📹 ✅ Local video track available: ${peer.videoTrack!.trackId}');
+          } else {
+            AppLogger.warning('⚠️ Local video track is NULL on join');
+          }
         }
         break;
         
@@ -662,12 +741,12 @@ class HMSCallService implements HMSUpdateListener {
           _remoteVideoState = VideoTrackState.notInitialized;
           _videoStateController.add(null);
           onUserLeft?.call(peer.name);
-          AppLogger.info('❌ Remote peer left: ${peer.name}');
+          AppLogger.info('❌ REMOTE PEER LEFT: ${peer.name}');
         }
         break;
         
       default:
-        AppLogger.info('🔄 Other peer update: $update for ${peer.name}');
+        AppLogger.info('🔄 OTHER PEER UPDATE: $update for ${peer.name} (isLocal: ${peer.isLocal})');
         break;
     }
   }
@@ -680,7 +759,15 @@ class HMSCallService implements HMSUpdateListener {
   }) {
     if (_isDisposed) return;
     
-    AppLogger.info('🎵 Track update: ${track.kind} - $trackUpdate - ${peer.name}');
+    AppLogger.info('🎵 ============================================');
+    AppLogger.info('🎵 TRACK UPDATE');
+    AppLogger.info('🎵 - Track Kind: ${track.kind}');
+    AppLogger.info('🎵 - Track Update: $trackUpdate');
+    AppLogger.info('🎵 - Peer: ${peer.name} (isLocal: ${peer.isLocal})');
+    AppLogger.info('🎵 - Track ID: ${track.trackId}');
+    AppLogger.info('🎵 - Track Source: ${track.source}');
+    AppLogger.info('🎵 - Track Muted: ${track.isMute}');
+    AppLogger.info('🎵 ============================================');
     
     if (track.kind == HMSTrackKind.kHMSTrackKindVideo) {
       _handleVideoTrackUpdate(track as HMSVideoTrack, trackUpdate, peer);
@@ -696,48 +783,68 @@ class HMSCallService implements HMSUpdateListener {
     HMSPeer peer,
   ) {
     if (peer.isLocal) {
+      AppLogger.info('📹 LOCAL VIDEO TRACK UPDATE');
       switch (update) {
         case HMSTrackUpdate.trackAdded:
           _localVideoTrack = track;
           _localVideoState = VideoTrackState.ready;
           _isCameraOff = track.isMute;
-          AppLogger.info('📹 Local video track added');
+          AppLogger.info('📹 ✅ LOCAL video track ADDED');
+          AppLogger.info('📹 - Track ID: ${track.trackId}');
+          AppLogger.info('📹 - Track state: $_localVideoState');
+          AppLogger.info('📹 - Camera off: $_isCameraOff');
           onMuteStateChanged?.call();
           break;
           
         case HMSTrackUpdate.trackRemoved:
           _localVideoTrack = null;
           _localVideoState = VideoTrackState.notInitialized;
-          AppLogger.info('📹 Local video track removed');
+          AppLogger.info('📹 ❌ LOCAL video track REMOVED');
           break;
           
         case HMSTrackUpdate.trackMuted:
         case HMSTrackUpdate.trackUnMuted:
           // Update state from HMS - single source of truth
           _isCameraOff = track.isMute;
-          AppLogger.info('📹 Local video ${track.isMute ? 'muted' : 'unmuted'}');
+          AppLogger.info('📹 LOCAL video ${track.isMute ? 'MUTED' : 'UNMUTED'}');
           onMuteStateChanged?.call();
           break;
           
         default:
+          AppLogger.info('📹 LOCAL video other update: $update');
           break;
       }
       _videoStateController.add(null);
     } else {
+      AppLogger.info('📹 REMOTE VIDEO TRACK UPDATE');
       switch (update) {
         case HMSTrackUpdate.trackAdded:
           _remoteVideoTrack = track;
           _remoteVideoState = VideoTrackState.ready;
-          AppLogger.info('📹 Remote video track added');
+          AppLogger.info('📹 ✅ REMOTE video track ADDED');
+          AppLogger.info('📹 - Track ID: ${track.trackId}');
+          AppLogger.info('📹 - Track source: ${track.source}');
+          AppLogger.info('📹 - Track muted: ${track.isMute}');
+          AppLogger.info('📹 - Track state: $_remoteVideoState');
+          AppLogger.info('📹 - Current remote track: ${_remoteVideoTrack?.trackId}');
           break;
           
         case HMSTrackUpdate.trackRemoved:
           _remoteVideoTrack = null;
           _remoteVideoState = VideoTrackState.notInitialized;
-          AppLogger.info('📹 Remote video track removed');
+          AppLogger.info('📹 ❌ REMOTE video track REMOVED');
+          break;
+          
+        case HMSTrackUpdate.trackMuted:
+          AppLogger.info('📹 REMOTE video MUTED');
+          break;
+          
+        case HMSTrackUpdate.trackUnMuted:
+          AppLogger.info('📹 REMOTE video UNMUTED');
           break;
           
         default:
+          AppLogger.info('📹 REMOTE video other update: $update');
           break;
       }
       _videoStateController.add(null);
