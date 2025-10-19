@@ -110,7 +110,7 @@ class _SignUpPageState extends State<SignUpPage> {
         },
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppConfig.defaultPadding),
+            padding: const EdgeInsets.fromLTRB(AppConfig.defaultPadding, AppConfig.defaultPadding, AppConfig.defaultPadding, 80), // Added bottom padding for keyboard/buttons
             child: Form(
               key: _formKey,
               child: Column(

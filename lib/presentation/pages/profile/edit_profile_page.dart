@@ -408,7 +408,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), // Added bottom padding for keyboard/buttons
               child: Form(
                 key: _formKey,
                 child: Column(

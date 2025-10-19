@@ -57,23 +57,23 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
 
   void _checkGamesTutorial() async {
     final shouldShow = await OnboardingService.shouldShowGamesTutorial();
-    print('🔵 GAMES TOOLTIP: shouldShowGamesTutorial returned: $shouldShow');
-    print('🔵 GAMES TOOLTIP: mounted: $mounted');
-    print('🔵 GAMES TOOLTIP: conversation starter completed: $_conversationStarterCompleted');
+    AppLogger.info('🔵 GAMES TOOLTIP: shouldShowGamesTutorial returned: $shouldShow');
+    AppLogger.info('🔵 GAMES TOOLTIP: mounted: $mounted');
+    AppLogger.info('🔵 GAMES TOOLTIP: conversation starter completed: $_conversationStarterCompleted');
     
     // Only show games tooltip if conversation starter tutorial is completed
     if (shouldShow && mounted && _conversationStarterCompleted) {
-      print('🔵 GAMES TOOLTIP: Setting _showGamesTooltip to true');
+      AppLogger.info('🔵 GAMES TOOLTIP: Setting _showGamesTooltip to true');
       setState(() {
         _showGamesTooltip = true;
       });
     } else {
-      print('🔵 GAMES TOOLTIP: Not showing tooltip - shouldShow: $shouldShow, mounted: $mounted, conversationStarterCompleted: $_conversationStarterCompleted');
+      AppLogger.info('🔵 GAMES TOOLTIP: Not showing tooltip - shouldShow: $shouldShow, mounted: $mounted, conversationStarterCompleted: $_conversationStarterCompleted');
     }
   }
 
   void _onConversationStarterCompleted() {
-    print('🔵 GAMES TOOLTIP: Conversation starter tutorial completed, checking games tutorial');
+    AppLogger.info('🔵 GAMES TOOLTIP: Conversation starter tutorial completed, checking games tutorial');
     setState(() {
       _conversationStarterCompleted = true;
     });
@@ -92,7 +92,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
         ),
         const SizedBox(width: 6),
         Text(
-          'Play to Bond',
+          'Play 2 Bond',
           style: TextStyle(
             color: Colors.white.withOpacity(0.9),
             fontSize: 14,
@@ -193,105 +193,121 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
   }
 
   Widget _buildNormalInterface(BuildContext context) {
-    print('🔵 GAMES TOOLTIP: _buildNormalInterface called, _showGamesTooltip: $_showGamesTooltip');
-    return Row(
-      children: [
-        // Conversation Starters
-        ConversationStarterWidget(
-          matchUserId: widget.matchUserId,
-          priorMessages: widget.priorMessages,
-          onSuggestionSelected: widget.onSuggestionSelected,
-          onTutorialCompleted: _onConversationStarterCompleted,
-        ),
-        
-        const SizedBox(width: 16),
-        
-        // Play to Bond - always show when other user is online
-        _showGamesTooltip
-            ? ContextualTooltip(
-                message: 'Choose a game to play together and have fun getting to know each other!',
-                position: TooltipPosition.bottom,
-                onDismiss: () {
-                  print('🔵 GAMES TOOLTIP: Tooltip dismissed');
-                  setState(() {
-                    _showGamesTooltip = false;
-                  });
-                  OnboardingService.markGamesTutorialCompleted();
-                },
-                child: GestureDetector(
-                  onTap: () {
-                    if (widget.currentUserId.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please wait while we connect...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      return;
-                    }
-                    context.read<GamesBloc>().add(const ShowGameMenu());
-                  },
-                  child: _buildPlayToBondButton(),
-                ),
-              )
-            : GestureDetector(
-                onTap: () {
-                  if (widget.currentUserId.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please wait while we connect...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
-                  context.read<GamesBloc>().add(const ShowGameMenu());
-                },
-                child: _buildPlayToBondButton(),
-              ),
-        
-        const SizedBox(width: 20),
-        
-        // Spice it Up - coming soon
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    AppLogger.info('🔵 GAMES TOOLTIP: _buildNormalInterface called, _showGamesTooltip: $_showGamesTooltip');
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Conversation Starters
+          Flexible(
+            flex: 2,
+            child: ConversationStarterWidget(
+              matchUserId: widget.matchUserId,
+              priorMessages: widget.priorMessages,
+              onSuggestionSelected: widget.onSuggestionSelected,
+              onTutorialCompleted: _onConversationStarterCompleted,
+            ),
+          ),
+          
+          const SizedBox(width: 8), // Reduced from 16
+          
+          // Play to Bond - always show when other user is online
+          Flexible(
+            flex: 1,
+            child: _showGamesTooltip
+                ? ContextualTooltip(
+                    message: 'Choose a game to play together and have fun getting to know each other!',
+                    position: TooltipPosition.bottom,
+                    onDismiss: () {
+                      AppLogger.info('🔵 GAMES TOOLTIP: Tooltip dismissed');
+                      setState(() {
+                        _showGamesTooltip = false;
+                      });
+                      OnboardingService.markGamesTutorialCompleted();
+                    },
+                    child: GestureDetector(
+                      onTap: () {
+                        if (widget.currentUserId.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please wait while we connect...'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                          return;
+                        }
+                        context.read<GamesBloc>().add(const ShowGameMenu());
+                      },
+                      child: _buildPlayToBondButton(),
+                    ),
+                  )
+                : GestureDetector(
+                    onTap: () {
+                      if (widget.currentUserId.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please wait while we connect...'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        return;
+                      }
+                      context.read<GamesBloc>().add(const ShowGameMenu());
+                    },
+                    child: _buildPlayToBondButton(),
+                  ),
+          ),
+          
+          const SizedBox(width: 8), // Reduced from 20
+          
+          // Spice it Up - coming soon (compact version)
+          Flexible(
+            flex: 1,
+            child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.local_fire_department,
-                  color: Colors.white.withOpacity(0.5),
-                  size: 20,
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_fire_department,
+                      color: Colors.white.withOpacity(0.5),
+                      size: 16, // Reduced from 20
+                    ),
+                    const SizedBox(width: 4), // Reduced from 6
+                    Flexible(
+                      child: Text(
+                        'Spice it Up',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 12, // Reduced from 14
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'Spice it Up',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.5),
-                    fontSize: 14,
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w500,
+                Padding(
+                  padding: const EdgeInsets.only(left: 20), // Reduced from 26 (16 + 4)
+                  child: Text(
+                    'Coming soon',
+                    style: TextStyle(
+                      color: Colors.orange.withOpacity(0.8),
+                      fontSize: 9, // Reduced from 10
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
               ],
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 26), // Icon width (20) + spacing (6)
-              child: Text(
-                'Coming soon',
-                style: TextStyle(
-                  color: Colors.orange.withOpacity(0.8),
-                  fontSize: 10,
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
