@@ -46,6 +46,10 @@ class _CallScreenState extends State<CallScreen> {
   bool _isMutingAudio = false;
   bool _isMutingVideo = false;
   bool _isChangingSpeaker = false;
+  
+  // Debounce timers
+  DateTime? _lastAudioMuteTime;
+  DateTime? _lastVideoMuteTime;
 
   @override
   void initState() {
@@ -448,6 +452,15 @@ class _CallScreenState extends State<CallScreen> {
 
   Future<void> _toggleAudioMute() async {
     try {
+      // Debounce: Prevent rapid clicks
+      final now = DateTime.now();
+      if (_lastAudioMuteTime != null && 
+          now.difference(_lastAudioMuteTime!).inMilliseconds < 1000) {
+        AppLogger.warning('⚠️ Audio mute debounced - too fast');
+        return;
+      }
+      _lastAudioMuteTime = now;
+      
       AppLogger.info('🎤 Audio mute button pressed');
       
       // Check if HMS is ready
@@ -498,6 +511,15 @@ class _CallScreenState extends State<CallScreen> {
 
   Future<void> _toggleVideoMute() async {
     try {
+      // Debounce: Prevent rapid clicks
+      final now = DateTime.now();
+      if (_lastVideoMuteTime != null && 
+          now.difference(_lastVideoMuteTime!).inMilliseconds < 1000) {
+        AppLogger.warning('⚠️ Video mute debounced - too fast');
+        return;
+      }
+      _lastVideoMuteTime = now;
+      
       AppLogger.info('📹 Video mute button pressed');
       
       // Check if HMS is ready

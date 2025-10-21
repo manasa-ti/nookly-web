@@ -673,14 +673,53 @@ class HMSCallService implements HMSUpdateListener {
   void onJoin({required HMSRoom room}) {
     if (_isDisposed) return;
     
-    AppLogger.info('🎉 onJoin called - Room ID: ${room.id}');
-    AppLogger.info('🎉 Total peers in room: ${room.peers?.length ?? 0}');
+    AppLogger.info('🎉 ============================================');
+    AppLogger.info('🎉 onJoin called');
+    AppLogger.info('🎉 - Room ID: ${room.id}');
+    AppLogger.info('🎉 - Room Name: ${room.name}');
+    AppLogger.info('🎉 - Total peers: ${room.peers?.length ?? 0}');
+    
+    // Log all peers
+    if (room.peers != null) {
+      for (var peer in room.peers!) {
+        AppLogger.info('🎉 Peer in room: ${peer.name} (isLocal: ${peer.isLocal})');
+        AppLogger.info('🎉   - Peer ID: ${peer.peerId}');
+        AppLogger.info('🎉   - Role: ${peer.role?.name}');
+        AppLogger.info('🎉   - Video Track: ${peer.videoTrack?.trackId ?? "NULL"}');
+        AppLogger.info('🎉   - Audio Track: ${peer.audioTrack?.trackId ?? "NULL"}');
+        
+        // Immediately assign tracks if available
+        if (peer.isLocal) {
+          _localPeer = peer;
+          if (peer.videoTrack != null && !_isAudioCall) {
+            _localVideoTrack = peer.videoTrack;
+            _localVideoState = VideoTrackState.ready;
+            _videoStateController.add(null);
+            AppLogger.info('🎉 ✅ LOCAL VIDEO ASSIGNED ON JOIN: ${peer.videoTrack!.trackId}');
+          }
+          if (peer.audioTrack != null) {
+            _isMuted = peer.audioTrack!.isMute;
+            AppLogger.info('🎉 ✅ LOCAL AUDIO state: ${_isMuted ? "MUTED" : "UNMUTED"}');
+          }
+        } else {
+          _remotePeer = peer;
+          if (peer.videoTrack != null && !_isAudioCall) {
+            _remoteVideoTrack = peer.videoTrack;
+            _remoteVideoState = VideoTrackState.ready;
+            _videoStateController.add(null);
+            AppLogger.info('🎉 ✅ REMOTE VIDEO ASSIGNED ON JOIN: ${peer.videoTrack!.trackId}');
+          }
+        }
+      }
+    }
+    AppLogger.info('🎉 ============================================');
     
     _isInCall = true;
     _currentRoomId = room.id;
     
-    // Initialize video tracks
-    if (!_isAudioCall) {
+    // Initialize video tracks if not already assigned
+    if (!_isAudioCall && _localVideoState != VideoTrackState.ready) {
+      AppLogger.info('🎉 Starting video track initialization...');
       _initializeLocalVideoTrack();
     }
     
