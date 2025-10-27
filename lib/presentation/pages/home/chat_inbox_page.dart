@@ -450,6 +450,12 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             AppLogger.info('🔵 isEncrypted: ${message.isEncrypted}');
             AppLogger.info('🔵 content: ${message.content}');
             AppLogger.info('🔵 encryptedContent: ${message.encryptedContent}');
+            // Ensure encryption fields are cleared for non-encrypted messages
+            decryptedMessage = message.copyWith(
+              isEncrypted: false,
+              encryptedContent: null,
+              encryptionMetadata: null,
+            );
           }
           
           // Create updated conversation with new unread count and last message
@@ -631,7 +637,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
               }
             } else {
               AppLogger.info('🔵 Message not encrypted or no encrypted content available in conversation_updated');
-              lastMessage = message;
+              lastMessage = message.copyWith(
+                isEncrypted: false,
+                encryptedContent: null,
+                encryptionMetadata: null,
+              );
             }
           }
           

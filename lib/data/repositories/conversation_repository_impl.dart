@@ -709,13 +709,21 @@ class ConversationRepositoryImpl implements ConversationRepository {
   /// Decrypt a message if it's encrypted
   Future<Message> _decryptMessageIfNeeded(Message message, String senderId, {String? conversationKey}) async {
     if (!message.isEncrypted || message.encryptionMetadata == null) {
-      return message; // Not encrypted, return as is
+      // Not encrypted, ensure encryption fields are cleared
+      return message.copyWith(
+        isEncrypted: false,
+        encryptedContent: null,
+        encryptionMetadata: null,
+      );
     }
 
     if (_keyManagementService == null) {
       AppLogger.error('Key management service not available for decryption');
       return message.copyWith(
         content: '[DECRYPTION FAILED - NO KEY SERVICE]',
+        isEncrypted: false,
+        encryptedContent: null,
+        encryptionMetadata: null,
         decryptionError: true,
       );
     }
@@ -758,12 +766,18 @@ class ConversationRepositoryImpl implements ConversationRepository {
       
       return message.copyWith(
         content: decryptedContent,
+        isEncrypted: false,
+        encryptedContent: null,
+        encryptionMetadata: null,
         decryptionError: false,
       );
     } catch (error) {
       AppLogger.error('Error decrypting message: $error');
       return message.copyWith(
         content: '[DECRYPTION FAILED]',
+        isEncrypted: false,
+        encryptedContent: null,
+        encryptionMetadata: null,
         decryptionError: true,
       );
     }
