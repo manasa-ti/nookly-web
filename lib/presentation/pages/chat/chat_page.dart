@@ -43,6 +43,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/core/services/call_manager_service.dart';
 import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/hms_call_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -540,6 +541,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           callApiService: sl<CallApiService>(),
           socketService: _socketService!,
           context: context,
+          callService: sl<HMSCallService>(),
           currentUserId: _currentUserId,
         );
         AppLogger.info('✅ [CALL] CallManagerService initialized for incoming calls');
@@ -560,6 +562,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           callApiService: sl<CallApiService>(),
           socketService: _socketService!,
           context: context,
+          callService: sl<HMSCallService>(),
           currentUserId: _currentUserId,
         );
         AppLogger.info('✅ [CALL] CallManagerService initialized (fallback)');

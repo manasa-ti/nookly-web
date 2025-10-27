@@ -23,7 +23,7 @@ class CallManagerService {
   factory CallManagerService() => _instance;
   CallManagerService._internal();
 
-  final HMSCallService _callService = HMSCallService();
+  HMSCallService? _callService;
   CallApiService? _callApiService;
   SocketService? _socketService;
   BuildContext? _context;
@@ -40,6 +40,7 @@ class CallManagerService {
     required CallApiService callApiService,
     required SocketService socketService,
     required BuildContext context,
+    required HMSCallService callService,
     String? currentUserId,
   }) {
     if (_isInitialized) {
@@ -51,8 +52,9 @@ class CallManagerService {
     _socketService = socketService;
     _context = context;
     _currentUserId = currentUserId;
+    _callService = callService;
     
-    _callService.setCallApiService(callApiService);
+    _callService?.setCallApiService(callApiService);
     _setupSocketListeners();
     
     _isInitialized = true;
@@ -189,7 +191,7 @@ class CallManagerService {
     
     // End call locally
     try {
-      _callService.endCall();
+      _callService?.endCall();
     } catch (e) {
       AppLogger.warning('⚠️ [CALL] Error ending call: $e');
     }
@@ -235,8 +237,8 @@ class CallManagerService {
         );
       }
 
-      // Initiate call via HMS service
-      final response = await _callService.initiateCall(
+      // Initiate call via API service
+      final response = await _callApiService!.initiateCall(
         receiverId: receiverId,
         callType: callType,
       );
@@ -305,7 +307,7 @@ class CallManagerService {
     try {
       AppLogger.info('✅ [CALL] Accepting call for room: $roomId');
 
-      final response = await _callService.acceptCall(roomId: roomId);
+      final response = await _callApiService!.acceptCall(roomId: roomId);
 
       final callSession = response['callSession'];
       
@@ -360,7 +362,7 @@ class CallManagerService {
   Future<void> rejectCall(String roomId) async {
     try {
       AppLogger.info('❌ [CALL] Rejecting call for room: $roomId');
-      await _callService.rejectCall(roomId: roomId);
+      await _callApiService!.rejectCall(roomId: roomId);
       AppLogger.info('✅ [CALL] Call rejected successfully');
     } catch (e) {
       AppLogger.error('❌ [CALL] Failed to reject: $e');
@@ -372,7 +374,7 @@ class CallManagerService {
   Future<void> endCall() async {
     try {
       AppLogger.info('🔚 [CALL] Ending call via manager');
-      await _callService.endCall();
+      await _callService?.endCall();
       _isInCall = false;
       _currentRoomId = null;
       
@@ -413,7 +415,7 @@ class CallManagerService {
   bool get isInCall => _isInCall;
   String? get currentRoomId => _currentRoomId;
   String? get currentUserId => _currentUserId;
-  HMSCallService get callService => _callService;
+  HMSCallService get callService => _callService!;
 
   /// Dispose and cleanup
   /// 
@@ -427,7 +429,7 @@ class CallManagerService {
     // End call if active
     if (_isInCall) {
       try {
-        _callService.endCall();
+        _callService?.endCall();
       } catch (e) {
         AppLogger.warning('⚠️ [CALL] Error ending call during disposal: $e');
       }
@@ -438,7 +440,7 @@ class CallManagerService {
     
     // Dispose call service
     try {
-      _callService.dispose();
+      _callService?.dispose();
     } catch (e) {
       AppLogger.warning('⚠️ [CALL] Error disposing call service: $e');
     }
