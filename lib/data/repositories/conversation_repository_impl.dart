@@ -100,8 +100,15 @@ class ConversationRepositoryImpl implements ConversationRepository {
           if (lastMessageJson != null) {
             // Ensure required fields are present in the message data
             final messageData = Map<String, dynamic>.from(lastMessageJson);
+            AppLogger.info('🔵 ConversationRepository: Raw lastMessage from API: $lastMessageJson');
+            AppLogger.info('🔵 ConversationRepository: Raw lastMessage sender field: ${messageData['sender']}');
+            AppLogger.info('🔵 ConversationRepository: Raw lastMessage from field: ${messageData['from']}');
+            AppLogger.info('🔵 ConversationRepository: Raw lastMessage isRead field: ${messageData['isRead']}');
+            AppLogger.info('🔵 ConversationRepository: Raw lastMessage status field: ${messageData['status']}');
+            
             if (!messageData.containsKey('sender')) {
               messageData['sender'] = userJson['_id'] as String; // Use conversation user as sender
+              AppLogger.info('🔵 ConversationRepository: No sender field, using participantId: ${userJson['_id']}');
             }
             if (!messageData.containsKey('receiver')) {
               messageData['receiver'] = currentUserId; // Use current user as receiver
@@ -110,7 +117,9 @@ class ConversationRepositoryImpl implements ConversationRepository {
             if (messageData.containsKey('messageType')) {
               messageData['type'] = messageData['messageType'] == 'image' ? 'image' : 'text';
             }
+            AppLogger.info('🔵 ConversationRepository: Message data before parsing: $messageData');
             lastMessage = Message.fromJson(messageData);
+            AppLogger.info('🔵 ConversationRepository: Parsed message sender: ${lastMessage.sender}');
             
             // Decrypt message if it's encrypted
             if (lastMessage.isEncrypted && lastMessage.encryptionMetadata != null) {
@@ -153,6 +162,26 @@ class ConversationRepositoryImpl implements ConversationRepository {
           
           final participantIdFromJson = userJson['_id'] as String;
 
+          // Adjust unread count based on last message status
+          int unreadCount = itemMap['unreadCount'] as int? ?? 0;
+          if (lastMessage != null) {
+            AppLogger.info('🔵 ConversationRepository: Last message sender: ${lastMessage.sender}, Current user: $currentUserId');
+            AppLogger.info('🔵 ConversationRepository: Last message isRead: ${lastMessage.isRead}');
+            
+            // If last message is from current user, unread count should be 0
+            if (lastMessage.sender == currentUserId) {
+              unreadCount = 0;
+              AppLogger.info('🔵 ConversationRepository: Last message is from current user, setting unread count to 0');
+            }
+            // If last message is marked as read, it means all messages are read
+            else if (lastMessage.isRead == true) {
+              unreadCount = 0;
+              AppLogger.info('🔵 ConversationRepository: Last message is marked as read, setting unread count to 0');
+            }
+          }
+          
+          AppLogger.info('🔵 ConversationRepository: Final unread count for ${userJson['name']}: $unreadCount (API reported: ${itemMap['unreadCount']})');
+
           final conversation = Conversation(
             id: participantIdFromJson, 
             participantId: participantIdFromJson, 
@@ -161,7 +190,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
             messages: lastMessage != null ? [lastMessage] : [],
             lastMessageTime: lastMessageTime,
             isOnline: userJson['isOnline'] as bool? ?? false, 
-            unreadCount: itemMap['unreadCount'] as int? ?? 0,
+            unreadCount: unreadCount,
             userId: currentUserId,
             lastMessage: lastMessage, // Add the lastMessage field
             updatedAt: lastMessageTime,
