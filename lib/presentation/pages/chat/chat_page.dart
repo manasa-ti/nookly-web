@@ -339,6 +339,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
   }
 
+  // DEBUG: Force trigger scam alert popup
+  void _forceTriggerScamAlert() {
+    AppLogger.info('🧪 DEBUG: Force triggering scam alert popup');
+    setState(() {
+      _currentScamAlert = ScamAlertType.videoCallVerification;
+      _showScamAlert = true;
+    });
+  }
+
   void _dismissScamAlert() {
     setState(() {
       _showScamAlert = false;
@@ -2450,8 +2459,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     }
                     */
 
-                    // TODO: Temporarily commented out bulk_message_read processing
-                    /*
+                    // Emit bulk_message_read for unread messages
                     if (messagesToRead.isNotEmpty) {
                       final timestamp = DateTime.now().toIso8601String();
                       AppLogger.info('🔵 Emitting bulk_message_read for messages: ${messagesToRead.join(', ')}');
@@ -2473,7 +2481,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         AppLogger.error('❌ Failed to emit bulk_message_read event: $e');
                       }
                     }
-                    */
                   }
                 } else if (state is ConversationLeft) {
                   // Navigate back when conversation is left (for initiator)
@@ -2561,9 +2568,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   final message = messages[index];
                                   final isMe = message.sender == _currentUserId;
                                   
-                                  // TODO: Temporarily commented out message read processing
                                   // Emit message_read when message is visible and from other user
-                                  /*
                                   if (!isMe && 
                                       message.status == 'delivered' && 
                                       _socketService != null &&
@@ -2582,7 +2587,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                       AppLogger.error('❌ Failed to emit message status events: $e');
                                     }
                                   }
-                                  */
                                   
                                   // Only pass timer parameters for disappearing image messages
                                   final timerState = _disappearingImageManager.getTimerState(message.id);

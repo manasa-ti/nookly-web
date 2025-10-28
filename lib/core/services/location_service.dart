@@ -117,16 +117,31 @@ class LocationService {
   /// Get location and update on server (for app launch)
   Future<void> updateLocationOnAppLaunch() async {
     try {
-      AppLogger.info('Updating location on app launch...');
+      AppLogger.info('📍 Updating location on app launch...');
+      
+      // First check permission status
+      final permission = await checkLocationPermission();
+      AppLogger.info('📍 Location permission status: $permission');
+      
+      // Check if location services are enabled
+      final serviceEnabled = await isLocationServiceEnabled();
+      AppLogger.info('📍 Location services enabled: $serviceEnabled');
+      
+      if (!serviceEnabled) {
+        AppLogger.warning('⚠️ Location services are disabled on device');
+        return;
+      }
       
       final position = await getCurrentLocation();
       if (position != null) {
+        AppLogger.info('📍 Got location: ${position.latitude}, ${position.longitude}');
         await updateUserLocationOnServer(position);
+        AppLogger.info('✅ Location updated successfully on server');
       } else {
-        AppLogger.warning('Could not get location for app launch update');
+        AppLogger.warning('⚠️ Could not get location - permission: $permission, serviceEnabled: $serviceEnabled');
       }
     } catch (e) {
-      AppLogger.error('Error updating location on app launch: $e');
+      AppLogger.error('❌ Error updating location on app launch: $e');
       // Silent failure - don't throw, just log
     }
   }

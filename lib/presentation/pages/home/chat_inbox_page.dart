@@ -385,7 +385,30 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           AppLogger.info('🔵 Message content: ${data['content']}');
           AppLogger.info('🔵 Message is encrypted: ${data['isEncrypted']}');
           AppLogger.info('🔵 Encrypted content: ${data['encryptedContent']}');
+          AppLogger.info('🔵 Encryption metadata: ${data['encryptionMetadata']}');
+          AppLogger.info('🔵 Full socket event data keys: ${data.keys.toList()}');
+          AppLogger.info('🔵 Full socket event data: $data');
           AppLogger.info('🔵 Current unread count: ${conversation.unreadCount}');
+          
+          // Check if this message is already part of the conversation (already loaded)
+          final messageId = data['_id'] ?? data['id'];
+          final messageTimestamp = DateTime.parse(data['createdAt'] ?? data['timestamp'] ?? DateTime.now().toIso8601String());
+          
+          // Skip if this message is older than the last message time (already processed)
+          // Only process messages that are NEWER than what we already have
+          if (messageTimestamp.isBefore(conversation.lastMessageTime)) {
+            AppLogger.info('⏭️ Skipping old message - already in conversation');
+            AppLogger.info('⏭️ Message timestamp: $messageTimestamp');
+            AppLogger.info('⏭️ Last message time: ${conversation.lastMessageTime}');
+            return; // Skip processing this message
+          }
+          
+          // Skip if this is the exact same message
+          if (conversation.lastMessage?.id == messageId) {
+            AppLogger.info('⏭️ Skipping duplicate message - same ID');
+            AppLogger.info('⏭️ Message ID: $messageId');
+            return; // Skip processing this message
+          }
           
           // Create message from full private_message data
           final message = Message(
@@ -450,11 +473,38 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             AppLogger.info('🔵 isEncrypted: ${message.isEncrypted}');
             AppLogger.info('🔵 content: ${message.content}');
             AppLogger.info('🔵 encryptedContent: ${message.encryptedContent}');
+            
+            // If content is "[ENCRYPTED]" but no encrypted content is available,
+            // this means the socket event didn't include encryption data
+            // Clear encryption fields to prevent false positives in decryption checks
+            if (message.content == '[ENCRYPTED]' && message.encryptedContent == null) {
+              AppLogger.warning('⚠️ Message content is [ENCRYPTED] but no encryptedContent available in socket event');
+              AppLogger.warning('⚠️ This might indicate the socket event is missing encryption data');
+              // Clear encryption fields to prevent the message from being treated as encrypted
+              decryptedMessage = message.copyWith(
+                isEncrypted: false,
+                encryptedContent: null,
+                encryptionMetadata: null,
+              );
+            } else {
+              // Ensure encryption fields are cleared for non-encrypted messages
+              decryptedMessage = message.copyWith(
+                isEncrypted: false,
+                encryptedContent: null,
+                encryptionMetadata: null,
+              );
+            }
           }
           
+          // Check if the message is from the current user
+          final isMessageFromCurrentUser = message.sender == _currentUser?.id;
+          AppLogger.info('🔵 Message sender: ${message.sender}, Current user: ${_currentUser?.id}');
+          AppLogger.info('🔵 Is message from current user: $isMessageFromCurrentUser');
+          
           // Create updated conversation with new unread count and last message
+          // Only increment unread count if the message is NOT from the current user
           final updatedConversation = conversation.copyWith(
-            unreadCount: conversation.unreadCount + 1, // Increment unread count
+            unreadCount: isMessageFromCurrentUser ? conversation.unreadCount : conversation.unreadCount + 1,
             lastMessage: decryptedMessage,
             lastMessageTime: decryptedMessage.timestamp,
             updatedAt: DateTime.now(),
@@ -631,7 +681,11 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
               }
             } else {
               AppLogger.info('🔵 Message not encrypted or no encrypted content available in conversation_updated');
-              lastMessage = message;
+              lastMessage = message.copyWith(
+                isEncrypted: false,
+                encryptedContent: null,
+                encryptionMetadata: null,
+              );
             }
           }
           
@@ -1079,7 +1133,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                           conversation.participantName,
                           style: TextStyle(
                             color: Colors.white,
-                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
+                            fontWeight: hasUnread ? FontWeight.w700 : FontWeight.normal,
                             fontSize: isTablet ? 18.0 : null,
                           ),
                         ),
