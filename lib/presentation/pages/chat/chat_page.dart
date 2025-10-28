@@ -336,6 +336,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
   }
 
+  // DEBUG: Force trigger scam alert popup
+  void _forceTriggerScamAlert() {
+    AppLogger.info('🧪 DEBUG: Force triggering scam alert popup');
+    setState(() {
+      _currentScamAlert = ScamAlertType.videoCallVerification;
+      _showScamAlert = true;
+    });
+  }
+
   void _dismissScamAlert() {
     setState(() {
       _showScamAlert = false;

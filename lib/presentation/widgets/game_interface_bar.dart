@@ -124,7 +124,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
       builder: (context, state) {
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             border: Border(
@@ -194,55 +194,35 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
 
   Widget _buildNormalInterface(BuildContext context) {
     AppLogger.info('🔵 GAMES TOOLTIP: _buildNormalInterface called, _showGamesTooltip: $_showGamesTooltip');
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Conversation Starters
-          Flexible(
-            flex: 2,
-            child: ConversationStarterWidget(
-              matchUserId: widget.matchUserId,
-              priorMessages: widget.priorMessages,
-              onSuggestionSelected: widget.onSuggestionSelected,
-              onTutorialCompleted: _onConversationStarterCompleted,
-            ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        // Conversation Starters
+        Flexible(
+          flex: 1,
+          child: ConversationStarterWidget(
+            matchUserId: widget.matchUserId,
+            priorMessages: widget.priorMessages,
+            onSuggestionSelected: widget.onSuggestionSelected,
+            onTutorialCompleted: _onConversationStarterCompleted,
           ),
-          
-          const SizedBox(width: 8), // Reduced from 16
-          
-          // Play to Bond - always show when other user is online
-          Flexible(
-            flex: 1,
-            child: _showGamesTooltip
-                ? ContextualTooltip(
-                    message: 'Choose a game to play together and have fun getting to know each other!',
-                    position: TooltipPosition.bottom,
-                    onDismiss: () {
-                      AppLogger.info('🔵 GAMES TOOLTIP: Tooltip dismissed');
-                      setState(() {
-                        _showGamesTooltip = false;
-                      });
-                      OnboardingService.markGamesTutorialCompleted();
-                    },
-                    child: GestureDetector(
-                      onTap: () {
-                        if (widget.currentUserId.isEmpty) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Please wait while we connect...'),
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
-                          return;
-                        }
-                        context.read<GamesBloc>().add(const ShowGameMenu());
-                      },
-                      child: _buildPlayToBondButton(),
-                    ),
-                  )
-                : GestureDetector(
+        ),
+        
+        // Play to Bond - always show when other user is online
+        Flexible(
+          flex: 1,
+          child: _showGamesTooltip
+              ? ContextualTooltip(
+                  message: 'Choose a game to play together and have fun getting to know each other!',
+                  position: TooltipPosition.bottom,
+                  onDismiss: () {
+                    AppLogger.info('🔵 GAMES TOOLTIP: Tooltip dismissed');
+                    setState(() {
+                      _showGamesTooltip = false;
+                    });
+                    OnboardingService.markGamesTutorialCompleted();
+                  },
+                  child: GestureDetector(
                     onTap: () {
                       if (widget.currentUserId.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -257,57 +237,70 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                     },
                     child: _buildPlayToBondButton(),
                   ),
-          ),
-          
-          const SizedBox(width: 8), // Reduced from 20
-          
-          // Spice it Up - coming soon (compact version)
-          Flexible(
-            flex: 1,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.local_fire_department,
-                      color: Colors.white.withOpacity(0.5),
-                      size: 16, // Reduced from 20
-                    ),
-                    const SizedBox(width: 4), // Reduced from 6
-                    Flexible(
-                      child: Text(
-                        'Spice it Up',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 12, // Reduced from 14
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w500,
+                )
+              : GestureDetector(
+                  onTap: () {
+                    if (widget.currentUserId.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Please wait while we connect...'),
+                          duration: Duration(seconds: 2),
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
+                      );
+                      return;
+                    }
+                    context.read<GamesBloc>().add(const ShowGameMenu());
+                  },
+                  child: _buildPlayToBondButton(),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 20), // Reduced from 26 (16 + 4)
-                  child: Text(
-                    'Coming soon',
-                    style: TextStyle(
-                      color: Colors.orange.withOpacity(0.8),
-                      fontSize: 9, // Reduced from 10
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.w500,
+        ),
+        
+        // Spice it Up - coming soon (compact version)
+        Flexible(
+          flex: 1,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.local_fire_department,
+                    color: Colors.white.withOpacity(0.5),
+                    size: 16, // Reduced from 20
+                  ),
+                  const SizedBox(width: 4), // Reduced from 6
+                  Flexible(
+                    child: Text(
+                      'Spice it Up',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.5),
+                        fontSize: 12, // Reduced from 14
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w500,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 20), // Reduced from 26 (16 + 4)
+                child: Text(
+                  'Coming soon',
+                  style: TextStyle(
+                    color: Colors.orange.withOpacity(0.8),
+                    fontSize: 9, // Reduced from 10
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

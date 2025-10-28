@@ -83,7 +83,7 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
           ),
           const SizedBox(width: 6),
           Text(
-            'Break the ice',
+            'Break d Ice',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 14,
