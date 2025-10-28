@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/pages/home/recommended_profiles_page.dart';
 import 'package:nookly/presentation/pages/home/received_likes_page.dart';
@@ -79,7 +80,7 @@ class _HomePageState extends State<HomePage> {
     // If filters were updated, refresh the recommended profiles
     if (result == true && _currentIndex == 0) {
       // Refresh the recommended profiles with filter preferences
-      print('🔵 DEBUG: Filters updated, refreshing recommended profiles');
+      AppLogger.info('🔵 DEBUG: Filters updated, refreshing recommended profiles');
       
       // Load filter preferences
       final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();

@@ -41,6 +41,9 @@ import 'package:nookly/presentation/widgets/scam_alert_popup.dart';
 import 'package:nookly/presentation/widgets/conversation_starter_widget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:nookly/core/services/user_cache_service.dart';
+import 'package:nookly/core/services/call_manager_service.dart';
+import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/hms_call_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -345,7 +348,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   // Debug: Test scam detection
   void _testScamDetection() {
-    print('🧪 Testing scam detection...');
+    AppLogger.info('🧪 Testing scam detection...');
     final testMessages = [
       'Emergency has happened',  // Should trigger romanceFinancial
       'I need help with my bills',
@@ -355,7 +358,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     ];
     
     for (final message in testMessages) {
-      print('🧪 Testing: "$message"');
+      AppLogger.info('🧪 Testing: "$message"');
       _checkForScamAlert(message, true);
     }
   }
@@ -530,6 +533,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('🔵 Socket is connected with ID, registering listeners...');
         _registerSocketListeners();
         AppLogger.info('🔵 Socket listeners registered');
+        
+        // Initialize CallManagerService for incoming calls
+        AppLogger.info('🔵 [CALL] Initializing CallManagerService...');
+        final callManagerService = sl<CallManagerService>();
+        callManagerService.initialize(
+          callApiService: sl<CallApiService>(),
+          socketService: _socketService!,
+          context: context,
+          callService: sl<HMSCallService>(),
+          currentUserId: _currentUserId,
+        );
+        AppLogger.info('✅ [CALL] CallManagerService initialized for incoming calls');
       } else {
         AppLogger.error('❌ Socket not properly connected after waiting');
         AppLogger.error('❌ Socket state: ${_socketService!.isConnected}');
@@ -539,6 +554,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         AppLogger.info('🔵 Attempting to register listeners as fallback...');
         _registerSocketListeners();
         AppLogger.info('🔵 Socket listeners registered (fallback)');
+        
+        // Initialize CallManagerService even in fallback mode
+        AppLogger.info('🔵 [CALL] Initializing CallManagerService (fallback)...');
+        final callManagerService = sl<CallManagerService>();
+        callManagerService.initialize(
+          callApiService: sl<CallApiService>(),
+          socketService: _socketService!,
+          context: context,
+          callService: sl<HMSCallService>(),
+          currentUserId: _currentUserId,
+        );
+        AppLogger.info('✅ [CALL] CallManagerService initialized (fallback)');
       }
     } else {
       AppLogger.error('❌ User or token is null');
@@ -2323,6 +2350,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.call, color: Colors.white),
+            onPressed: () => _startCall(true), // Audio call
+            tooltip: 'Audio Call',
+          ),
+          IconButton(
+            icon: const Icon(Icons.videocam, color: Colors.white),
+            onPressed: () => _startCall(false), // Video call
+            tooltip: 'Video Call',
+          ),
+          IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white),
             onPressed: _toggleMenu,
           ),
@@ -3422,5 +3459,43 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     AppLogger.info('🔵 From user IDs: $_currentUserId and $otherUserId');
     
     return actualConversationId;
+  }
+
+  /// Start audio or video call
+  void _startCall(bool isAudioCall) {
+    try {
+      AppLogger.info('🚀 [CALL] Initiating ${isAudioCall ? 'audio' : 'video'} call');
+      
+      // Get call manager service
+      final callManagerService = sl<CallManagerService>();
+      
+      // Initiate call
+      callManagerService.initiateCall(
+        receiverId: widget.conversationId,
+        callType: isAudioCall ? 'audio' : 'video',
+        receiverName: widget.participantName,
+        receiverAvatar: widget.participantAvatar,
+      ).catchError((error) {
+        AppLogger.error('❌ [CALL] Failed to initiate call: $error');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to start call: $error'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
+    } catch (e) {
+      AppLogger.error('❌ [CALL] Error starting call: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start call: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 } 

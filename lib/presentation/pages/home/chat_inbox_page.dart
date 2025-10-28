@@ -924,7 +924,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   }
 
   Widget _buildAvatar(Conversation conversation) {
-    print('🔵 Building avatar for ${conversation.participantName}: isOnline = ${conversation.isOnline}');
+    AppLogger.info('🔵 Building avatar for ${conversation.participantName}: isOnline = ${conversation.isOnline}');
     return GestureDetector(
       onTap: () {
         Navigator.push(

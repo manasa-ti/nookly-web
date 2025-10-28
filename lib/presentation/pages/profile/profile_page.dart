@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/domain/entities/user.dart';
@@ -46,7 +47,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _openPrivacyPolicy() async {
-    print('🔵 Privacy button tapped!'); // Debug log
+    AppLogger.info('🔵 Privacy button tapped!'); // Debug log
     
     // Show immediate feedback that button was tapped
     if (mounted) {
@@ -60,19 +61,19 @@ class _ProfilePageState extends State<ProfilePage> {
     
     const url = 'https://privacy-policy.nookly.app/';
     try {
-      print('🔵 Attempting to open URL: $url'); // Debug log
+      AppLogger.info('🔵 Attempting to open URL: $url'); // Debug log
       final uri = Uri.parse(url);
-      print('🔵 Parsed URI: $uri'); // Debug log
+      AppLogger.info('🔵 Parsed URI: $uri'); // Debug log
       
       final canLaunch = await canLaunchUrl(uri);
-      print('🔵 Can launch URL: $canLaunch'); // Debug log
+      AppLogger.info('🔵 Can launch URL: $canLaunch'); // Debug log
       
       if (canLaunch) {
-        print('🔵 Launching URL...'); // Debug log
+        AppLogger.info('🔵 Launching URL...'); // Debug log
         await launchUrl(uri, mode: LaunchMode.externalApplication);
-        print('🔵 URL launched successfully'); // Debug log
+        AppLogger.info('🔵 URL launched successfully'); // Debug log
       } else {
-        print('🔵 Cannot launch URL'); // Debug log
+        AppLogger.info('🔵 Cannot launch URL'); // Debug log
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -83,7 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       }
     } catch (e) {
-      print('🔵 Error opening privacy policy: $e'); // Debug log
+      AppLogger.info('🔵 Error opening privacy policy: $e'); // Debug log
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

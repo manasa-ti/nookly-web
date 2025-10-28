@@ -39,6 +39,10 @@ import 'package:nookly/core/services/heartbeat_service.dart';
 import 'package:nookly/core/services/conversation_key_cache.dart';
 import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/data/repositories/games_repository_impl.dart';
+import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/hms_call_service.dart';
+import 'package:nookly/core/services/call_manager_service.dart';
+import 'package:nookly/core/network/network_service.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -108,6 +112,19 @@ Future<void> init() async {
   // Conversation Starter Service
   sl.registerLazySingleton<ConversationStarterService>(
     () => ConversationStarterService(sl()),
+  );
+  
+  // Call Services (Audio/Video Calling with 100ms)
+  sl.registerLazySingleton<CallApiService>(
+    () => CallApiService(NetworkService.dio),
+  );
+  
+  sl.registerLazySingleton<HMSCallService>(
+    () => HMSCallService(),
+  );
+  
+  sl.registerLazySingleton<CallManagerService>(
+    () => CallManagerService(),
   );
   
   // Blocs

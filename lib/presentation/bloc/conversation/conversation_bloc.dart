@@ -41,10 +41,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<MuteConversation>(_onMuteConversation);
     on<UnmuteConversation>(_onUnmuteConversation);
     on<LeaveConversation>(_onLeaveConversation);
-    // TODO: Uncomment when call feature is re-implemented
-    // on<StartAudioCall>(_onStartAudioCall);
-    // on<StartVideoCall>(_onStartVideoCall);
-    // on<EndCall>(_onEndCall);
+    // Call event handlers
+    on<StartAudioCall>(_onStartAudioCall);
+    on<StartVideoCall>(_onStartVideoCall);
     // Add a new event handler for when messages are updated by the stream
     on<_MessagesUpdated>(_onMessagesUpdated);
     on<MessageReceived>(_onMessageReceived);
@@ -356,34 +355,24 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     }
   }
 
-  // TODO: Uncomment when call feature is re-implemented
-  // void _onStartAudioCall(
-  //   StartAudioCall event,
-  //   Emitter<ConversationState> emit,
-  // ) {
-  //   if (state is ConversationLoaded) {
-  //     final currentState = state as ConversationLoaded;
-  //     emit(currentState.copyWith(
-  //       isCallActive: true,
-  //       isAudioCall: true,
-  //     ));
-  //     AppLogger.info('🔵 Audio call started for conversation: ${event.conversationId}');
-  //   }
-  // }
+  // Call event handlers
+  void _onStartAudioCall(
+    StartAudioCall event,
+    Emitter<ConversationState> emit,
+  ) {
+    // Call initiation is handled by CallManagerService
+    // This is just for logging/tracking in the bloc if needed
+    AppLogger.info('🔵 [CALL] Audio call event triggered for: ${event.conversationId}');
+  }
 
-  // void _onStartVideoCall(
-  //   StartVideoCall event,
-  //   Emitter<ConversationState> emit,
-  // ) {
-  //   if (state is ConversationLoaded) {
-  //     final currentState = state as ConversationLoaded;
-  //     emit(currentState.copyWith(
-  //       isCallActive: true,
-  //       isAudioCall: false,
-  //     ));
-  //     AppLogger.info('🔵 Video call started for conversation: ${event.conversationId}');
-  //   }
-  // }
+  void _onStartVideoCall(
+    StartVideoCall event,
+    Emitter<ConversationState> emit,
+  ) {
+    // Call initiation is handled by CallManagerService
+    // This is just for logging/tracking in the bloc if needed
+    AppLogger.info('🔵 [CALL] Video call event triggered for: ${event.conversationId}');
+  }
 
   // void _onEndCall(
   //   EndCall event,

@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
@@ -91,10 +92,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         if (state is Authenticated) {
           // Check if welcome tour should be shown
           final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
-          print('🔵 SPLASH: shouldShowWelcomeTour = $shouldShowWelcomeTour');
+          AppLogger.info('🔵 SPLASH: shouldShowWelcomeTour = $shouldShowWelcomeTour');
           
           if (shouldShowWelcomeTour) {
-            print('🔵 SPLASH: Showing welcome tour');
+            AppLogger.info('🔵 SPLASH: Showing welcome tour');
             // Show welcome tour first
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
@@ -120,7 +121,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               (route) => false, // Remove all previous routes
             );
           } else {
-            print('🔵 SPLASH: Welcome tour already completed, navigating directly');
+            AppLogger.info('🔵 SPLASH: Welcome tour already completed, navigating directly');
             // Welcome tour already completed, navigate directly
             if (state.user.isProfileComplete) {
               // Navigate to home page if profile is complete and clear navigation stack

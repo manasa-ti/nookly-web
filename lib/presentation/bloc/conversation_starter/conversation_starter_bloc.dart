@@ -24,15 +24,15 @@ class ConversationStarterBloc extends Bloc<ConversationStarterEvent, Conversatio
     Emitter<ConversationStarterState> emit,
   ) async {
     try {
-      print('DEBUGGING STARTERS: BLoC - _onGenerateConversationStarters called');
-      print('DEBUGGING STARTERS: BLoC - event.matchUserId: ${event.matchUserId}');
-      print('DEBUGGING STARTERS: BLoC - event.priorMessages: ${event.priorMessages}');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - _onGenerateConversationStarters called');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - event.matchUserId: ${event.matchUserId}');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - event.priorMessages: ${event.priorMessages}');
       AppLogger.info('🔵 ConversationStarterBloc: Generating conversation starters');
       
-      print('DEBUGGING STARTERS: BLoC - Emitting loading state');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Emitting loading state');
       emit(const ConversationStarterLoading());
 
-      print('DEBUGGING STARTERS: BLoC - Calling service.generateConversationStarters');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Calling service.generateConversationStarters');
       final suggestions = await _conversationStarterService.generateConversationStarters(
         matchUserId: event.matchUserId,
         numberOfSuggestions: event.numberOfSuggestions,
@@ -40,18 +40,18 @@ class ConversationStarterBloc extends Bloc<ConversationStarterEvent, Conversatio
         priorMessages: event.priorMessages,
       );
 
-      print('DEBUGGING STARTERS: BLoC - Service returned ${suggestions.length} suggestions');
-      print('DEBUGGING STARTERS: BLoC - Getting usage info');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Service returned ${suggestions.length} suggestions');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Getting usage info');
       final usage = await _conversationStarterService.getUsage();
       final isFallback = suggestions.any((suggestion) => suggestion.isFallback);
 
-      print('DEBUGGING STARTERS: BLoC - Usage remaining: ${usage.remaining}');
-      print('DEBUGGING STARTERS: BLoC - Is fallback: $isFallback');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Usage remaining: ${usage.remaining}');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Is fallback: $isFallback');
       AppLogger.info('✅ ConversationStarterBloc: Generated ${suggestions.length} suggestions');
       AppLogger.info('🔵 ConversationStarterBloc: Is fallback: $isFallback');
       AppLogger.info('🔵 ConversationStarterBloc: Usage remaining: ${usage.remaining}');
 
-      print('DEBUGGING STARTERS: BLoC - Emitting loaded state with ${suggestions.length} suggestions');
+      AppLogger.info('DEBUGGING STARTERS: BLoC - Emitting loaded state with ${suggestions.length} suggestions');
       emit(ConversationStarterLoaded(
         suggestions: suggestions,
         usage: usage,

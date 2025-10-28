@@ -190,7 +190,7 @@ class Message extends Equatable {
         deliveredAt = DateTime.parse(json['deliveredAt'] as String);
       }
     } catch (e) {
-      print('Error parsing deliveredAt: $e');
+      AppLogger.info('Error parsing deliveredAt: $e');
     }
 
     DateTime? readAt;
@@ -199,7 +199,7 @@ class Message extends Equatable {
         readAt = DateTime.parse(json['readAt'] as String);
       }
     } catch (e) {
-      print('Error parsing readAt: $e');
+      AppLogger.info('Error parsing readAt: $e');
     }
 
     int? disappearingTime;
@@ -211,7 +211,7 @@ class Message extends Equatable {
         disappearingTime = json['disappearingTime'] as int;
       }
     } catch (e) {
-      print('Error parsing disappearingTime: $e');
+      AppLogger.info('Error parsing disappearingTime: $e');
     }
 
     // Parse URL expiration time from metadata.expiresAt or root level urlExpirationTime
@@ -289,7 +289,7 @@ class Message extends Equatable {
       }
     } catch (e) {
       AppLogger.error('❌ DEBUGGING EXPIRATION: Error parsing urlExpirationTime: $e');
-      print('Error parsing urlExpirationTime: $e');
+      AppLogger.info('Error parsing urlExpirationTime: $e');
     }
 
     // Parse isDisappearing from metadata first, then root level
@@ -314,7 +314,7 @@ class Message extends Equatable {
         }
       }
     } catch (e) {
-      print('Error parsing isDisappearing: $e');
+      AppLogger.info('Error parsing isDisappearing: $e');
     }
 
     // Parse disappearing fields from JSON

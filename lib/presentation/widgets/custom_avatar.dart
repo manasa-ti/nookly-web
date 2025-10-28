@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -42,7 +43,7 @@ class CustomAvatar extends StatelessWidget {
     final colorIndex = hash.abs() % allColors.length;
     
     // Debug: Print the color being used for this name
-    print('Avatar for "$name": Using color index $colorIndex (${allColors[colorIndex]})');
+    AppLogger.info('Avatar for "$name": Using color index $colorIndex (${allColors[colorIndex]})');
     
     return allColors[colorIndex];
   }
@@ -63,7 +64,7 @@ class CustomAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Debug logging for online status
-    print('🔵 CustomAvatar for "$name": isOnline = $isOnline, imageUrl = $imageUrl');
+    AppLogger.info('🔵 CustomAvatar for "$name": isOnline = $isOnline, imageUrl = $imageUrl');
     
     return Stack(
       children: [

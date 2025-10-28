@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -23,7 +24,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   @override
   void initState() {
     super.initState();
-    print('🔵 DEBUG: RecommendedProfilesPage initState called');
+    AppLogger.info('🔵 DEBUG: RecommendedProfilesPage initState called');
     _loadProfiles();
     _scrollController.addListener(_onScroll);
   }
@@ -39,7 +40,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     if (state is RecommendedProfilesLoaded && 
         state.hasMore && 
         _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      print('🔵 PAGINATION: Scroll triggered pagination at position: ${_scrollController.position.pixels}');
+      AppLogger.info('🔵 PAGINATION: Scroll triggered pagination at position: ${_scrollController.position.pixels}');
       _loadMoreProfiles();
     }
   }
@@ -52,7 +53,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           _isLoadingMore = true;
         });
         
-        print('🔵 DEBUG: _loadMoreProfiles called - loading more profiles');
+        AppLogger.info('🔵 DEBUG: _loadMoreProfiles called - loading more profiles');
         
         // Load filter preferences for pagination
         final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
@@ -72,24 +73,24 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
 
   void _loadProfiles() async {
     if (_isInitialLoad) {
-      print('🔵 DEBUG: _loadProfiles called but already loading, skipping');
+      AppLogger.info('🔵 DEBUG: _loadProfiles called but already loading, skipping');
       return;
     }
     
     final currentState = context.read<RecommendedProfilesBloc>().state;
     if (currentState is RecommendedProfilesLoaded && currentState.profiles.isNotEmpty) {
-      print('🔵 DEBUG: _loadProfiles called but profiles already loaded, skipping');
+      AppLogger.info('🔵 DEBUG: _loadProfiles called but profiles already loaded, skipping');
       return;
     }
     
-    print('🔵 DEBUG: _loadProfiles called');
+    AppLogger.info('🔵 DEBUG: _loadProfiles called');
     _isInitialLoad = true;
     
     // Load filter preferences
     final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
     final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
     
-    print('🔵 DEBUG: Loaded filters - Physical Activeness: $physicalActivenessFilters, Availability: $availabilityFilters');
+    AppLogger.info('🔵 DEBUG: Loaded filters - Physical Activeness: $physicalActivenessFilters, Availability: $availabilityFilters');
     
     context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
       skip: 0, // Explicitly set skip to 0 for initial load
@@ -121,7 +122,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
               barrierDismissible: false, // Prevent dismissing by tapping outside
               builder: (context) => MatchingTutorialDialog(
                 onComplete: () {
-                  print('🔵 MATCHING TUTORIAL: Dialog completed');
+                  AppLogger.info('🔵 MATCHING TUTORIAL: Dialog completed');
                 },
               ),
             );
@@ -129,7 +130,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
         });
       }
     } catch (e) {
-      print('🔵 MATCHING TUTORIAL: Error showing tutorial: $e');
+      AppLogger.info('🔵 MATCHING TUTORIAL: Error showing tutorial: $e');
     }
   }
 
@@ -155,13 +156,13 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
               setState(() {
                 _isLoadingMore = false;
               });
-              print('🔵 DEBUG: Reset _isLoadingMore flag');
+              AppLogger.info('🔵 DEBUG: Reset _isLoadingMore flag');
             }
             if (_isInitialLoad) {
               setState(() {
                 _isInitialLoad = false;
               });
-              print('🔵 DEBUG: Reset _isInitialLoad flag');
+              AppLogger.info('🔵 DEBUG: Reset _isInitialLoad flag');
               
               // Show matching tutorial dialog after initial load
               _showMatchingTutorialIfNeeded();
@@ -210,7 +211,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
               );
             }
             
-            print('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isLoadingMore: $_isLoadingMore');
+            AppLogger.info('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isLoadingMore: $_isLoadingMore');
             
             // Adaptive padding for different screen sizes
             final isTablet = MediaQuery.of(context).size.width > 600;
@@ -218,7 +219,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             
             return RefreshIndicator(
               onRefresh: () async {
-                print('🔵 DEBUG: Pull to refresh triggered');
+                AppLogger.info('🔵 DEBUG: Pull to refresh triggered');
                 
                 // Load filter preferences for refresh
                 final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
@@ -252,7 +253,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                 }
                 
                 final profile = state.profiles[index];
-                print('🔵 DEBUG: Rendering profile ${index + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
+                AppLogger.info('🔵 DEBUG: Rendering profile ${index + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
                 return ProfileCard(
                   key: ValueKey(profile.id), // Add unique key based on profile ID
                   profile: {

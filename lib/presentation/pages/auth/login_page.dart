@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:flutter_svg/flutter_svg.dart'; // Temporarily unused
@@ -74,10 +75,10 @@ class _LoginPageState extends State<LoginPage> {
             
             // Check if welcome tour should be shown
             final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
-            print('🔵 LOGIN: shouldShowWelcomeTour = $shouldShowWelcomeTour');
+            AppLogger.info('🔵 LOGIN: shouldShowWelcomeTour = $shouldShowWelcomeTour');
             
             if (shouldShowWelcomeTour) {
-              print('🔵 LOGIN: Showing welcome tour');
+              AppLogger.info('🔵 LOGIN: Showing welcome tour');
               // Show welcome tour first
               Navigator.pushAndRemoveUntil(
                 context,
@@ -104,7 +105,7 @@ class _LoginPageState extends State<LoginPage> {
                 (route) => false, // Remove all previous routes
               );
             } else {
-              print('🔵 LOGIN: Welcome tour already completed, navigating directly');
+              AppLogger.info('🔵 LOGIN: Welcome tour already completed, navigating directly');
               // Welcome tour already completed, navigate directly
               if (state.user.isProfileComplete) {
                 // Navigate to home page and clear navigation stack

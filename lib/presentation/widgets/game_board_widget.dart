@@ -1,3 +1,4 @@
+import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 
@@ -98,8 +99,8 @@ class GameBoardWidget extends StatelessWidget {
     // If turn is completed, show waiting message for the user who completed their turn
     // (This user is no longer the current turn user)
     if (isTurnCompleted && !_isCurrentUserTurn()) {
-      print('🎮 Showing turn completed message for user who completed turn: $currentUserId');
-      print('🎮 Current turn user: ${gameSession.currentTurn.userId}');
+      AppLogger.info('🎮 Showing turn completed message for user who completed turn: $currentUserId');
+      AppLogger.info('🎮 Current turn user: ${gameSession.currentTurn.userId}');
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(12),
@@ -128,12 +129,12 @@ class GameBoardWidget extends StatelessWidget {
     if (gameSession.selectedChoice == null) {
       // Only show buttons if it's the current user's turn
       if (_isCurrentUserTurn()) {
-        print('🎮 Showing Truth/Thrill buttons for current user: $currentUserId');
-        print('🎮 Current turn user: ${gameSession.currentTurn.userId}');
-        print('🎮 Game session ID: ${gameSession.sessionId}');
-        print('🎮 Game type: ${gameSession.gameType.displayName}');
-        print('🎮 Selected choice: ${gameSession.selectedChoice}');
-        print('🎮 isTurnCompleted: $isTurnCompleted');
+        AppLogger.info('🎮 Showing Truth/Thrill buttons for current user: $currentUserId');
+        AppLogger.info('🎮 Current turn user: ${gameSession.currentTurn.userId}');
+        AppLogger.info('🎮 Game session ID: ${gameSession.sessionId}');
+        AppLogger.info('🎮 Game type: ${gameSession.gameType.displayName}');
+        AppLogger.info('🎮 Selected choice: ${gameSession.selectedChoice}');
+        AppLogger.info('🎮 isTurnCompleted: $isTurnCompleted');
         return Row(
           children: [
             Expanded(
@@ -190,10 +191,10 @@ class GameBoardWidget extends StatelessWidget {
           ],
         );
       } else {
-        print('🎮 Showing partner turn message for user: $currentUserId');
-        print('🎮 Current turn user: ${gameSession.currentTurn.userId}');
-        print('🎮 isTurnCompleted: $isTurnCompleted');
-        print('🎮 selectedChoice: ${gameSession.selectedChoice}');
+        AppLogger.info('🎮 Showing partner turn message for user: $currentUserId');
+        AppLogger.info('🎮 Current turn user: ${gameSession.currentTurn.userId}');
+        AppLogger.info('🎮 isTurnCompleted: $isTurnCompleted');
+        AppLogger.info('🎮 selectedChoice: ${gameSession.selectedChoice}');
         // Show "partner's turn" message
         return Container(
           width: double.infinity,
@@ -355,19 +356,19 @@ class GameBoardWidget extends StatelessWidget {
 
   bool _isCurrentUserTurn() {
     final isCurrentTurn = gameSession.isCurrentUserTurn(currentUserId);
-    print('🎮 _isCurrentUserTurn() check:');
-    print('🎮 - currentUserId: $currentUserId');
-    print('🎮 - gameSession.currentTurn.userId: ${gameSession.currentTurn.userId}');
-    print('🎮 - isCurrentTurn: $isCurrentTurn');
+    AppLogger.info('🎮 _isCurrentUserTurn() check:');
+    AppLogger.info('🎮 - currentUserId: $currentUserId');
+    AppLogger.info('🎮 - gameSession.currentTurn.userId: ${gameSession.currentTurn.userId}');
+    AppLogger.info('🎮 - isCurrentTurn: $isCurrentTurn');
     return isCurrentTurn;
   }
 
   bool _isGamePending() {
     // Game is pending if sessionId starts with 'pending_'
     final isPending = gameSession.sessionId.startsWith('pending_');
-    print('🎮 _isGamePending() check:');
-    print('🎮 - sessionId: ${gameSession.sessionId}');
-    print('🎮 - isPending: $isPending');
+    AppLogger.info('🎮 _isGamePending() check:');
+    AppLogger.info('🎮 - sessionId: ${gameSession.sessionId}');
+    AppLogger.info('🎮 - isPending: $isPending');
     return isPending;
   }
 
