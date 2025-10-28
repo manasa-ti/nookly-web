@@ -57,6 +57,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 }
 
 void main() async {
+  final startupStopwatch = Stopwatch()..start();
   WidgetsFlutterBinding.ensureInitialized();
   
   // Add some initial logging
@@ -112,21 +113,86 @@ void main() async {
   heartbeatService.initialize();
   logger.i('Heartbeat service initialized');
   
-  // Update location on app launch (silent failure)
-  final locationService = di.sl<LocationService>();
-  locationService.updateLocationOnAppLaunch();
-  logger.i('Location update initiated on app launch');
+  startupStopwatch.stop();
+  logger.i('🚀 App initialization completed in ${startupStopwatch.elapsedMilliseconds}ms');
   
+  // Start the app immediately - don't block UI on location
   runApp(const MyApp());
   logger.i('Application started');
+  
+  // Update location in background after app starts (non-blocking)
+  _updateLocationInBackground();
 }
 
-class MyApp extends StatelessWidget {
+/// Update location in background without blocking app startup
+Future<void> _updateLocationInBackground() async {
+  try {
+    logger.i('📍 Starting background location update...');
+    final locationService = di.sl<LocationService>();
+    await locationService.updateLocationOnAppLaunch();
+    logger.i('✅ Background location update completed');
+  } catch (e) {
+    logger.e('❌ Background location update failed: $e');
+    // Silent failure - don't affect app startup
+  }
+}
+
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   // Global ScaffoldMessenger key for consistent SnackBar display
   static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey = 
       GlobalKey<ScaffoldMessengerState>();
+      
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  bool _isLocationUpdateInProgress = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App resumed from background (e.g., from settings)
+      // Add small delay to let chat observer handle socket reconnection first
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _updateLocationOnResume();
+      });
+    }
+  }
+
+  Future<void> _updateLocationOnResume() async {
+    // Prevent concurrent location updates
+    if (_isLocationUpdateInProgress) {
+      logger.i('📍 Location update already in progress, skipping...');
+      return;
+    }
+    
+    try {
+      _isLocationUpdateInProgress = true;
+      logger.i('📍 App resumed, checking location permission...');
+      final locationService = di.sl<LocationService>();
+      await locationService.updateLocationOnAppLaunch();
+      logger.i('✅ Resume location update completed');
+    } catch (e) {
+      logger.e('❌ Error updating location on resume: $e');
+    } finally {
+      _isLocationUpdateInProgress = false;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +233,7 @@ class MyApp extends StatelessWidget {
         child: MaterialApp(
           title: 'nookly',
           navigatorKey: FirebaseMessagingService.navigatorKey ?? AuthHandler.navigatorKey, // Firebase notifications and auth navigation
-          scaffoldMessengerKey: scaffoldMessengerKey, // Add global scaffold messenger key
+          scaffoldMessengerKey: MyApp.scaffoldMessengerKey, // Add global scaffold messenger key
           theme: AppTheme.theme,
           home: const SplashScreen(),
           routes: {

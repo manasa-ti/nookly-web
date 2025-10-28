@@ -25,6 +25,30 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
+  static const List<String> _bioTips = [
+    'One cool thing about you',
+    'What you truly seek',
+    'One limitation of yours',
+  ];
+  bool _isBioValid(String? bio) {
+    if (bio == null) return false;
+    final normalized = bio.trim();
+    final nonWhitespaceLen = normalized.replaceAll(RegExp(r"\s"), '').length;
+    return normalized.length >= 150 && nonWhitespaceLen >= 120;
+  }
+
+  int _getBioLength(String? bio) {
+    return bio?.trim().length ?? 0;
+  }
+
+  // Deprecated: superseded by _bioProgressColor
+  Color _bioProgressColor(String? bio) {
+    final length = _getBioLength(bio);
+    if (length >= 150) return const Color(0xFF4C5C8A); // valid - app accent blue
+    if (length >= 120) return const Color(0xFFFFA84A); // warning - orange
+    if (length >= 90) return const Color(0xFFE6C65B); // heads-up - soft yellow
+    return const Color(0xFFB0B3C7); // neutral gray
+  }
   
   bool _isLoading = false;
   String? _selectedImagePath;
@@ -471,14 +495,118 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: TextFormField(
                           controller: _bioController,
-                          maxLines: 3,
+                          maxLines: null,
+                          minLines: 3,
                           style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             labelText: 'Bio',
-                            labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
-                            border: InputBorder.none,
+                            labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito'),
+                            border: UnderlineInputBorder(
+                              borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
+                            ),
+                            enabledBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
+                            ),
+                            focusedBorder: UnderlineInputBorder(
+                              borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
+                            ),
+                            errorText: _isBioValid(_bioController.text) || _bioController.text.isEmpty
+                                ? null
+                                : 'Please write at least 150 characters about yourself',
+                            errorStyle: const TextStyle(
+                              color: Colors.red,
+                              fontFamily: 'Nunito',
+                              fontSize: 12,
+                            ),
                           ),
+                          validator: (value) {
+                            return _isBioValid(value)
+                                ? null
+                                : 'Please write at least 150 characters about yourself';
+                          },
+                          onChanged: (value) {
+                            setState(() {}); // Trigger rebuild for dynamic validation
+                          },
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Character counter
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${_getBioLength(_bioController.text)}/150 characters',
+                        style: TextStyle(
+                          color: _bioProgressColor(_bioController.text),
+                          fontFamily: 'Nunito',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: const Color(0xFF4C5C8A),
+                          width: 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFF2A3A5F).withOpacity(0.3),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.lightbulb_outline,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Bio Tips',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontFamily: 'Nunito',
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          ..._bioTips.map((tip) => Padding(
+                            padding: const EdgeInsets.only(bottom: 4),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 4,
+                                  height: 4,
+                                  margin: const EdgeInsets.only(top: 6, right: 8),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFF4C5C8A),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Text(
+                                    tip,
+                                    style: const TextStyle(
+                                      color: Color(0xFFB0B3C7),
+                                      fontFamily: 'Nunito',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w400,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )).toList(),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 16),
