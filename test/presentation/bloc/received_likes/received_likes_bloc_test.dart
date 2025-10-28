@@ -63,27 +63,35 @@ void main() {
       ],
     );
 
-    // NOTE: Tests skipped - async timing issues, need proper await or seed setup
-    // These should be rewritten with proper seed or async handling
+    blocTest<ReceivedLikesBloc, ReceivedLikesState>(
+      'loaded state should contain non-empty likes list',
+      build: () => bloc,
+      act: (bloc) => bloc.add(const LoadReceivedLikes()),
+      expect: () => [
+        isA<ReceivedLikesLoading>(),
+        isA<ReceivedLikesLoaded>(),
+      ],
+      verify: (bloc) {
+        final state = bloc.state as ReceivedLikesLoaded;
+        expect(state.likes.isNotEmpty, true);
+      },
+    );
 
-    test('loaded state should contain non-empty likes list', () async {
-      bloc.add(const LoadReceivedLikes());
-      await Future.delayed(const Duration(milliseconds: 100));
-      
-      expect(bloc.state, isA<ReceivedLikesLoaded>());
-      final likes = (bloc.state as ReceivedLikesLoaded).likes;
-      expect(likes.isNotEmpty, true);
-    });
-
-    test('likes should have valid timestamps', () async {
-      bloc.add(const LoadReceivedLikes());
-      await Future.delayed(const Duration(milliseconds: 100));
-      
-      final likes = (bloc.state as ReceivedLikesLoaded).likes;
-      for (final like in likes) {
-        expect(like.likedAt, isA<DateTime>());
-        expect(like.likedAt.isBefore(DateTime.now()), true);
-      }
-    });
+    blocTest<ReceivedLikesBloc, ReceivedLikesState>(
+      'likes should have valid timestamps',
+      build: () => bloc,
+      act: (bloc) => bloc.add(const LoadReceivedLikes()),
+      expect: () => [
+        isA<ReceivedLikesLoading>(),
+        isA<ReceivedLikesLoaded>(),
+      ],
+      verify: (bloc) {
+        final state = bloc.state as ReceivedLikesLoaded;
+        for (final like in state.likes) {
+          expect(like.likedAt, isA<DateTime>());
+          expect(like.likedAt.isBefore(DateTime.now()), true);
+        }
+      },
+    );
   });
 } 
