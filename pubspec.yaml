@@ -39,6 +39,10 @@ dependencies:
   flutter_card_swiper: ^6.0.0
   just_audio: ^0.9.36
   
+  # Audio Recording
+  record: ^6.0.0
+  permission_handler: ^11.0.1
+  
   # Utils
   intl: ^0.18.1
   logger: ^2.0.2+1
@@ -62,7 +66,6 @@ dependencies:
   http: ^1.1.0
   image_picker: ^1.1.2
   file_picker: ^10.1.2
-  record: ^6.0.0
   socket_io_client: ^2.0.3
   
   # Firebase
@@ -71,7 +74,7 @@ dependencies:
   
   # Video Calling (100ms SDK)
   hmssdk_flutter: ^1.10.6
-  permission_handler: ^11.0.1
+  
  
 
 dev_dependencies:

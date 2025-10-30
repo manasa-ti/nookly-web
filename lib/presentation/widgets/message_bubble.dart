@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/presentation/widgets/voice_player_widget.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/core/services/image_url_service.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -63,10 +64,10 @@ class _MessageBubbleState extends State<MessageBubble> {
         widget.message?.metadata != oldWidget.message?.metadata) {
       AppLogger.info('🔵 MessageBubble updated:');
       AppLogger.info('  - Message ID: ${widget.message?.id}');
-      AppLogger.info('  - Is disappearing: ${widget.message?.isDisappearing}');
-      AppLogger.info('  - Disappearing time: ${widget.message?.disappearingTime}');
+      AppLogger.info('  - Is disappearing: ${widget.message?.metadata?.isDisappearing}');
+      AppLogger.info('  - Disappearing time: ${widget.message?.metadata?.disappearingTime}');
       AppLogger.info('  - Metadata: ${widget.message?.metadata}');
-      AppLogger.info('  - Is expired: ${widget.message?.metadata?['isExpired']}');
+      AppLogger.info('  - Is expired: ${widget.message?.isExpired}');
     }
     
     // Handle image URL changes
@@ -186,7 +187,7 @@ class _MessageBubbleState extends State<MessageBubble> {
   @override
   Widget build(BuildContext context) {
     // Check if message is expired (handled by external timer management)
-    if (widget.message?.metadata?['isExpired'] == 'true') {
+    if (widget.message?.isExpired == true) {
       AppLogger.info('🔵 Message marked as expired, hiding: ${widget.message?.id}');
       return const SizedBox.shrink();
     }
@@ -225,9 +226,21 @@ class _MessageBubbleState extends State<MessageBubble> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (widget.message?.isDisappearing == true && 
-                              widget.message?.disappearingTime != null &&
-                              widget.message?.type == MessageType.image)
+                          if (widget.message?.metadata?.isDisappearing == true && 
+                              widget.message?.metadata?.disappearingTime != null &&
+                              widget.message?.type == MessageType.image) ...[
+                            // Debug logging for timer display
+                            Builder(
+                              builder: (context) {
+                                AppLogger.info('🔍 Timer display DEBUG:');
+                                AppLogger.info('  - Message type: ${widget.message?.type}');
+                                AppLogger.info('  - Is disappearing: ${widget.message?.metadata?.isDisappearing}');
+                                AppLogger.info('  - Disappearing time: ${widget.message?.metadata?.disappearingTime}');
+                                AppLogger.info('  - Timer notifier: ${widget.timerNotifier != null}');
+                                AppLogger.info('  - Widget disappearing time: ${widget.disappearingTime}');
+                                return const SizedBox.shrink();
+                              },
+                            ),
                             Builder(
                               builder: (context) {
                                 // Log when timer is being displayed
@@ -235,7 +248,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                   AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: Displaying timer for image message: ${widget.message?.id}');
                                   AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Using timerNotifier: ${widget.timerNotifier != null}');
                                   AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Widget disappearingTime: ${widget.disappearingTime}');
-                                  AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.disappearingTime}');
+                                  AppLogger.info('🔵 DEBUGGING DISAPPEARING TIME: - Message disappearingTime: ${widget.message?.metadata?.disappearingTime}');
                                 }
                                 
                                 return Padding(
@@ -275,7 +288,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${widget.disappearingTime ?? widget.message!.disappearingTime}s',
+                                              '${widget.disappearingTime ?? widget.message!.metadata?.disappearingTime ?? 5}s',
                                               style: TextStyle(
                                                 fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
                                                 fontFamily: 'Nunito',
@@ -287,6 +300,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                 );
                               },
                             ),
+                          ],
                           if (widget.message?.type == MessageType.image)
                             GestureDetector(
                               onTap: widget.onImageTap,
@@ -305,6 +319,18 @@ class _MessageBubbleState extends State<MessageBubble> {
                                     : _buildImageContent(),
                               ),
                             ),
+                          if (widget.message?.type == MessageType.voice)
+                            VoicePlayerWidget(
+                              message: widget.message!,
+                              isMe: widget.isMe,
+                              onPlaybackComplete: () {
+                                // Handle playback completion if needed
+                              },
+                            ),
+                          if (widget.message?.type == MessageType.gif)
+                            _buildGifContent(),
+                          if (widget.message?.type == MessageType.sticker)
+                            _buildStickerContent(),
                           if (widget.message?.type == MessageType.text)
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,15 +398,29 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   Widget _buildImageContent() {
+    // Debug logging for disappearing image logic
+    AppLogger.info('🔍 _buildImageContent DEBUG:');
+    AppLogger.info('  - Message type: ${widget.message?.type}');
+    AppLogger.info('  - Is disappearing: ${widget.message?.metadata?.isDisappearing}');
+    AppLogger.info('  - Disappearing time: ${widget.message?.metadata?.disappearingTime}');
+    AppLogger.info('  - Image expiresAt: ${widget.message?.metadata?.image?.expiresAt}');
+    AppLogger.info('  - Full metadata: ${widget.message?.metadata}');
+    AppLogger.info('  - Message ID: ${widget.message?.id}');
+    AppLogger.info('  - Message content: ${widget.message?.content}');
+    
     // Check if this is a disappearing image that hasn't been viewed yet
-    final isDisappearingUnviewed = widget.message?.isDisappearing == true && 
-                                   widget.message?.disappearingTime != null &&
-                                   widget.message?.metadata?['viewedAt'] == null;
+    final isDisappearingUnviewed = widget.message?.metadata?.isDisappearing == true && 
+                                   widget.message?.metadata?.disappearingTime != null &&
+                                   widget.message?.metadata?.image?.expiresAt != null;
+    
+    AppLogger.info('  - Is disappearing unviewed: $isDisappearingUnviewed');
     
     if (isDisappearingUnviewed) {
       // Show animated frame preview for disappearing images
+      AppLogger.info('  - Showing animated preview');
       return _buildAnimatedPreview();
     } else {
+      AppLogger.info('  - Showing normal image');
       // Show normal image for viewed disappearing images or regular images
       return Image.network(
         _currentImageUrl ?? widget.message!.content,
@@ -416,7 +456,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             AppLogger.error('❌ This suggests an issue with S3 pre-signed URL generation on the server');
             
             // Try to refresh the URL if it's a disappearing image
-            if (widget.message?.isDisappearing == true) {
+            if (widget.message?.metadata?.isDisappearing == true) {
               AppLogger.info('🔵 Attempting to refresh URL for disappearing image due to 403 error');
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 _loadImageUrl(); // Retry loading the image URL
@@ -491,5 +531,176 @@ class _MessageBubbleState extends State<MessageBubble> {
     );
   }
 
+  Widget _buildGifContent() {
+    final gifMetadata = widget.message?.metadata?.gif;
+    if (gifMetadata == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Failed to load GIF',
+          style: TextStyle(
+            color: widget.isMe ? Colors.white70 : Colors.white60,
+            fontFamily: 'Nunito',
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: () {
+        // Optional: Open full-size GIF viewer
+        widget.onTap?.call();
+      },
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.7,
+          maxHeight: 300,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(
+            gifMetadata.giphyUrl,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: widget.isMe ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    value: loadingProgress.expectedTotalBytes != null
+                        ? loadingProgress.cumulativeBytesLoaded /
+                            loadingProgress.expectedTotalBytes!
+                        : null,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      widget.isMe ? Colors.white : Colors.white70,
+                    ),
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: widget.isMe ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: widget.isMe ? Colors.white70 : Colors.white60,
+                        size: 32,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Failed to load GIF',
+                        style: TextStyle(
+                          color: widget.isMe ? Colors.white70 : Colors.white60,
+                          fontFamily: 'Nunito',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStickerContent() {
+    final stickerMetadata = widget.message?.metadata?.sticker;
+    if (stickerMetadata == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          'Failed to load sticker',
+          style: TextStyle(
+            color: widget.isMe ? Colors.white70 : Colors.white60,
+            fontFamily: 'Nunito',
+            fontSize: 14,
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: 120,
+        maxHeight: 120,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image.network(
+          stickerMetadata.stickerUrl,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: widget.isMe ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: loadingProgress.expectedTotalBytes != null
+                      ? loadingProgress.cumulativeBytesLoaded /
+                          loadingProgress.expectedTotalBytes!
+                      : null,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    widget.isMe ? Colors.white : Colors.white70,
+                  ),
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: widget.isMe ? Colors.white.withOpacity(0.1) : Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: widget.isMe ? Colors.white70 : Colors.white60,
+                      size: 24,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Failed',
+                      style: TextStyle(
+                        color: widget.isMe ? Colors.white70 : Colors.white60,
+                        fontFamily: 'Nunito',
+                        fontSize: 10,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
 
 } 

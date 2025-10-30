@@ -82,6 +82,32 @@ class SendImageMessage extends ConversationEvent {
   List<Object?> get props => [conversationId, imagePath];
 }
 
+class SendGifMessage extends ConversationEvent {
+  final String conversationId;
+  final Map<String, dynamic> gifMetadata;
+
+  const SendGifMessage({
+    required this.conversationId,
+    required this.gifMetadata,
+  });
+
+  @override
+  List<Object?> get props => [conversationId, gifMetadata];
+}
+
+class SendStickerMessage extends ConversationEvent {
+  final String conversationId;
+  final Map<String, dynamic> stickerMetadata;
+
+  const SendStickerMessage({
+    required this.conversationId,
+    required this.stickerMetadata,
+  });
+
+  @override
+  List<Object?> get props => [conversationId, stickerMetadata];
+}
+
 class MarkMessageAsRead extends ConversationEvent {
   final String messageId;
 

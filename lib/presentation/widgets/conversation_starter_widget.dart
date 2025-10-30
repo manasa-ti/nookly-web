@@ -84,7 +84,7 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
           ),
           const SizedBox(width: 6),
           Text(
-            'Break d Ice',
+            'Open Up',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
               fontSize: 14,
@@ -190,7 +190,7 @@ class _ConversationStartersModal extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'Break Ice',
+                        'Open Up',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 18,

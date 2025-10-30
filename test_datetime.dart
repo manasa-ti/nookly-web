@@ -1,4 +1,5 @@
 import 'package:nookly/domain/entities/message.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 void main() {
   final json = {
@@ -18,26 +19,32 @@ void main() {
     }
   };
 
-  print('Message Details:');
-  print('ID: ${json['id']}');
-  print('Content: ${json['content']}');
-  print('Status: ${json['status']}');
-  print('\nParsing message using Message.fromJson:');
+  AppLogger.info('Message Details:');
+  AppLogger.info('ID: ${json['id']}');
+  AppLogger.info('Content: ${json['content']}');
+  AppLogger.info('Status: ${json['status']}');
+  AppLogger.info('\nParsing message using Message.fromJson:');
   
   final message = Message.fromJson(json);
-  
-  print('\nParsed Message Details:');
-  print('ID: ${message.id}');
-  print('Content: ${message.content}');
-  print('Status: ${message.status}');
-  print('Created At: ${message.timestamp} (UTC: ${message.timestamp.isUtc})');
-  print('Delivered At: ${message.deliveredAt} (UTC: ${message.deliveredAt?.isUtc})');
-  print('Read At: ${message.readAt} (UTC: ${message.readAt?.isUtc})');
 
-  if (message.deliveredAt != null && message.readAt != null) {
-    print('\nTime Differences:');
-    print('Time to deliver: ${message.deliveredAt!.difference(message.timestamp).inSeconds} seconds');
-    print('Time to read: ${message.readAt!.difference(message.deliveredAt!).inSeconds} seconds');
-    print('Total time from creation to read: ${message.readAt!.difference(message.timestamp).inSeconds} seconds');
+  // Extract nested timestamps from metadata per new structure
+  final deliveredAtStr = message.metadata?.deliveredAt;
+  final readAtStr = message.metadata?.readAt;
+  final deliveredAt = deliveredAtStr != null ? DateTime.tryParse(deliveredAtStr) : null;
+  final readAt = readAtStr != null ? DateTime.tryParse(readAtStr) : null;
+
+  AppLogger.info('\nParsed Message Details:');
+  AppLogger.info('ID: ${message.id}');
+  AppLogger.info('Content: ${message.content}');
+  AppLogger.info('Status: ${message.status}');
+  AppLogger.info('Created At: ${message.timestamp} (UTC: ${message.timestamp.isUtc})');
+  AppLogger.info('Delivered At: $deliveredAt (UTC: ${deliveredAt?.isUtc})');
+  AppLogger.info('Read At: $readAt (UTC: ${readAt?.isUtc})');
+
+  if (deliveredAt != null && readAt != null) {
+    AppLogger.info('\nTime Differences:');
+    AppLogger.info('Time to deliver: ${deliveredAt.difference(message.timestamp).inSeconds} seconds');
+    AppLogger.info('Time to read: ${readAt.difference(deliveredAt).inSeconds} seconds');
+    AppLogger.info('Total time from creation to read: ${readAt.difference(message.timestamp).inSeconds} seconds');
   }
 } 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/network/network_service.dart'; // Use NetworkService
 import 'package:nookly/core/utils/logger.dart'; // Add logger import
 import 'package:nookly/domain/entities/conversation.dart';
@@ -8,6 +9,8 @@ import 'package:nookly/domain/entities/conversation_key.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/domain/repositories/conversation_repository.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart'; // Still needed for currentUserId
+import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/api_cache_service.dart';
@@ -132,26 +135,34 @@ class ConversationRepositoryImpl implements ConversationRepository {
               AppLogger.info('🔵 Message content after decryption: ${lastMessage.content}');
             }
             
-            // Handle disappearing images logic
-            if (lastMessage.isDisappearing && lastMessage.type == MessageType.image) {
-              final isViewed = lastMessage.metadata?.containsKey('viewedAt') == true;
-              final disappearingTime = lastMessage.disappearingTime ?? 5;
-              
-              if (isViewed) {
-                // Check if the image has expired since being viewed
-                final viewedAt = DateTime.parse(lastMessage.metadata!['viewedAt']!);
-                final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
-                
-                if (elapsedSeconds >= disappearingTime) {
-                  AppLogger.info('Disappearing image has expired, not showing in conversation list');
-                  lastMessage = null; // Don't show expired disappearing images
-                } else {
-                  AppLogger.info('Disappearing image is still valid, showing in conversation list');
+            // Handle disappearing images logic (inbox preview)
+            // Rules:
+            // 1) Consider the image "viewed" only if we have a definitive signal:
+            //    - metadata.readAt (preferred)
+            //    - metadata.viewedAt (if backend adds it in future)
+            // 2) Do NOT derive viewed state from S3 URL expiresAt; it is not a user-view signal
+            // 3) If we cannot determine viewed state, keep the message and display as "📷 Photo"
+            if (lastMessage.metadata?.isDisappearing == true && lastMessage.type == MessageType.image) {
+              final readAtStr = lastMessage.metadata?.readAt;
+              // Placeholder for future support; keep null-safe for now
+              final String? viewedAtStr = null; 
+              final disappearingTime = lastMessage.metadata?.disappearingTime ?? 5;
+
+              final hasDefinitiveViewedSignal = (readAtStr != null) || (viewedAtStr != null);
+
+              if (hasDefinitiveViewedSignal) {
+                try {
+                  final viewedAt = DateTime.parse(readAtStr ?? viewedAtStr!);
+                  final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
+                  if (elapsedSeconds >= disappearingTime) {
+                    AppLogger.info('Disappearing image expired after being viewed; keeping inbox preview but consider expired in detail view');
+                    // Keep lastMessage for inbox preview. Do not null it to avoid "No messages yet".
+                  }
+                } catch (e) {
+                  AppLogger.warning('Failed to parse viewedAt/readAt for disappearing image: $e');
                 }
               } else {
-                // Unviewed disappearing image - show placeholder
-                AppLogger.info('Unviewed disappearing image, showing placeholder');
-                // Keep the message but it will show as "Photo" in the UI
+                AppLogger.info('Disappearing image without viewed signal; showing placeholder in inbox');
               }
             }
             
@@ -166,7 +177,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
           int unreadCount = itemMap['unreadCount'] as int? ?? 0;
           if (lastMessage != null) {
             AppLogger.info('🔵 ConversationRepository: Last message sender: ${lastMessage.sender}, Current user: $currentUserId');
-            AppLogger.info('🔵 ConversationRepository: Last message isRead: ${lastMessage.isRead}');
+            AppLogger.info('🔵 ConversationRepository: Last message isRead: ${lastMessage.metadata?.isRead}');
             
             // If last message is from current user, unread count should be 0
             if (lastMessage.sender == currentUserId) {
@@ -174,7 +185,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
               AppLogger.info('🔵 ConversationRepository: Last message is from current user, setting unread count to 0');
             }
             // If last message is marked as read, it means all messages are read
-            else if (lastMessage.isRead == true) {
+            else if (lastMessage.metadata?.isRead == true) {
               unreadCount = 0;
               AppLogger.info('🔵 ConversationRepository: Last message is marked as read, setting unread count to 0');
             }
@@ -262,30 +273,18 @@ class ConversationRepositoryImpl implements ConversationRepository {
               AppLogger.info('🔵 - DisappearingTime: ${json['disappearingTime']}');
               AppLogger.info('🔵 - Full JSON: $json');
               
-              return Message.fromJson({
-                '_id': json['_id'],
-                'sender': json['sender'],
-                'receiver': json['receiver'],
-                'content': json['content'],
-                'createdAt': json['createdAt'],
-                'type': json['type'],
-                'isRead': json['isRead'],
-                'status': json['status'],
-                'isDisappearing': json['isDisappearing'],
-                'disappearingTime': json['disappearingTime'],
-                'updatedAt': json['updatedAt'],
-              });
+              return Message.fromJson(json);
             })
             .toList();
 
         // Filter out expired disappearing images
         final filteredMessages = messages.where((message) {
-          if (message.isDisappearing && message.type == MessageType.image) {
-            final isViewed = message.metadata?.containsKey('viewedAt') == true;
-            final disappearingTime = message.disappearingTime ?? 5;
+          if (message.metadata?.isDisappearing == true && message.type == MessageType.image) {
+            final isViewed = message.metadata?.image?.expiresAt != null;
+            final disappearingTime = message.metadata?.disappearingTime ?? 5;
             
             AppLogger.info('🔍 REPO FILTERING DEBUG: Message ${message.id}');
-            AppLogger.info('🔍 REPO FILTERING DEBUG: - isDisappearing: ${message.isDisappearing}');
+            AppLogger.info('🔍 REPO FILTERING DEBUG: - isDisappearing: ${message.metadata?.isDisappearing}');
             AppLogger.info('🔍 REPO FILTERING DEBUG: - type: ${message.type}');
             AppLogger.info('🔍 REPO FILTERING DEBUG: - isViewed: $isViewed');
             AppLogger.info('🔍 REPO FILTERING DEBUG: - disappearingTime: $disappearingTime');
@@ -293,7 +292,7 @@ class ConversationRepositoryImpl implements ConversationRepository {
             
             if (isViewed) {
               // Check if the image has expired since being viewed
-              final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
+              final viewedAt = DateTime.parse(message.metadata!.image!.expiresAt);
               final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
               
               AppLogger.info('🔍 REPO FILTERING DEBUG: - viewedAt: $viewedAt');
@@ -369,12 +368,218 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
   @override
   Future<void> sendVoiceMessage(String conversationId, String audioPath, Duration duration) async {
-    throw UnimplementedError('sendVoiceMessage not implemented with API yet.');
+    try {
+      final uploadForm = FormData.fromMap({
+        'voice': await MultipartFile.fromFile(
+          audioPath,
+          filename: audioPath.split('/').last,
+          contentType: MediaType.parse('audio/m4a'),
+        ),
+      });
+      final uploadResponse = await NetworkService.dio.post(
+        '/messages/upload-voice',
+        data: uploadForm,
+        options: Options(headers: {'Content-Type': 'multipart/form-data'}),
+      );
+
+      if (uploadResponse.statusCode == 200) {
+        final voiceData = uploadResponse.data;
+        final voiceUrl = voiceData['voiceUrl'] as String;
+        final voiceKey = voiceData['key'] as String;
+        final voiceSize = (voiceData['size'] as num?)?.toInt() ?? 0;
+        final voiceType = voiceData['type'] as String;
+        // Backend may not return duration; use local recording duration
+        final voiceDuration = duration.inSeconds;
+        final expiresAt = voiceData['expiresAt'] as String;
+
+        final messageResponse = await NetworkService.dio.post(
+          '/messages',
+          data: {
+            'receiver': conversationId,
+            'messageType': 'voice',
+            'voiceKey': voiceKey,
+            'voiceSize': voiceSize,
+            'voiceType': voiceType,
+            'voiceDuration': voiceDuration,
+          },
+        );
+
+        if (messageResponse.statusCode == 200 || messageResponse.statusCode == 201) {
+          AppLogger.info('✅ Voice message sent successfully');
+          // Also emit private_message over socket so receiver updates in real-time
+          try {
+            final socket = sl<SocketService>();
+            socket.sendMessage({
+              'to': conversationId,
+              'content': '[VOICE]',
+              'messageType': 'voice',
+              'status': 'sent',
+              'metadata': {
+                'voice': {
+                  'voiceUrl': voiceUrl,
+                  'voiceKey': voiceKey,
+                  'voiceSize': voiceSize,
+                  'voiceType': voiceType,
+                  'voiceDuration': voiceDuration,
+                  'expiresAt': expiresAt,
+                }
+              }
+            });
+          } catch (e) {
+            AppLogger.error('❌ Failed to emit private_message for voice: $e');
+          }
+          return;
+        }
+        throw Exception('Failed to send voice message: ${messageResponse.data}');
+      }
+      throw Exception('Failed to upload voice file: ${uploadResponse.data}');
+    } catch (e) {
+      AppLogger.error('❌ Error sending voice message: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> sendFileMessage(String conversationId, String filePath, String fileName, int fileSize) async {
     throw UnimplementedError('sendFileMessage not implemented with API yet.');
+  }
+
+  @override
+  Future<void> sendGifMessage(String conversationId, Map<String, dynamic> gifMetadata) async {
+    try {
+      final response = await NetworkService.dio.post(
+        '/messages',
+        data: {
+          'receiver': conversationId,
+          'content': gifMetadata['giphyUrl'] as String,
+          'messageType': 'gif',
+          'giphyId': gifMetadata['giphyId'] as String,
+          'metadata': {
+            'isDisappearing': false,
+            'isRead': false,
+            'isViewOnce': false,
+            'gif': {
+              'giphyId': gifMetadata['giphyId'] as String,
+              'giphyUrl': gifMetadata['giphyUrl'] as String,
+              'giphyPreviewUrl': gifMetadata['giphyPreviewUrl'] as String? ?? gifMetadata['giphyUrl'] as String,
+              'title': gifMetadata['title'] as String? ?? '',
+              'width': gifMetadata['width'] as int? ?? 0,
+              'height': gifMetadata['height'] as int? ?? 0,
+              'size': gifMetadata['size'] as int? ?? 0,
+              'webpUrl': gifMetadata['webpUrl'] as String?,
+              'mp4Url': gifMetadata['mp4Url'] as String?,
+            },
+          },
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        AppLogger.info('✅ GIF message sent successfully');
+        
+        // Also emit private_message over socket so receiver updates in real-time
+        try {
+          final socket = sl<SocketService>();
+          socket.sendMessage({
+            'to': conversationId,
+            'content': gifMetadata['giphyUrl'] as String,
+            'messageType': 'gif',
+            'status': 'sent',
+            'giphyId': gifMetadata['giphyId'] as String,
+            'metadata': {
+              'isDisappearing': false,
+              'isRead': false,
+              'isViewOnce': false,
+              'gif': {
+                'giphyId': gifMetadata['giphyId'] as String,
+                'giphyUrl': gifMetadata['giphyUrl'] as String,
+                'giphyPreviewUrl': gifMetadata['giphyPreviewUrl'] as String? ?? gifMetadata['giphyUrl'] as String,
+                'title': gifMetadata['title'] as String? ?? '',
+                'width': gifMetadata['width'] as int? ?? 0,
+                'height': gifMetadata['height'] as int? ?? 0,
+                'size': gifMetadata['size'] as int? ?? 0,
+                'webpUrl': gifMetadata['webpUrl'] as String?,
+                'mp4Url': gifMetadata['mp4Url'] as String?,
+              },
+            }
+          });
+          AppLogger.info('✅ GIF private_message emitted successfully');
+        } catch (e) {
+          AppLogger.error('❌ Failed to emit private_message for GIF: $e');
+        }
+      } else {
+        throw Exception('Failed to send GIF message: ${response.data}');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Error sending GIF message: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> sendStickerMessage(String conversationId, Map<String, dynamic> stickerMetadata) async {
+    try {
+      final response = await NetworkService.dio.post(
+        '/messages',
+        data: {
+          'receiver': conversationId,
+          'content': stickerMetadata['stickerUrl'] as String,
+          'messageType': 'sticker',
+          'giphyId': stickerMetadata['giphyId'] as String,
+          'metadata': {
+            'isDisappearing': false,
+            'isRead': false,
+            'isViewOnce': false,
+            'sticker': {
+              'giphyId': stickerMetadata['giphyId'] as String,
+              'stickerUrl': stickerMetadata['stickerUrl'] as String,
+              'title': stickerMetadata['title'] as String? ?? '',
+              'width': stickerMetadata['width'] as int? ?? 0,
+              'height': stickerMetadata['height'] as int? ?? 0,
+              'size': stickerMetadata['size'] as int? ?? 0,
+              'webpUrl': stickerMetadata['webpUrl'] as String?,
+            },
+          },
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        AppLogger.info('✅ Sticker message sent successfully');
+        
+        // Also emit private_message over socket so receiver updates in real-time
+        try {
+          final socket = sl<SocketService>();
+          socket.sendMessage({
+            'to': conversationId,
+            'content': stickerMetadata['stickerUrl'] as String,
+            'messageType': 'sticker',
+            'status': 'sent',
+            'giphyId': stickerMetadata['giphyId'] as String,
+            'metadata': {
+              'isDisappearing': false,
+              'isRead': false,
+              'isViewOnce': false,
+              'sticker': {
+                'giphyId': stickerMetadata['giphyId'] as String,
+                'stickerUrl': stickerMetadata['stickerUrl'] as String,
+                'title': stickerMetadata['title'] as String? ?? '',
+                'width': stickerMetadata['width'] as int? ?? 0,
+                'height': stickerMetadata['height'] as int? ?? 0,
+                'size': stickerMetadata['size'] as int? ?? 0,
+                'webpUrl': stickerMetadata['webpUrl'] as String?,
+              },
+            }
+          });
+          AppLogger.info('✅ Sticker private_message emitted successfully');
+        } catch (e) {
+          AppLogger.error('❌ Failed to emit private_message for sticker: $e');
+        }
+      } else {
+        throw Exception('Failed to send sticker message: ${response.data}');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Error sending sticker message: $e');
+      rethrow;
+    }
   }
 
   @override

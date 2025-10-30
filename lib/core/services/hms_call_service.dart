@@ -344,6 +344,9 @@ class HMSCallService implements HMSUpdateListener {
   bool get isAudioMuted => _isMuted;
   bool get isVideoMuted => _isCameraOff;
   bool get isSpeakerOn => _isSpeakerOn;
+  bool get hasHeadsetConnected =>
+      _currentAudioDevice == HMSAudioDevice.WIRED_HEADSET ||
+      _currentAudioDevice == HMSAudioDevice.BLUETOOTH;
   bool get isLocalVideoReady => _localVideoTrack != null;
   bool get isRemoteVideoReady => _remoteVideoTrack != null;
   

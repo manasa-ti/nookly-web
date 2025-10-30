@@ -35,6 +35,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<SendVoiceMessage>(_onSendVoiceMessage);
     on<SendFileMessage>(_onSendFileMessage);
     on<SendImageMessage>(_onSendImageMessage);
+    on<SendGifMessage>(_onSendGifMessage);
+    on<SendStickerMessage>(_onSendStickerMessage);
     on<MarkMessageAsRead>(_onMarkMessageAsRead);
     on<BlockUser>(_onBlockUser);
     on<UnblockUser>(_onUnblockUser);
@@ -92,12 +94,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
 
       // Filter out expired disappearing images
       final filteredMessages = messages.where((message) {
-        if (message.isDisappearing && message.type == MessageType.image) {
-          final isViewed = message.metadata?.containsKey('viewedAt') == true;
-          final disappearingTime = message.disappearingTime ?? 5;
+        if (message.metadata?.isDisappearing == true && message.type == MessageType.image) {
+          final isViewed = message.metadata?.image?.expiresAt != null;
+          final disappearingTime = message.metadata?.disappearingTime ?? 5;
           
           AppLogger.info('🔍 FILTERING DEBUG: Message ${message.id}');
-          AppLogger.info('🔍 FILTERING DEBUG: - isDisappearing: ${message.isDisappearing}');
+          AppLogger.info('🔍 FILTERING DEBUG: - isDisappearing: ${message.metadata?.isDisappearing}');
           AppLogger.info('🔍 FILTERING DEBUG: - type: ${message.type}');
           AppLogger.info('🔍 FILTERING DEBUG: - isViewed: $isViewed');
           AppLogger.info('🔍 FILTERING DEBUG: - disappearingTime: $disappearingTime');
@@ -105,7 +107,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           
           if (isViewed) {
             // Check if the image has expired since being viewed
-            final viewedAt = DateTime.parse(message.metadata!['viewedAt']!);
+            final viewedAt = DateTime.parse(message.metadata!.image!.expiresAt!);
             final elapsedSeconds = DateTime.now().difference(viewedAt).inSeconds;
             
             AppLogger.info('🔍 FILTERING DEBUG: - viewedAt: $viewedAt');
@@ -221,11 +223,52 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     Emitter<ConversationState> emit,
   ) async {
     try {
+      // Create a temporary voice message for immediate UI feedback
+      final tempMessage = Message(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        content: 'Voice message',
+        sender: _currentUserId,
+        receiver: event.conversationId,
+        type: MessageType.voice,
+        timestamp: DateTime.now(),
+        status: 'sending',
+        metadata: MessageMetadata(
+          isDisappearing: false,
+          isRead: false,
+          isViewOnce: false,
+          voice: VoiceMetadata(
+            voiceKey: 'temp_key',
+            voiceUrl: 'temp_url',
+            voiceSize: 0,
+            voiceType: 'audio/m4a',
+            voiceDuration: event.duration.inSeconds,
+            expiresAt: DateTime.now().add(const Duration(hours: 1)).toIso8601String(),
+          ),
+        ),
+      );
+
+      // Add to current state immediately
+      final currentState = state;
+      if (currentState is ConversationLoaded) {
+        final updatedMessages = [tempMessage, ...currentState.messages];
+        emit(ConversationLoaded(
+          conversation: currentState.conversation,
+          messages: updatedMessages,
+          hasMoreMessages: currentState.hasMoreMessages,
+          participantName: currentState.participantName,
+          participantAvatar: currentState.participantAvatar,
+          isOnline: currentState.isOnline,
+        ));
+      }
+
+      // Send the actual voice message
       await _conversationRepository.sendVoiceMessage(
         event.conversationId, 
         event.audioPath,
         event.duration,
       );
+
+      // The real message will be received via socket and replace the temp message
     } catch (e) {
       emit(ConversationError(e.toString()));
     }
@@ -256,6 +299,115 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         event.conversationId,
         event.imagePath,
       );
+    } catch (e) {
+      emit(ConversationError(e.toString()));
+    }
+  }
+
+  Future<void> _onSendGifMessage(
+    SendGifMessage event,
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      // Create a temporary GIF message for immediate UI feedback
+      final tempMessage = Message(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        content: event.gifMetadata['giphyUrl'] as String,
+        sender: _currentUserId,
+        receiver: event.conversationId,
+        type: MessageType.gif,
+        timestamp: DateTime.now(),
+        status: 'sending',
+        metadata: MessageMetadata(
+          isDisappearing: false,
+          isRead: false,
+          isViewOnce: false,
+          gif: GifMetadata(
+            giphyId: event.gifMetadata['giphyId'] as String,
+            giphyUrl: event.gifMetadata['giphyUrl'] as String,
+            giphyPreviewUrl: event.gifMetadata['giphyPreviewUrl'] as String,
+            width: event.gifMetadata['width'] as int,
+            height: event.gifMetadata['height'] as int,
+            title: event.gifMetadata['title'] as String,
+          ),
+        ),
+      );
+
+      // Add to current state immediately
+      final currentState = state;
+      if (currentState is ConversationLoaded) {
+        final updatedMessages = [tempMessage, ...currentState.messages];
+        emit(ConversationLoaded(
+          conversation: currentState.conversation,
+          messages: updatedMessages,
+          hasMoreMessages: currentState.hasMoreMessages,
+          participantName: currentState.participantName,
+          participantAvatar: currentState.participantAvatar,
+          isOnline: currentState.isOnline,
+        ));
+      }
+
+      // Send the actual GIF message
+      await _conversationRepository.sendGifMessage(
+        event.conversationId,
+        event.gifMetadata,
+      );
+
+      // The real message will be received via socket and replace the temp message
+    } catch (e) {
+      emit(ConversationError(e.toString()));
+    }
+  }
+
+  Future<void> _onSendStickerMessage(
+    SendStickerMessage event,
+    Emitter<ConversationState> emit,
+  ) async {
+    try {
+      // Create a temporary sticker message for immediate UI feedback
+      final tempMessage = Message(
+        id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+        content: event.stickerMetadata['stickerUrl'] as String,
+        sender: _currentUserId,
+        receiver: event.conversationId,
+        type: MessageType.sticker,
+        timestamp: DateTime.now(),
+        status: 'sending',
+        metadata: MessageMetadata(
+          isDisappearing: false,
+          isRead: false,
+          isViewOnce: false,
+          sticker: StickerMetadata(
+            giphyId: event.stickerMetadata['giphyId'] as String,
+            stickerUrl: event.stickerMetadata['stickerUrl'] as String,
+            width: event.stickerMetadata['width'] as int,
+            height: event.stickerMetadata['height'] as int,
+            title: event.stickerMetadata['title'] as String,
+          ),
+        ),
+      );
+
+      // Add to current state immediately
+      final currentState = state;
+      if (currentState is ConversationLoaded) {
+        final updatedMessages = [tempMessage, ...currentState.messages];
+        emit(ConversationLoaded(
+          conversation: currentState.conversation,
+          messages: updatedMessages,
+          hasMoreMessages: currentState.hasMoreMessages,
+          participantName: currentState.participantName,
+          participantAvatar: currentState.participantAvatar,
+          isOnline: currentState.isOnline,
+        ));
+      }
+
+      // Send the actual sticker message
+      await _conversationRepository.sendStickerMessage(
+        event.conversationId,
+        event.stickerMetadata,
+      );
+
+      // The real message will be received via socket and replace the temp message
     } catch (e) {
       emit(ConversationError(e.toString()));
     }
@@ -430,7 +582,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           final deliveredAt = event.deliveredAt ?? DateTime.now();
           return msg.copyWith(
             status: 'delivered',
-            deliveredAt: deliveredAt,
+            metadata: msg.metadata?.copyWith(
+              deliveredAt: deliveredAt.toIso8601String(),
+            ),
           );
         }
         return msg;
@@ -440,7 +594,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final updatedLastMessage = currentState.conversation.lastMessage?.id == event.messageId
           ? currentState.conversation.lastMessage?.copyWith(
               status: 'delivered',
-              deliveredAt: event.deliveredAt ?? DateTime.now(),
+              metadata: currentState.conversation.lastMessage?.metadata?.copyWith(
+                deliveredAt: (event.deliveredAt ?? DateTime.now()).toIso8601String(),
+              ),
             )
           : currentState.conversation.lastMessage;
       
@@ -472,7 +628,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         if (event.messageIds.contains(msg.id)) {
           return msg.copyWith(
             status: 'delivered',
-            deliveredAt: deliveredAt,
+            metadata: msg.metadata?.copyWith(
+              deliveredAt: deliveredAt.toIso8601String(),
+            ),
           );
         }
         return msg;
@@ -482,7 +640,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final updatedLastMessage = event.messageIds.contains(currentState.conversation.lastMessage?.id)
           ? currentState.conversation.lastMessage?.copyWith(
               status: 'delivered',
-              deliveredAt: deliveredAt,
+              metadata: currentState.conversation.lastMessage?.metadata?.copyWith(
+                deliveredAt: deliveredAt.toIso8601String(),
+              ),
             )
           : currentState.conversation.lastMessage;
       
@@ -517,23 +677,27 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           AppLogger.info('🔵 Setting readAt to: $readAt');
           return msg.copyWith(
             status: 'read',
-            readAt: readAt,
+            metadata: msg.metadata?.copyWith(
+              readAt: readAt.toIso8601String(),
+            ),
           );
         }
         return msg;
       }).toList();
       
-      AppLogger.info('🔵 Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (readAt: ${m.readAt})').join(', ')}');
+      AppLogger.info('🔵 Messages after update: ${updatedMessages.map((m) => '${m.id}: ${m.status} (readAt: ${m.metadata?.readAt})').join(', ')}');
       
       // Update both the messages list and the lastMessage in the conversation
       final updatedLastMessage = currentState.conversation.lastMessage?.id == event.messageId
           ? currentState.conversation.lastMessage?.copyWith(
               status: 'read',
-              readAt: event.readAt ?? DateTime.now(),
+              metadata: currentState.conversation.lastMessage?.metadata?.copyWith(
+                readAt: (event.readAt ?? DateTime.now()).toIso8601String(),
+              ),
             )
           : currentState.conversation.lastMessage;
       
-      AppLogger.info('🔵 Updated last message: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (readAt: ${updatedLastMessage?.readAt})');
+      AppLogger.info('🔵 Updated last message: ${updatedLastMessage?.id}: ${updatedLastMessage?.status} (readAt: ${updatedLastMessage?.metadata?.readAt})');
       
       // Create a new state to force UI rebuild
       emit(ConversationLoaded(
@@ -564,7 +728,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           AppLogger.info('🔵 Found message to update: ${msg.id}');
           return msg.copyWith(
             status: 'read',
-            readAt: readAt,
+            metadata: msg.metadata?.copyWith(
+              readAt: readAt.toIso8601String(),
+            ),
           );
         }
         return msg;
@@ -574,7 +740,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final updatedLastMessage = event.messageIds.contains(currentState.conversation.lastMessage?.id)
           ? currentState.conversation.lastMessage?.copyWith(
               status: 'read',
-              readAt: readAt,
+              metadata: currentState.conversation.lastMessage?.metadata?.copyWith(
+                readAt: readAt.toIso8601String(),
+              ),
             )
           : currentState.conversation.lastMessage;
       
@@ -609,7 +777,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final currentState = state as ConversationLoaded;
       final updatedMessages = currentState.messages.map((msg) {
         if (msg.id == event.messageId) {
-          return msg.copyWith(content: event.newContent, metadata: {...?msg.metadata, 'editedAt': event.editedAt.toIso8601String()});
+          return msg.copyWith(content: event.newContent, metadata: msg.metadata?.copyWith());
         }
         return msg;
       }).toList();
@@ -671,8 +839,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           if (msg.id == event.lastMessage!.id) {
             return msg.copyWith(
               status: event.lastMessage!.status,
-              deliveredAt: event.lastMessage!.deliveredAt,
-              readAt: event.lastMessage!.readAt,
+              metadata: msg.metadata?.copyWith(
+                deliveredAt: event.lastMessage!.metadata?.deliveredAt,
+                readAt: event.lastMessage!.metadata?.readAt,
+              ),
             );
           }
           return msg;
@@ -775,13 +945,14 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       final updatedMessages = currentState.messages.map((message) {
         if (message.id == event.messageId) {
           // If this is a disappearing image message, start the timer
-          if (message.type == MessageType.image && message.isDisappearing) {
+          if (message.type == MessageType.image && message.metadata?.isDisappearing == true) {
             // Create a new message with the viewed timestamp and start the timer
             final updatedMessage = message.copyWith(
-              metadata: {
-                ...?message.metadata,
-                'viewedAt': event.viewedAt.toIso8601String(),
-              },
+              metadata: message.metadata?.copyWith(
+                image: message.metadata?.image?.copyWith(
+                  expiresAt: event.viewedAt.toIso8601String(),
+                ),
+              ),
             );
             return updatedMessage;
           }
@@ -839,12 +1010,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           AppLogger.info('🔵 Found message to update image data: ${message.id}');
           
           // Create updated metadata with any additional fields from refresh response
-          final updatedMetadata = Map<String, String>.from(message.metadata ?? {});
-          event.additionalData.forEach((key, value) {
-            if (value != null) {
-              updatedMetadata[key] = value.toString();
-            }
-          });
+          final updatedMetadata = message.metadata?.copyWith();
           
           return message.copyWith(
             content: event.newImageUrl, // Update the image URL

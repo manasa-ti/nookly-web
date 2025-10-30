@@ -396,6 +396,11 @@ class SocketService {
       _handleUserOnlineStatus(data, false);
     });
 
+    // Message deletion event handler
+    _socket!.on('messageDeleted', (data) {
+      AppLogger.info('🗑️ Message deleted: $data');
+      _handleMessageDeleted(data);
+    });
     
     AppLogger.info('✅ Socket listeners setup complete');
   }
@@ -521,6 +526,42 @@ class SocketService {
       }
     } catch (e) {
       AppLogger.error('❌ Error handling user online status: $e');
+    }
+  }
+
+  void _handleMessageDeleted(dynamic data) {
+    try {
+      if (data is Map<String, dynamic> && data.containsKey('messageId')) {
+        final messageId = data['messageId'] as String;
+        final reason = data['reason'] as String?;
+        
+        AppLogger.info('🗑️ Handling message deletion: $messageId, reason: $reason');
+        
+        // Emit event to listeners
+        _emitToListeners('messageDeleted', {
+          'messageId': messageId,
+          'reason': reason,
+        });
+        
+        AppLogger.info('✅ Message deletion event emitted to listeners');
+      } else {
+        AppLogger.warning('⚠️ Invalid message deletion data received: $data');
+      }
+    } catch (e) {
+      AppLogger.error('❌ Error handling message deletion: $e');
+    }
+  }
+
+  void _emitToListeners(String event, Map<String, dynamic> data) {
+    final listeners = _listeners[event];
+    if (listeners != null) {
+      for (final listener in listeners) {
+        try {
+          listener(data);
+        } catch (e) {
+          AppLogger.error('❌ Error in listener for $event: $e');
+        }
+      }
     }
   }
 

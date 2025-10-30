@@ -18,6 +18,8 @@ abstract class ConversationRepository {
   Future<void> sendVoiceMessage(String conversationId, String audioPath, Duration duration);
   Future<void> sendFileMessage(String conversationId, String filePath, String fileName, int fileSize);
   Future<void> sendImageMessage(String conversationId, String imagePath);
+  Future<void> sendGifMessage(String conversationId, Map<String, dynamic> gifMetadata);
+  Future<void> sendStickerMessage(String conversationId, Map<String, dynamic> stickerMetadata);
   Future<void> markMessageAsRead(String messageId);
   Future<void> blockUser(String userId);
   Future<void> unblockUser(String userId);

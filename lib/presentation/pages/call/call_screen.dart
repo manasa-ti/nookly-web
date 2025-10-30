@@ -368,7 +368,9 @@ class _CallScreenState extends State<CallScreen> {
         
         // Speaker on/off
         _buildControlButtonWithLoading(
-          icon: _callService.isSpeakerOn ? Icons.volume_up : Icons.volume_off,
+          icon: _callService.hasHeadsetConnected
+              ? Icons.bluetooth_audio
+              : (_callService.isSpeakerOn ? Icons.volume_up : Icons.volume_off),
           onPressed: _isChangingSpeaker ? () {} : _toggleSpeaker,
           isLoading: _isChangingSpeaker,
         ),

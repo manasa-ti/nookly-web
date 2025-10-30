@@ -4,6 +4,9 @@ import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
 import 'package:nookly/presentation/widgets/message_bubble.dart';
+import 'package:nookly/presentation/widgets/voice_recorder_widget.dart';
+import 'package:nookly/presentation/widgets/gif_picker_widget.dart';
+import 'package:nookly/presentation/widgets/sticker_picker_widget.dart';
 import 'package:nookly/presentation/widgets/game_interface_bar.dart';
 import 'package:nookly/presentation/pages/profile/profile_view_page.dart';
 import 'package:nookly/presentation/bloc/games/games_bloc.dart';
@@ -20,6 +23,7 @@ import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/data/services/giphy_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
@@ -126,6 +130,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   bool _showScamAlert = false;
   final Map<String, DateTime> _lastAlertShown = {};
   int _messageCount = 0;
+
+  // Voice recording state
+  bool _isRecordingVoice = false;
+  bool _isUploadingVoice = false;
+  String _voiceUploadStatus = '';
+
+  // GIF and Sticker picker state
+  bool _isGifPickerVisible = false;
+  bool _isStickerPickerVisible = false;
 
   @override
   void initState() {
@@ -777,8 +790,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         final viewedAt = data['timestamp'] != null 
             ? DateTime.parse(data['timestamp']) 
             : DateTime.now();
-        final disappearingTime = data['disappearingTime'];
-        final isDisappearing = data['isDisappearing'] ?? false;
+        
+        // Read from metadata first, fallback to top-level fields
+        final metadata = data['metadata'] as Map<String, dynamic>?;
+        final disappearingTime = metadata?['disappearingTime'] ?? data['disappearingTime'];
+        final isDisappearing = metadata?['isDisappearing'] ?? data['isDisappearing'] ?? false;
         
         // Check if message exists in state when image_viewed is received
         final state = context.read<ConversationBloc>().state;
@@ -789,8 +805,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             // Try to find the message by content (image URL) instead of ID
             final messageByContent = state.messages.where((msg) => 
                 msg.type == MessageType.image && 
-                msg.isDisappearing && 
-                msg.disappearingTime == disappearingTime
+                msg.metadata?.isDisappearing == true && 
+                msg.metadata?.disappearingTime == disappearingTime
             ).toList();
             
             if (messageByContent.isNotEmpty) {
@@ -876,6 +892,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     _eventBusPrivateMessageListener = (data) async {
       if (!mounted) return;
       
+      AppLogger.info('🚨 [CRITICAL] private_message event received - STARTING PROCESSING');
       AppLogger.info('📥 [CHAT PAGE] private_message event received via direct socket listener');
       AppLogger.info('📥 [CHAT PAGE] Current user ID: $_currentUserId');
       AppLogger.info('📥 [CHAT PAGE] Widget conversation ID: ${widget.conversationId}');
@@ -890,6 +907,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.info('📥 [CHAT PAGE] Timestamp: ${data['timestamp'] ?? data['createdAt']}');
       AppLogger.info('📥 [CHAT PAGE] Full event data: $data');
       AppLogger.info('📥 [CHAT PAGE] Event timestamp: ${DateTime.now().toIso8601String()}');
+      
+      // Debugging disappearing data - Raw event data (images only)
+      final _rawTypeStr = (data['messageType'] ?? data['type'])?.toString().toLowerCase();
+      if (_rawTypeStr == 'image') {
+        AppLogger.info('🔍 [Debugging disappearing data] RAW EVENT DATA:');
+        AppLogger.info('🔍 [Debugging disappearing data] - data[\'isDisappearing\']: ${data['isDisappearing']} (type: ${data['isDisappearing'].runtimeType})');
+        AppLogger.info('🔍 [Debugging disappearing data] - data[\'disappearingTime\']: ${data['disappearingTime']} (type: ${data['disappearingTime'].runtimeType})');
+        AppLogger.info('🔍 [Debugging disappearing data] - data[\'metadata\']: ${data['metadata']} (type: ${data['metadata'].runtimeType})');
+        if (data['metadata'] != null) {
+          AppLogger.info('🔍 [Debugging disappearing data] - metadata[\'isDisappearing\']: ${data['metadata']['isDisappearing']}');
+          AppLogger.info('🔍 [Debugging disappearing data] - metadata[\'disappearingTime\']: ${data['metadata']['disappearingTime']}');
+        }
+      }
       
       // NEW: Filter events by conversation ID (WhatsApp/Telegram style)
       final eventConversationId = data['conversationId'] as String?;
@@ -959,6 +989,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           'content': decryptedData['content']?.toString() ?? '',
           'createdAt': serverTimestamp, // Use server's timestamp
           'messageType': decryptedData['messageType']?.toString() ?? 'text',
+          // Provide 'type' for Message.fromJson compatibility
+          'type': decryptedData['messageType']?.toString() ?? decryptedData['type']?.toString() ?? 'text',
           'status': decryptedData['status']?.toString() ?? 'sent',
         };
         
@@ -973,25 +1005,59 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           messageData['decryptionError'] = true;
         }
         
-        // Only set disappearing properties for image messages
-        final messageType = decryptedData['messageType']?.toString() ?? 'text';
-        if (messageType == 'image') {
-          messageData['isDisappearing'] = decryptedData['isDisappearing'];
-          messageData['disappearingTime'] = decryptedData['disappearingTime'];
-        }
-        
         // Handle metadata conversion properly
         if (decryptedData['metadata'] != null) {
           if (decryptedData['metadata'] is Map) {
             messageData['metadata'] = Map<String, dynamic>.from(decryptedData['metadata']);
+            AppLogger.info('🔍 Extracted metadata from private_message: ${messageData['metadata']}');
+            
+            // Debugging disappearing data - After metadata extraction (images only)
+            try {
+              final _decTypeStr = (decryptedData['messageType'] ?? decryptedData['type'])?.toString().toLowerCase();
+              if (_decTypeStr == 'image') {
+                AppLogger.info('🔍 [Debugging disappearing data] AFTER METADATA EXTRACTION:');
+                AppLogger.info('🔍 [Debugging disappearing data] - messageData[\'metadata\'][\'isDisappearing\']: ${messageData['metadata']['isDisappearing']}');
+                AppLogger.info('🔍 [Debugging disappearing data] - messageData[\'metadata\'][\'disappearingTime\']: ${messageData['metadata']['disappearingTime']}');
+              }
+            } catch (e) {
+              AppLogger.error('❌ Error in debugging metadata extraction: $e');
+            }
+            
           } else {
-            // If metadata is not a Map, try to convert it
-            messageData['metadata'] = {'raw': decryptedData['metadata'].toString()};
+            // If metadata is not a Map, log warning
+            AppLogger.warning('⚠️ Metadata is not a Map: ${decryptedData['metadata'].runtimeType}');
           }
+        } else {
+          AppLogger.warning('⚠️ No metadata found in private_message event for message type: ${decryptedData['messageType']?.toString() ?? 'text'}');
         }
         
         final msg = Message.fromJson(messageData);
-        AppLogger.info('🔍 Created message object: ${msg.id}, sender: ${msg.sender}, type: ${msg.type}, isDisappearing: ${msg.isDisappearing}');
+        AppLogger.info('🔍 private_message handler - Created message:');
+        AppLogger.info('  - Message ID: ${msg.id}');
+        AppLogger.info('  - Message type: ${msg.type}');
+        AppLogger.info('  - Message metadata: ${msg.metadata}');
+        AppLogger.info('  - Message isDisappearing: ${msg.metadata?.isDisappearing}');
+        AppLogger.info('  - Message disappearingTime: ${msg.metadata?.disappearingTime}');
+        
+        // Debugging disappearing data - After Message.fromJson
+        try {
+          if (msg.type == MessageType.image) {
+            AppLogger.info('🔍 [Debugging disappearing data] AFTER Message.fromJson:');
+            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata: ${msg.metadata}');
+            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.isDisappearing: ${msg.metadata?.isDisappearing} (type: ${msg.metadata?.isDisappearing.runtimeType})');
+            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.disappearingTime: ${msg.metadata?.disappearingTime} (type: ${msg.metadata?.disappearingTime.runtimeType})');
+            AppLogger.info('🔍 [Debugging disappearing data] - msg.type: ${msg.type}');
+          }
+        } catch (e) {
+          AppLogger.error('❌ Error in debugging Message.fromJson: $e');
+        }
+        
+        if (msg.type == MessageType.voice) {
+          AppLogger.info('🔍 Voice message metadata voice: ${msg.metadata?.voice}');
+          if (msg.metadata?.voice == null) {
+            AppLogger.error('❌ CRITICAL: Voice message missing voice metadata! This will cause playback to fail.');
+          }
+        }
         
         // Only process messages from the other participant
         AppLogger.info('🔍 Checking if message should be processed: sender=${msg.sender}, currentUserId=$_currentUserId');
@@ -1001,6 +1067,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           if (msg.type == MessageType.text && msg.content.isNotEmpty) {
             _messageCount++;
             _checkForScamAlert(msg.content, true);
+          }
+          
+          // Debugging disappearing data - Before adding to ConversationBloc (images only)
+          if (msg.type == MessageType.image) {
+            AppLogger.info('🔍 [Debugging disappearing data] BEFORE ADDING TO CONVERSATION BLOC:');
+            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.isDisappearing: ${msg.metadata?.isDisappearing}');
+            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.disappearingTime: ${msg.metadata?.disappearingTime}');
           }
           
           AppLogger.info('🔍 Adding MessageReceived event to ConversationBloc');
@@ -1034,13 +1107,30 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         } else {
           AppLogger.info('🔍 Message is from current user, ignoring (sender: ${msg.sender}, currentUserId: $_currentUserId)');
         }
+        
+        AppLogger.info('🚨 [CRITICAL] private_message event processing COMPLETED SUCCESSFULLY');
       } catch (e) {
         AppLogger.error('❌ Error processing received message: $e');
         AppLogger.error('❌ Error stack trace: ${StackTrace.current}');
+        AppLogger.error('🚨 [CRITICAL] private_message event processing FAILED');
       }
     };
+    
+    AppLogger.info('🚨 [CRITICAL] About to register private_message listener');
+    AppLogger.info('🚨 [CRITICAL] Socket service: ${_socketService != null}');
+    AppLogger.info('🚨 [CRITICAL] Socket connected: ${_socketService?.isConnected}');
+    AppLogger.info('🚨 [CRITICAL] Event listener function: ${_eventBusPrivateMessageListener != null}');
+    
     _socketService!.on('private_message', _eventBusPrivateMessageListener!);
+
     AppLogger.info('🔵 Private_message direct socket listener registered successfully');
+    AppLogger.info('🚨 [CRITICAL] private_message listener registration COMPLETED');
+    
+    // Test socket connectivity
+    _socketService!.on('test_private_message', (data) {
+      AppLogger.info('🧪 [TEST] test_private_message event received: $data');
+    });
+    AppLogger.info('🧪 [TEST] test_private_message listener registered');
 
     // Add typing indicator listeners with debounce via direct socket listener
     _socketService!.on('typing', (data) {
@@ -1174,6 +1264,25 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       }
     };
     _socketService!.on('message_read', _messageReadListener!);
+
+    // Message deletion listener (for other message types, not voice)
+    _socketService!.on('messageDeleted', (data) {
+      if (!mounted) return;
+      
+      try {
+        final messageId = data['messageId'] as String?;
+        final reason = data['reason'] as String?;
+        
+        if (messageId != null) {
+          AppLogger.info('🗑️ Message deleted: $messageId, reason: $reason');
+          
+          // Remove message from conversation state
+          context.read<ConversationBloc>().add(MessageDeleted(messageId));
+        }
+      } catch (e) {
+        AppLogger.error('❌ Error handling message deletion: $e');
+      }
+    });
 
     // Game event listeners via direct socket listeners
     AppLogger.info('🔵 Registering game_invite direct socket listener...');
@@ -1782,11 +1891,28 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'messageType': 'image',
             'status': 'sent',
             'createdAt': DateTime.now().toIso8601String(),
-            'isDisappearing': isDisappearing,
+            'metadata': {
+              'isDisappearing': isDisappearing,
             'disappearingTime': disappearingTime,
-            'metadata': expiresAt != null ? {'expiresAt': expiresAt} : null,
+              'isRead': false,
+              'isViewOnce': false,
+              'image': {
+                'imageKey': finalImageKey,
+                'imageUrl': imageUrl,
+                'imageSize': finalImageSize,
+                'imageType': finalImageType,
+                'expiresAt': expiresAt ?? DateTime.now().add(Duration(seconds: disappearingTime)).toIso8601String(),
+              },
+            },
             'conversationId': _getActualConversationId(), // NEW: Required for room-based broadcasting
           };
+          
+          // Debugging disappearing data - Image message being sent
+          AppLogger.info('🔍 [Debugging disappearing data] IMAGE MESSAGE BEING SENT:');
+          AppLogger.info('🔍 [Debugging disappearing data] - isDisappearing parameter: $isDisappearing');
+          AppLogger.info('🔍 [Debugging disappearing data] - disappearingTime parameter: $disappearingTime');
+          AppLogger.info('🔍 [Debugging disappearing data] - messageData[\'metadata\'][\'isDisappearing\']: ${messageData['metadata']['isDisappearing']}');
+          AppLogger.info('🔍 [Debugging disappearing data] - messageData[\'metadata\']: ${messageData['metadata']}');
           
           AppLogger.info('📤 [CHAT PAGE] Emitting private_message (IMAGE)');
           AppLogger.info('📤 [CHAT PAGE] From: ${_currentUserId}');
@@ -1795,6 +1921,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           AppLogger.info('📤 [CHAT PAGE] Content: $imageUrl');
           AppLogger.info('📤 [CHAT PAGE] Is disappearing: $isDisappearing');
           AppLogger.info('📤 [CHAT PAGE] Disappearing time: $disappearingTime');
+          AppLogger.info('📤 [CHAT PAGE] Metadata: ${messageData['metadata']}');
           AppLogger.info('📤 [CHAT PAGE] Conversation ID: ${_getActualConversationId()}');
           AppLogger.info('📤 [CHAT PAGE] Message ID: $messageId');
           AppLogger.info('📤 [CHAT PAGE] Full message data: ${messageData.toString()}');
@@ -1804,7 +1931,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           
           AppLogger.info('✅ [CHAT PAGE] private_message (IMAGE) emitted successfully');
           
-          // Create message for local state with metadata
+          // Create message for local state with proper nested metadata structure
           final messageJson = {
             '_id': messageData['_id'],
             'sender': messageData['from'],
@@ -1813,9 +1940,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             'createdAt': messageData['createdAt'],
             'messageType': messageData['messageType'],
             'status': 'sent',
-            'isDisappearing': isDisappearing,
+            'metadata': {
+              'isDisappearing': isDisappearing,
             'disappearingTime': disappearingTime,
-            'metadata': messageData['metadata'], // Include metadata in Message.fromJson
+              'isRead': false,
+              'isViewOnce': false,
+              'image': {
+                'imageKey': finalImageKey,
+                'imageUrl': imageUrl,
+                'imageSize': finalImageSize,
+                'imageType': finalImageType,
+                'expiresAt': expiresAt ?? DateTime.now().add(Duration(seconds: disappearingTime)).toIso8601String(),
+              },
+            },
           };
           
           final msg = Message.fromJson(messageJson);
@@ -2019,6 +2156,24 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   _showImagePicker();
                 },
               ),
+            ListTile(
+              leading: const Icon(Icons.gif_box),
+              title: const Text('GIF'),
+              onTap: () {
+                AppLogger.info('🔵 GIF option tapped');
+                Navigator.pop(context);
+                _showGifPicker();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.emoji_emotions),
+              title: const Text('Sticker'),
+              onTap: () {
+                AppLogger.info('🔵 Sticker option tapped');
+                Navigator.pop(context);
+                _showStickerPicker();
+              },
+            ),
               // Temporarily hidden Voice Message option
               // ListTile(
               //   leading: const Icon(Icons.mic),
@@ -2135,7 +2290,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
 
     // Emit image_viewed event for receiver when opening full screen
-    if (!isSender && message.isDisappearing && message.disappearingTime != null) {
+    if (!isSender && message.metadata?.isDisappearing == true && message.metadata?.disappearingTime != null) {
       _socketService?.sendImageViewed(message.id, widget.conversationId);
     }
 
@@ -2259,7 +2414,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   const Icon(Icons.timer, color: Colors.white, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
-                                    '${message!.disappearingTime}s',
+                                    '${message!.metadata?.disappearingTime ?? 5}s',
                                     style: const TextStyle(color: Colors.white, fontSize: 16),
                                   ),
                                 ],
@@ -2401,13 +2556,31 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     _scrollToBottom();
                   });
 
+                  // Debugging disappearing data - In BlocListener
+                  AppLogger.info('🔍 [Debugging disappearing data] IN BLOC LISTENER - ConversationLoaded:');
+                  AppLogger.info('🔍 [Debugging disappearing data] - Total messages: ${state.messages.length}');
+                  
+                  // Check each message for disappearing data
+                  for (int i = 0; i < state.messages.length; i++) {
+                    final message = state.messages[i];
+                    if (message.type == MessageType.image) {
+                      AppLogger.info('🔍 [Debugging disappearing data] - Message $i (${message.id}):');
+                      AppLogger.info('🔍 [Debugging disappearing data]   - isDisappearing: ${message.metadata?.isDisappearing}');
+                      AppLogger.info('🔍 [Debugging disappearing data]   - disappearingTime: ${message.metadata?.disappearingTime}');
+                      AppLogger.info('🔍 [Debugging disappearing data]   - metadata: ${message.metadata}');
+                    }
+                  }
+
                   // Initialize display timers for disappearing image messages
                   for (final message in state.messages) {
-                    if (message.isDisappearing && 
-                        message.disappearingTime != null && 
+                    if (message.metadata?.isDisappearing == true && 
+                        message.metadata?.disappearingTime != null && 
                         message.type == MessageType.image &&
                         !_disappearingImageManager.hasTimer(message.id)) {
-                      _disappearingImageManager.initializeDisplayTimer(message.id, message.disappearingTime!);
+                      AppLogger.info('🔍 [Debugging disappearing data] INITIALIZING TIMER for message ${message.id}:');
+                      AppLogger.info('🔍 [Debugging disappearing data] - isDisappearing: ${message.metadata?.isDisappearing}');
+                      AppLogger.info('🔍 [Debugging disappearing data] - disappearingTime: ${message.metadata?.disappearingTime}');
+                      _disappearingImageManager.initializeDisplayTimer(message.id, message.metadata!.disappearingTime!);
                     }
                   }
 
@@ -2590,9 +2763,55 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   
                                   // Only pass timer parameters for disappearing image messages
                                   final timerState = _disappearingImageManager.getTimerState(message.id);
-                                  final shouldShowTimer = message.isDisappearing && 
-                                                       message.disappearingTime != null && 
+                                  final shouldShowTimer = message.metadata?.isDisappearing == true && 
+                                                       message.metadata?.disappearingTime != null && 
                                                        message.type == MessageType.image;
+                                  
+                                  // Debug logging for all messages
+                                  AppLogger.info('🔍 CHAT PAGE - Processing message for display:');
+                                  AppLogger.info('  - Message ID: ${message.id}');
+                                  AppLogger.info('  - Message type: ${message.type}');
+                                  AppLogger.info('  - Message metadata: ${message.metadata}');
+                                  AppLogger.info('  - Message isDisappearing: ${message.metadata?.isDisappearing}');
+                                  AppLogger.info('  - Message disappearingTime: ${message.metadata?.disappearingTime}');
+                                  AppLogger.info('  - Total messages in list: ${messages.length}');
+                                  AppLogger.info('  - Message index: ${messages.indexOf(message)}');
+                                  
+                                  // Debugging disappearing data - Before MessageBubble rendering (images only)
+                                  if (message.type == MessageType.image) {
+                                    AppLogger.info('🔍 [Debugging disappearing data] BEFORE MESSAGEBUBBLE RENDERING:');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.id: ${message.id}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.type: ${message.type}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata: ${message.metadata}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata?.isDisappearing: ${message.metadata?.isDisappearing} (type: ${message.metadata?.isDisappearing.runtimeType})');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata?.disappearingTime: ${message.metadata?.disappearingTime} (type: ${message.metadata?.disappearingTime.runtimeType})');
+                                  }
+                                  AppLogger.info('🔍 [Debugging disappearing data] - shouldShowTimer: $shouldShowTimer');
+                                  AppLogger.info('🔍 [Debugging disappearing data] - timerState: ${timerState?.remainingTime}');
+                                  
+                                  // Debug logging for MessageBubble parameters
+                                  if (message.type == MessageType.image) {
+                                    AppLogger.info('🔍 MessageBubble parameters DEBUG:');
+                                    AppLogger.info('  - Message ID: ${message.id}');
+                                    AppLogger.info('  - Is disappearing: ${message.metadata?.isDisappearing}');
+                                    AppLogger.info('  - Disappearing time: ${message.metadata?.disappearingTime}');
+                                    AppLogger.info('  - Should show timer: $shouldShowTimer');
+                                    AppLogger.info('  - Timer state remaining: ${timerState?.remainingTime}');
+                                    AppLogger.info('  - Passing disappearingTime: ${shouldShowTimer ? message.metadata?.disappearingTime : null}');
+                                    AppLogger.info('  - Full message metadata: ${message.metadata}');
+                                  }
+                                  
+                                  // Debugging disappearing data - Final parameters being passed to MessageBubble (images only)
+                                  if (message.type == MessageType.image) {
+                                    AppLogger.info('🔍 [Debugging disappearing data] FINAL MESSAGEBUBBLE PARAMETERS:');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.id: ${message.id}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.type: ${message.type}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata: ${message.metadata}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - shouldShowTimer: $shouldShowTimer');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - disappearingTime parameter: ${shouldShowTimer ? message.metadata?.disappearingTime : null}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - timerNotifier parameter: ${shouldShowTimer ? timerState?.timerNotifier : null}');
+                                    AppLogger.info('🔍 [Debugging disappearing data] - timerState?.remainingTime: ${timerState?.remainingTime}');
+                                  }
                                   
                                   return Padding(
                                     padding: const EdgeInsets.symmetric(vertical: 4),
@@ -2611,7 +2830,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                           _showFullScreenImage(message.content, isMe);
                                         }
                                       },
-                                      disappearingTime: shouldShowTimer ? timerState?.remainingTime : null,
+                                      disappearingTime: shouldShowTimer ? message.metadata?.disappearingTime : null,
                                       timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,
                                       onImageUrlRefreshed: (messageId, newImageUrl, newExpirationTime, additionalData) {
                                         AppLogger.info('🔵 MessageBubble requested image URL refresh for message: $messageId');
@@ -2747,6 +2966,71 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 ],
               ),
             ),
+          // Voice upload status indicator
+          if (_isUploadingVoice)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.2),
+                  width: 0.5,
+                ),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _voiceUploadStatus,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontFamily: 'Nunito',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          // Voice recorder widget
+          if (_isRecordingVoice)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: VoiceRecorderWidget(
+                onRecordingComplete: _handleVoiceRecordingComplete,
+                onRecordingCancelled: _handleVoiceRecordingCancelled,
+              ),
+            ),
+          // GIF picker widget
+          if (_isGifPickerVisible)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: GifPickerWidget(
+                onGifSelected: _onGifSelected,
+                onClose: _hideGifPicker,
+              ),
+            ),
+          // Sticker picker widget
+          if (_isStickerPickerVisible)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: StickerPickerWidget(
+                onStickerSelected: _onStickerSelected,
+                onClose: _hideStickerPicker,
+              ),
+            ),
           // Main input container
           Container(
             padding: EdgeInsets.all(inputPadding),
@@ -2856,6 +3140,20 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           'isTyping': false,
                         });
                       },
+                    ),
+                  ),
+                  // Voice recording button (moved near send)
+                  IconButton(
+                    icon: Icon(
+                      Icons.mic, 
+                      color: Colors.white.withOpacity(0.8),
+                      size: 20,
+                    ),
+                    onPressed: _toggleVoiceRecording,
+                    padding: const EdgeInsets.all(8),
+                    constraints: const BoxConstraints(
+                      minWidth: 32,
+                      minHeight: 32,
                     ),
                   ),
                   // Send button - smaller and more subtle
@@ -3060,10 +3358,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     DateTime localTime;
     
     // Use the most appropriate timestamp based on message status
-    if (message.status == 'read' && message.readAt != null) {
-      localTime = message.readAt!.toLocal();
-    } else if (message.status == 'delivered' && message.deliveredAt != null) {
-      localTime = message.deliveredAt!.toLocal();
+    if (message.status == 'read' && message.metadata?.readAt != null) {
+      localTime = DateTime.parse(message.metadata!.readAt!).toLocal();
+    } else if (message.status == 'delivered' && message.metadata?.deliveredAt != null) {
+      localTime = DateTime.parse(message.metadata!.deliveredAt!).toLocal();
     } else {
       // Default to message timestamp
       localTime = message.timestamp.toLocal();
@@ -3079,12 +3377,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     Widget statusIcon;
     
     // Properly handle status progression - only show status icons, not timestamps
-    if (message.status == 'read' && message.readAt != null) {
+    if (message.status == 'read' && message.metadata?.readAt != null) {
       statusIcon = Opacity(
         opacity: 0, // Hide the icon
         child: const Icon(Icons.done_all, size: 16, color: Colors.blue),
       );
-    } else if (message.status == 'delivered' && message.deliveredAt != null) {
+    } else if (message.status == 'delivered' && message.metadata?.deliveredAt != null) {
       statusIcon = Opacity(
         opacity: 0, // Hide the icon
         child: const Icon(Icons.done_all, size: 16, color: Colors.grey),
@@ -3381,6 +3679,113 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       baseOffset: 0,
       extentOffset: suggestion.length,
     );
+  }
+
+  void _toggleVoiceRecording() {
+    setState(() {
+      _isRecordingVoice = !_isRecordingVoice;
+    });
+  }
+
+  Future<void> _handleVoiceRecordingComplete(String filePath, Duration duration) async {
+    try {
+      setState(() {
+        _isRecordingVoice = false;
+        _isUploadingVoice = true;
+        _voiceUploadStatus = 'Uploading voice message...';
+      });
+
+      // Send voice message using repository
+      context.read<ConversationBloc>().add(SendVoiceMessage(
+        conversationId: widget.conversationId,
+        audioPath: filePath,
+        duration: duration,
+      ));
+
+      setState(() {
+        _isUploadingVoice = false;
+        _voiceUploadStatus = '';
+      });
+
+      AppLogger.info('✅ Voice message sent successfully');
+    } catch (e) {
+      setState(() {
+        _isUploadingVoice = false;
+        _voiceUploadStatus = '';
+      });
+      
+      AppLogger.error('❌ Error sending voice message: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to send voice message. Please try again.')),
+      );
+    }
+  }
+
+  void _handleVoiceRecordingCancelled() {
+    setState(() {
+      _isRecordingVoice = false;
+    });
+  }
+
+  void _showGifPicker() {
+    setState(() {
+      _isGifPickerVisible = true;
+    });
+  }
+
+  void _showStickerPicker() {
+    setState(() {
+      _isStickerPickerVisible = true;
+    });
+  }
+
+  void _hideGifPicker() {
+    setState(() {
+      _isGifPickerVisible = false;
+    });
+  }
+
+  void _hideStickerPicker() {
+    setState(() {
+      _isStickerPickerVisible = false;
+    });
+  }
+
+  void _onGifSelected(GiphyGif gif) {
+    _hideGifPicker();
+    
+    // Send GIF message
+    context.read<ConversationBloc>().add(SendGifMessage(
+      conversationId: widget.conversationId,
+      gifMetadata: GifMetadata(
+        giphyId: gif.id,
+        giphyUrl: gif.url,
+        giphyPreviewUrl: gif.previewUrl,
+        width: gif.width,
+        height: gif.height,
+        title: gif.title,
+      ).toJson(),
+    ));
+    
+    AppLogger.info('🎬 GIF selected and sent: ${gif.title}');
+  }
+
+  void _onStickerSelected(GiphySticker sticker) {
+    _hideStickerPicker();
+    
+    // Send Sticker message
+    context.read<ConversationBloc>().add(SendStickerMessage(
+      conversationId: widget.conversationId,
+      stickerMetadata: StickerMetadata(
+        giphyId: sticker.id,
+        stickerUrl: sticker.url,
+        width: sticker.width,
+        height: sticker.height,
+        title: sticker.title,
+      ).toJson(),
+    ));
+    
+    AppLogger.info('😊 Sticker selected and sent: ${sticker.title}');
   }
 
   bool _isAISuggestedMessage(String content) {

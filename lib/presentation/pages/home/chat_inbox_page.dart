@@ -419,9 +419,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             timestamp: DateTime.parse(data['createdAt'] ?? data['timestamp'] ?? DateTime.now().toIso8601String()),
             type: _getMessageTypeFromString(data['messageType'] ?? data['type'] ?? 'text'),
             status: data['status'] ?? 'sent',
-            isDisappearing: data['isDisappearing'] ?? false,
-            disappearingTime: data['disappearingTime'] != null ? int.tryParse(data['disappearingTime'].toString()) : null,
-            metadata: data['metadata'] ?? {},
+            metadata: data['metadata'] != null ? MessageMetadata.fromJson(data['metadata'] as Map<String, dynamic>) : null,
             isEncrypted: data['isEncrypted'] ?? false,
             encryptedContent: data['encryptedContent'],
             encryptionMetadata: data['encryptionMetadata'],
@@ -452,8 +450,6 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                 timestamp: message.timestamp,
                 type: message.type,
                 status: message.status,
-                isDisappearing: message.isDisappearing,
-                disappearingTime: message.disappearingTime,
                 metadata: message.metadata,
                 isEncrypted: false,
                 encryptedContent: null,
@@ -634,7 +630,44 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     // REMOVED: stop_typing listener - typing_notification handles both start and stop
 
     _conversationUpdatedListener = (data) async {
-      AppLogger.info('🔍 Debugging received event: conversation_updated - Data: $data');
+      // Pretty-print the full payload in chunks to avoid truncation
+      Map<String, dynamic> _asStringKeyedMap(dynamic v) {
+        if (v is Map<String, dynamic>) return v;
+        if (v is Map) {
+          return v.map((key, value) => MapEntry(key.toString(), value));
+        }
+        return <String, dynamic>{};
+      }
+      String _prettyJson(dynamic any) {
+        try {
+          // Avoid imports by delegating to toString if encoder not available
+          // but prefer JSON-like formatting when possible
+          final map = _asStringKeyedMap(any);
+          // Lightweight pretty format
+          return map.toString();
+        } catch (_) {
+          return any.toString();
+        }
+      }
+      void _logLarge(String title, String text, {int chunk = 800}) {
+        AppLogger.info('🔍 $title (len=${text.length})');
+        for (int i = 0; i < text.length; i += chunk) {
+          final end = (i + chunk < text.length) ? i + chunk : text.length;
+          AppLogger.info(text.substring(i, end));
+        }
+      }
+
+      try {
+        final full = _prettyJson(data);
+        _logLarge('conversation_updated FULL', full);
+        final lastMsg = _asStringKeyedMap((data as Map)['lastMessage'] ?? {});
+        _logLarge('conversation_updated lastMessage', _prettyJson(lastMsg));
+        final metadata = _asStringKeyedMap(lastMsg['metadata'] ?? {});
+        _logLarge('conversation_updated lastMessage.metadata', _prettyJson(metadata));
+      } catch (e) {
+        AppLogger.warning('⚠️ Pretty logging failed for conversation_updated: $e');
+        AppLogger.info('🔍 Debugging received event: conversation_updated - Data: $data');
+      }
       if (_inboxBloc?.state is InboxLoaded) {
         final currentState = _inboxBloc?.state as InboxLoaded;
         final conversations = currentState.conversations;
@@ -650,6 +683,12 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           Message? lastMessage;
           if (data['lastMessage'] != null) {
             final message = Message.fromJson(data['lastMessage']);
+            AppLogger.info('🔍 CONVERSATION_UPDATED - Created message:');
+            AppLogger.info('  - Message ID: ${message.id}');
+            AppLogger.info('  - Message type: ${message.type}');
+            AppLogger.info('  - Message metadata: ${message.metadata}');
+            AppLogger.info('  - Message isDisappearing: ${message.metadata?.isDisappearing}');
+            AppLogger.info('  - Message disappearingTime: ${message.metadata?.disappearingTime}');
             
             AppLogger.info('🔍 CONVERSATION_UPDATED DECRYPTION CHECK:');
             AppLogger.info('  - message.isEncrypted: ${message.isEncrypted}');
@@ -707,6 +746,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           
           // Emit updated state immediately
           _inboxBloc?.add(InboxUpdated(conversations: updatedConversations));
+          
           
           // Invalidate cache since conversation was updated
           if (_currentUser != null) {

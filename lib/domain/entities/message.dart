@@ -1,11 +1,275 @@
 import 'package:equatable/equatable.dart';
 import 'package:nookly/core/utils/logger.dart';
 
+// Metadata classes for different message types
+class ImageMetadata {
+  final String imageKey;
+  final String imageUrl;
+  final int imageSize;
+  final String imageType;
+  final String expiresAt;
+
+  const ImageMetadata({
+    required this.imageKey,
+    required this.imageUrl,
+    required this.imageSize,
+    required this.imageType,
+    required this.expiresAt,
+  });
+
+  factory ImageMetadata.fromJson(Map<String, dynamic> json) {
+    return ImageMetadata(
+      imageKey: json['imageKey'] as String,
+      imageUrl: json['imageUrl'] as String,
+      imageSize: json['imageSize'] as int,
+      imageType: json['imageType'] as String,
+      expiresAt: json['expiresAt'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'imageKey': imageKey,
+      'imageUrl': imageUrl,
+      'imageSize': imageSize,
+      'imageType': imageType,
+      'expiresAt': expiresAt,
+    };
+  }
+
+  ImageMetadata copyWith({
+    String? imageKey,
+    String? imageUrl,
+    int? imageSize,
+    String? imageType,
+    String? expiresAt,
+  }) {
+    return ImageMetadata(
+      imageKey: imageKey ?? this.imageKey,
+      imageUrl: imageUrl ?? this.imageUrl,
+      imageSize: imageSize ?? this.imageSize,
+      imageType: imageType ?? this.imageType,
+      expiresAt: expiresAt ?? this.expiresAt,
+    );
+  }
+}
+
+class VoiceMetadata {
+  final String voiceKey;
+  final String voiceUrl;
+  final int voiceSize;
+  final String voiceType;
+  final int voiceDuration; // in seconds
+  final String expiresAt;
+
+  const VoiceMetadata({
+    required this.voiceKey,
+    required this.voiceUrl,
+    required this.voiceSize,
+    required this.voiceType,
+    required this.voiceDuration,
+    required this.expiresAt,
+  });
+
+  factory VoiceMetadata.fromJson(Map<String, dynamic> json) {
+    return VoiceMetadata(
+      voiceKey: json['voiceKey'] as String,
+      voiceUrl: json['voiceUrl'] as String,
+      voiceSize: json['voiceSize'] as int,
+      voiceType: json['voiceType'] as String,
+      voiceDuration: json['voiceDuration'] as int,
+      expiresAt: json['expiresAt'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'voiceKey': voiceKey,
+      'voiceUrl': voiceUrl,
+      'voiceSize': voiceSize,
+      'voiceType': voiceType,
+      'voiceDuration': voiceDuration,
+      'expiresAt': expiresAt,
+    };
+  }
+}
+
+class GifMetadata {
+  final String giphyId;
+  final String giphyUrl;
+  final String giphyPreviewUrl;
+  final int width;
+  final int height;
+  final String title;
+
+  const GifMetadata({
+    required this.giphyId,
+    required this.giphyUrl,
+    required this.giphyPreviewUrl,
+    required this.width,
+    required this.height,
+    required this.title,
+  });
+
+  factory GifMetadata.fromJson(Map<String, dynamic> json) {
+    return GifMetadata(
+      giphyId: json['giphyId'] as String,
+      giphyUrl: json['giphyUrl'] as String,
+      giphyPreviewUrl: json['giphyPreviewUrl'] as String,
+      width: json['width'] as int,
+      height: json['height'] as int,
+      title: json['title'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'giphyId': giphyId,
+      'giphyUrl': giphyUrl,
+      'giphyPreviewUrl': giphyPreviewUrl,
+      'width': width,
+      'height': height,
+      'title': title,
+    };
+  }
+}
+
+class StickerMetadata {
+  final String giphyId;
+  final String stickerUrl;
+  final int width;
+  final int height;
+  final String title;
+
+  const StickerMetadata({
+    required this.giphyId,
+    required this.stickerUrl,
+    required this.width,
+    required this.height,
+    required this.title,
+  });
+
+  factory StickerMetadata.fromJson(Map<String, dynamic> json) {
+    return StickerMetadata(
+      giphyId: json['giphyId'] as String,
+      stickerUrl: json['stickerUrl'] as String,
+      width: json['width'] as int,
+      height: json['height'] as int,
+      title: json['title'] as String,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'giphyId': giphyId,
+      'stickerUrl': stickerUrl,
+      'width': width,
+      'height': height,
+      'title': title,
+    };
+  }
+}
+
+class MessageMetadata {
+  final bool isDisappearing;
+  final int? disappearingTime;
+  final bool isRead;
+  final String? deliveredAt;
+  final String? readAt;
+  final bool isViewOnce;
+  final ImageMetadata? image;
+  final VoiceMetadata? voice;
+  final GifMetadata? gif;
+  final StickerMetadata? sticker;
+
+  const MessageMetadata({
+    required this.isDisappearing,
+    this.disappearingTime,
+    required this.isRead,
+    this.deliveredAt,
+    this.readAt,
+    required this.isViewOnce,
+    this.image,
+    this.voice,
+    this.gif,
+    this.sticker,
+  });
+
+  factory MessageMetadata.fromJson(Map<String, dynamic> json) {
+    AppLogger.info('🔍 MessageMetadata.fromJson DEBUG:');
+    AppLogger.info('  - Received json keys: ${json.keys.toList()}');
+    AppLogger.info('  - json[\'isDisappearing\']: ${json['isDisappearing']} (type: ${json['isDisappearing'].runtimeType})');
+    AppLogger.info('  - json[\'disappearingTime\']: ${json['disappearingTime']} (type: ${json['disappearingTime']?.runtimeType})');
+    
+    final isDisappearing = json['isDisappearing'] as bool? ?? false;
+    final disappearingTime = json['disappearingTime'] as int?;
+    
+    AppLogger.info('  - Parsed isDisappearing: $isDisappearing');
+    AppLogger.info('  - Parsed disappearingTime: $disappearingTime');
+    
+    return MessageMetadata(
+      isDisappearing: isDisappearing,
+      disappearingTime: disappearingTime,
+      isRead: json['isRead'] as bool? ?? false,
+      deliveredAt: json['deliveredAt'] as String?,
+      readAt: json['readAt'] as String?,
+      isViewOnce: json['isViewOnce'] as bool? ?? false,
+      image: json['image'] != null ? ImageMetadata.fromJson(json['image'] as Map<String, dynamic>) : null,
+      voice: json['voice'] != null ? VoiceMetadata.fromJson(json['voice'] as Map<String, dynamic>) : null,
+      gif: json['gif'] != null ? GifMetadata.fromJson(json['gif'] as Map<String, dynamic>) : null,
+      sticker: json['sticker'] != null ? StickerMetadata.fromJson(json['sticker'] as Map<String, dynamic>) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'isDisappearing': isDisappearing,
+      'disappearingTime': disappearingTime,
+      'isRead': isRead,
+      'deliveredAt': deliveredAt,
+      'readAt': readAt,
+      'isViewOnce': isViewOnce,
+      'image': image?.toJson(),
+      'voice': voice?.toJson(),
+      'gif': gif?.toJson(),
+      'sticker': sticker?.toJson(),
+    };
+  }
+
+  MessageMetadata copyWith({
+    bool? isDisappearing,
+    int? disappearingTime,
+    bool? isRead,
+    String? deliveredAt,
+    String? readAt,
+    bool? isViewOnce,
+    ImageMetadata? image,
+    VoiceMetadata? voice,
+    GifMetadata? gif,
+    StickerMetadata? sticker,
+  }) {
+    return MessageMetadata(
+      isDisappearing: isDisappearing ?? this.isDisappearing,
+      disappearingTime: disappearingTime ?? this.disappearingTime,
+      isRead: isRead ?? this.isRead,
+      deliveredAt: deliveredAt ?? this.deliveredAt,
+      readAt: readAt ?? this.readAt,
+      isViewOnce: isViewOnce ?? this.isViewOnce,
+      image: image ?? this.image,
+      voice: voice ?? this.voice,
+      gif: gif ?? this.gif,
+      sticker: sticker ?? this.sticker,
+    );
+  }
+}
+
 enum MessageType {
   text,
   image,
   voice,
   file,
+  gif,
+  sticker,
   // Add other types if your API supports them directly by string name
 }
 
@@ -16,13 +280,8 @@ class Message extends Equatable {
   final String content;
   final DateTime timestamp; // Corresponds to API's createdAt
   final MessageType type;
-  final bool isRead;
-  final Map<String, String>? metadata;
   final String status; // sent, delivered, read
-  final DateTime? deliveredAt;
-  final DateTime? readAt;
-  final bool isDisappearing; // Whether the message should disappear
-  final int? disappearingTime; // Time in seconds before message disappears
+  final MessageMetadata? metadata;
   final bool isExpired;
   final DateTime? urlExpirationTime; // Add this field
   
@@ -43,13 +302,8 @@ class Message extends Equatable {
     required this.content,
     required this.timestamp,
     required this.type,
-    this.isRead = false,
-    this.metadata,
     this.status = 'sent',
-    this.deliveredAt,
-    this.readAt,
-    this.isDisappearing = false,
-    this.disappearingTime,
+    this.metadata,
     this.isExpired = false,
     this.urlExpirationTime, // Add this parameter
     this.isAISuggested = false,
@@ -68,13 +322,8 @@ class Message extends Equatable {
         content,
         timestamp,
         type,
-        isRead,
-        metadata,
         status,
-        deliveredAt,
-        readAt,
-        isDisappearing,
-        disappearingTime,
+        metadata,
         isExpired,
         urlExpirationTime, // Add to props
         isAISuggested,
@@ -92,13 +341,8 @@ class Message extends Equatable {
     String? content,
     DateTime? timestamp,
     MessageType? type,
-    bool? isRead,
-    Map<String, String>? metadata,
     String? status,
-    DateTime? deliveredAt,
-    DateTime? readAt,
-    bool? isDisappearing,
-    int? disappearingTime,
+    MessageMetadata? metadata,
     bool? isExpired,
     DateTime? urlExpirationTime, // Add to copyWith
     bool? isAISuggested,
@@ -115,13 +359,8 @@ class Message extends Equatable {
       content: content ?? this.content,
       timestamp: timestamp ?? this.timestamp,
       type: type ?? this.type,
-      isRead: isRead ?? this.isRead,
-      metadata: metadata ?? this.metadata,
       status: status ?? this.status,
-      deliveredAt: deliveredAt ?? this.deliveredAt,
-      readAt: readAt ?? this.readAt,
-      isDisappearing: isDisappearing ?? this.isDisappearing,
-      disappearingTime: disappearingTime ?? this.disappearingTime,
+      metadata: metadata ?? this.metadata,
       isExpired: isExpired ?? this.isExpired,
       urlExpirationTime: urlExpirationTime ?? this.urlExpirationTime, // Add to copyWith
       isAISuggested: isAISuggested ?? this.isAISuggested,
@@ -164,6 +403,12 @@ class Message extends Equatable {
         case 'file':
           parsedType = MessageType.file;
           break;
+        case 'gif':
+          parsedType = MessageType.gif;
+          break;
+        case 'sticker':
+          parsedType = MessageType.sticker;
+          break;
         case 'text':
         default:
           parsedType = MessageType.text;
@@ -184,154 +429,108 @@ class Message extends Equatable {
       status = 'sent';
     }
 
-    DateTime? deliveredAt;
-    try {
-      if (json['deliveredAt'] != null) {
-        deliveredAt = DateTime.parse(json['deliveredAt'] as String);
-      }
-    } catch (e) {
-      AppLogger.info('Error parsing deliveredAt: $e');
-    }
-
-    DateTime? readAt;
-    try {
-      if (json['readAt'] != null) {
-        readAt = DateTime.parse(json['readAt'] as String);
-      }
-    } catch (e) {
-      AppLogger.info('Error parsing readAt: $e');
-    }
-
-    int? disappearingTime;
-    try {
-      // Check for disappearingTime in metadata first, then at root level
-      if (json['metadata'] != null && json['metadata']['disappearingTime'] != null) {
-        disappearingTime = json['metadata']['disappearingTime'] as int;
-      } else if (json['disappearingTime'] != null) {
-        disappearingTime = json['disappearingTime'] as int;
-      }
-    } catch (e) {
-      AppLogger.info('Error parsing disappearingTime: $e');
-    }
-
-    // Parse URL expiration time from metadata.expiresAt or root level urlExpirationTime
+    // Parse metadata - handle both new nested structure and old flat structure
+    MessageMetadata? metadata;
     DateTime? urlExpirationTime;
+    
     try {
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsing URL expiration time from JSON');
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: JSON metadata: ${json['metadata']}');
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: JSON metadata type: ${json['metadata']?.runtimeType}');
+      // Handle hybrid structure: top-level isDisappearing/disappearingTime + nested metadata.image
+      // This is common in backend responses
+      final topLevelIsDisappearing = json['isDisappearing'] as bool?;
+      final topLevelDisappearingTime = json['disappearingTime'] as int?;
+      final topLevelIsRead = json['isRead'] as bool?;
+      final topLevelDeliveredAt = json['deliveredAt'] as String?;
+      final topLevelReadAt = json['readAt'] as String?;
+      final topLevelIsViewOnce = json['isViewOnce'] as bool?;
       
       if (json['metadata'] != null) {
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata exists, checking for expiresAt');
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: Metadata keys: ${(json['metadata'] as Map<String, dynamic>).keys.toList()}');
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: expiresAt value in metadata: ${json['metadata']['expiresAt']}');
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: urlExpirationTime value in metadata: ${json['metadata']['urlExpirationTime']}');
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: imageExpiresAt value in metadata: ${json['metadata']['imageExpiresAt']}');
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: imageExpirationTime value in metadata: ${json['metadata']['imageExpirationTime']}');
+        final metadataJson = Map<String, dynamic>.from(json['metadata'] as Map<String, dynamic>);
         
-        // Try multiple possible field names in metadata
-        if (json['metadata']['expiresAt'] != null) {
-          urlExpirationTime = DateTime.parse(json['metadata']['expiresAt'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed expiresAt from metadata: $urlExpirationTime');
-        } else if (json['metadata']['urlExpirationTime'] != null) {
-          urlExpirationTime = DateTime.parse(json['metadata']['urlExpirationTime'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed urlExpirationTime from metadata: $urlExpirationTime');
-        } else if (json['metadata']['imageExpiresAt'] != null) {
-          urlExpirationTime = DateTime.parse(json['metadata']['imageExpiresAt'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed imageExpiresAt from metadata: $urlExpirationTime');
-        } else if (json['metadata']['imageExpirationTime'] != null) {
-          urlExpirationTime = DateTime.parse(json['metadata']['imageExpirationTime'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Successfully parsed imageExpirationTime from metadata: $urlExpirationTime');
-        } else {
-          AppLogger.warning('🔵 DEBUGGING EXPIRATION: No expiration time found in metadata');
+        
+        // Merge top-level fields into metadata if they exist (for hybrid structure support)
+        AppLogger.info('🔍 Message.fromJson DEBUG - BEFORE MERGE:');
+        AppLogger.info('  - Top-level isDisappearing: $topLevelIsDisappearing');
+        AppLogger.info('  - Top-level disappearingTime: $topLevelDisappearingTime');
+        AppLogger.info('  - Metadata original keys: ${metadataJson.keys.toList()}');
+        AppLogger.info('  - Metadata original isDisappearing: ${metadataJson['isDisappearing']}');
+        AppLogger.info('  - Metadata original disappearingTime: ${metadataJson['disappearingTime']}');
+        
+        if (topLevelIsDisappearing != null) {
+          metadataJson['isDisappearing'] = topLevelIsDisappearing;
+          AppLogger.info('  - ✅ Merged isDisappearing: $topLevelIsDisappearing');
         }
-      } else {
-        AppLogger.warning('🔵 DEBUGGING EXPIRATION: No metadata in JSON');
-      }
-      
-      // Check root level fields if not found in metadata
-      if (urlExpirationTime == null) {
-        if (json['expiresAt'] != null) {
-          urlExpirationTime = DateTime.parse(json['expiresAt'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed expiresAt from root: $urlExpirationTime');
-        } else if (json['urlExpirationTime'] != null) {
-          urlExpirationTime = DateTime.parse(json['urlExpirationTime'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed urlExpirationTime from root: $urlExpirationTime');
-        } else if (json['imageExpiresAt'] != null) {
-          urlExpirationTime = DateTime.parse(json['imageExpiresAt'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed imageExpiresAt from root: $urlExpirationTime');
-        } else if (json['imageExpirationTime'] != null) {
-          urlExpirationTime = DateTime.parse(json['imageExpirationTime'] as String);
-          AppLogger.info('🔵 DEBUGGING EXPIRATION: Parsed imageExpirationTime from root: $urlExpirationTime');
+        if (topLevelDisappearingTime != null) {
+          metadataJson['disappearingTime'] = topLevelDisappearingTime;
+          AppLogger.info('  - ✅ Merged disappearingTime: $topLevelDisappearingTime');
         }
+        if (topLevelIsRead != null) {
+          metadataJson['isRead'] = topLevelIsRead;
+        }
+        if (topLevelDeliveredAt != null) {
+          metadataJson['deliveredAt'] = topLevelDeliveredAt;
+        }
+        if (topLevelReadAt != null) {
+          metadataJson['readAt'] = topLevelReadAt;
+        }
+        if (topLevelIsViewOnce != null) {
+          metadataJson['isViewOnce'] = topLevelIsViewOnce;
+        }
+        
+        AppLogger.info('🔍 Message.fromJson DEBUG - AFTER MERGE:');
+        AppLogger.info('  - Final metadata isDisappearing: ${metadataJson['isDisappearing']}');
+        AppLogger.info('  - Final metadata disappearingTime: ${metadataJson['disappearingTime']}');
+        AppLogger.info('  - Final metadata keys: ${metadataJson.keys.toList()}');
+        
+        
+        // Always use the new nested structure after merging
+        metadata = MessageMetadata.fromJson(metadataJson);
+        
+        // Extract URL expiration time from appropriate metadata
+        if (messageType == MessageType.image && metadata.image != null) {
+          urlExpirationTime = DateTime.parse(metadata.image!.expiresAt);
+        } else if (messageType == MessageType.voice && metadata.voice != null) {
+          urlExpirationTime = DateTime.parse(metadata.voice!.expiresAt);
+        }
+      } else if (topLevelIsDisappearing != null || topLevelDisappearingTime != null) {
+        // No metadata object, but top-level fields exist - create metadata from top-level fields
+        metadata = MessageMetadata(
+          isDisappearing: topLevelIsDisappearing ?? false,
+          disappearingTime: topLevelDisappearingTime,
+          isRead: topLevelIsRead ?? false,
+          deliveredAt: topLevelDeliveredAt,
+          readAt: topLevelReadAt,
+          isViewOnce: topLevelIsViewOnce ?? false,
+        );
       }
-      
-      AppLogger.info('🔵 DEBUGGING EXPIRATION: Final urlExpirationTime: $urlExpirationTime');
+    } catch (e) {
+      AppLogger.error('❌ Error parsing metadata: $e');
+      // Create default metadata if parsing fails
+      metadata = const MessageMetadata(
+        isDisappearing: false,
+        isRead: false,
+        isViewOnce: false,
+      );
+    }
       
       // Fallback: Extract expiration time from S3 URL if metadata is not available
       if (urlExpirationTime == null && json['content'] != null) {
-        AppLogger.info('🔵 DEBUGGING EXPIRATION: Attempting fallback extraction from S3 URL');
+      try {
         final content = json['content'] as String;
         if (content.contains('X-Amz-Expires=')) {
-          try {
             final uri = Uri.parse(content);
             final expiresParam = uri.queryParameters['X-Amz-Expires'];
             if (expiresParam != null) {
               final expiresSeconds = int.parse(expiresParam);
               final createdAt = DateTime.parse(json['createdAt'] as String);
               urlExpirationTime = createdAt.add(Duration(seconds: expiresSeconds));
-              AppLogger.info('🔵 DEBUGGING EXPIRATION: Extracted expiration from S3 URL: $urlExpirationTime');
-            }
-          } catch (e) {
-            AppLogger.error('❌ DEBUGGING EXPIRATION: Error extracting expiration from S3 URL: $e');
-          }
         }
       }
     } catch (e) {
-      AppLogger.error('❌ DEBUGGING EXPIRATION: Error parsing urlExpirationTime: $e');
-      AppLogger.info('Error parsing urlExpirationTime: $e');
-    }
-
-    // Parse isDisappearing from metadata first, then root level
-    // If disappearingTime is present, infer isDisappearing as true regardless of explicit value
-    bool isDisappearing = false;
-    try {
-      // First check if disappearingTime is present (this should make the message disappearing)
-      // But only for image messages - text messages should never be disappearing
-      if (disappearingTime != null && messageType == MessageType.image) {
-        isDisappearing = true;
-        // Inferring isDisappearing=true because disappearingTime is present for image message
-      } else if (disappearingTime != null && messageType == MessageType.text) {
-        // Text messages should never be disappearing, even if disappearingTime is present
-        isDisappearing = false;
-        AppLogger.warning('Ignoring disappearingTime=$disappearingTime for text message - text messages should not disappear');
-      } else {
-        // Only check explicit isDisappearing field if no disappearingTime is present
-        if (json['metadata'] != null && json['metadata']['isDisappearing'] != null) {
-          isDisappearing = json['metadata']['isDisappearing'] as bool;
-        } else if (json['isDisappearing'] != null) {
-          isDisappearing = json['isDisappearing'] as bool;
-        }
+        AppLogger.error('❌ Error extracting expiration from S3 URL: $e');
       }
-    } catch (e) {
-      AppLogger.info('Error parsing isDisappearing: $e');
     }
 
-    // Parse disappearing fields from JSON
 
-    // Parse other metadata fields
-    Map<String, String> metadata = {};
-    if (json['metadata'] != null) {
-      final metadataMap = json['metadata'] as Map<String, dynamic>;
-      metadataMap.forEach((key, value) {
-        if (value != null) {
-          metadata[key] = value.toString();
-        }
-      });
-    }
-    // Add root level fields to metadata if they exist
-    if (json['isDisappearing'] != null) metadata['isDisappearing'] = json['isDisappearing'].toString();
-    if (json['updatedAt'] != null) metadata['updatedAt'] = json['updatedAt'].toString();
 
     // Parse AI suggestion fields
     final isAISuggested = json['isAISuggested'] as bool? ?? false;
@@ -350,13 +549,8 @@ class Message extends Equatable {
       content: json['content'] as String? ?? '',
       timestamp: timestamp,
       type: messageType,
-      isRead: json['isRead'] as bool? ?? false,
-      metadata: metadata,
       status: status,
-      deliveredAt: deliveredAt,
-      readAt: readAt,
-      isDisappearing: isDisappearing,
-      disappearingTime: disappearingTime,
+      metadata: metadata,
       isExpired: false,
       urlExpirationTime: urlExpirationTime,
       isAISuggested: isAISuggested,
@@ -375,14 +569,9 @@ class Message extends Equatable {
       'receiver': receiver,
       'content': content,
       'createdAt': timestamp.toIso8601String(),
-      'messageType': type == MessageType.image ? 'image' : 'text',
-      'isRead': isRead,
-      'metadata': metadata,
+      'messageType': _getMessageTypeString(type),
       'status': status,
-      'deliveredAt': deliveredAt?.toIso8601String(),
-      'readAt': readAt?.toIso8601String(),
-      'isDisappearing': isDisappearing,
-      'disappearingTime': disappearingTime,
+      'metadata': metadata?.toJson(),
       'isExpired': isExpired,
       'urlExpirationTime': urlExpirationTime?.toIso8601String(),
       'isAISuggested': isAISuggested,
@@ -392,6 +581,23 @@ class Message extends Equatable {
       'encryptionMetadata': encryptionMetadata,
       'decryptionError': decryptionError,
     };
+  }
+
+  String _getMessageTypeString(MessageType type) {
+    switch (type) {
+      case MessageType.text:
+        return 'text';
+      case MessageType.image:
+        return 'image';
+      case MessageType.voice:
+        return 'voice';
+      case MessageType.file:
+        return 'file';
+      case MessageType.gif:
+        return 'gif';
+      case MessageType.sticker:
+        return 'sticker';
+    }
   }
 
   @override
@@ -404,12 +610,8 @@ class Message extends Equatable {
         other.content == content &&
         other.timestamp == timestamp &&
         other.type == type &&
-        other.isRead == isRead &&
         other.status == status &&
-        other.deliveredAt == deliveredAt &&
-        other.readAt == readAt &&
-        other.isDisappearing == isDisappearing &&
-        other.disappearingTime == disappearingTime &&
+        other.metadata == metadata &&
         other.isExpired == isExpired &&
         other.urlExpirationTime == urlExpirationTime &&
         other.isAISuggested == isAISuggested &&
@@ -424,12 +626,8 @@ class Message extends Equatable {
         content,
         timestamp,
         type,
-        isRead,
         status,
-        deliveredAt,
-        readAt,
-        isDisappearing,
-        disappearingTime,
+        metadata,
         isExpired,
         urlExpirationTime,
         isAISuggested,

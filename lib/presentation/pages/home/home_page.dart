@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:nookly/presentation/pages/home/recommended_profiles_page.dart';
 import 'package:nookly/presentation/pages/home/received_likes_page.dart';
 import 'package:nookly/presentation/pages/home/chat_inbox_page.dart';
-import 'package:nookly/presentation/pages/profile/profile_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_filters_page.dart';
 import 'package:nookly/presentation/pages/settings/settings_page.dart';
 import 'package:nookly/presentation/pages/notifications/notifications_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/pages/profile/profile_hub_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_page.dart';
 import 'package:nookly/presentation/widgets/svg_icons.dart';
 import 'package:nookly/core/services/filter_preferences_service.dart';
 import 'dart:ui';
@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
     const RecommendedProfilesPage(),
     const ReceivedLikesPage(),
     const ChatInboxPage(),
-    const ProfileHubPage(),
+    const ProfilePage(),
   ];
 
   // Helper method to determine if device is tablet
@@ -42,14 +42,7 @@ class _HomePageState extends State<HomePage> {
     return _isTablet(context) ? tabletSize : mobileSize;
   }
 
-  void _onProfilePressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ProfilePage(),
-      ),
-    );
-  }
+  // Removed legacy ProfilePage navigation; profile tab uses ProfileHubPage.
 
   void _onNotificationsPressed() {
     Navigator.push(

@@ -1,10 +1,11 @@
-import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
-import 'package:nookly/domain/repositories/auth_repository.dart';
-import 'package:nookly/domain/entities/user.dart';
 import 'package:get_it/get_it.dart';
-import 'package:nookly/presentation/widgets/custom_avatar.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
+import 'package:nookly/data/models/auth/delete_account_request_model.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -15,245 +16,161 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final _authRepository = GetIt.instance<AuthRepository>();
-  bool _isLoading = true;
-  String? _error;
   User? _user;
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _load();
   }
 
-  Future<void> _loadUserProfile() async {
+  Future<void> _load() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
       final user = await _authRepository.getCurrentUser();
-      
       setState(() {
         _user = user;
-        _isLoading = false;
+        _loading = false;
       });
     } catch (e) {
       setState(() {
         _error = e.toString();
-        _isLoading = false;
+        _loading = false;
       });
     }
   }
 
-  Future<void> _openPrivacyPolicy() async {
-    AppLogger.info('🔵 Privacy button tapped!'); // Debug log
-    
-    // Show immediate feedback that button was tapped
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Opening privacy policy...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-    
-    const url = 'https://privacy-policy.nookly.app/';
-    try {
-      AppLogger.info('🔵 Attempting to open URL: $url'); // Debug log
-      final uri = Uri.parse(url);
-      AppLogger.info('🔵 Parsed URI: $uri'); // Debug log
-      
-      final canLaunch = await canLaunchUrl(uri);
-      AppLogger.info('🔵 Can launch URL: $canLaunch'); // Debug log
-      
-      if (canLaunch) {
-        AppLogger.info('🔵 Launching URL...'); // Debug log
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        AppLogger.info('🔵 URL launched successfully'); // Debug log
-      } else {
-        AppLogger.info('🔵 Cannot launch URL'); // Debug log
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not open privacy policy'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      AppLogger.info('🔵 Error opening privacy policy: $e'); // Debug log
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening privacy policy: $e'),
-            backgroundColor: Colors.red,
+  Future<void> _logout() async {
+    await _authRepository.logout();
+    if (!mounted) return;
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+      (route) => false,
+    );
+  }
+
+  Future<void> _confirmDeleteAccount() async {
+    final formKey = GlobalKey<FormState>();
+    final confirmationController = TextEditingController();
+    final passwordController = TextEditingController();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Type DELETE to confirm. This action is irreversible.',
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: confirmationController,
+                decoration: const InputDecoration(labelText: 'Confirmation'),
+                validator: (v) => v == 'DELETE' ? null : 'Please type DELETE',
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: passwordController,
+                decoration: const InputDecoration(labelText: 'Password (if required)'),
+                obscureText: true,
+              ),
+            ],
           ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                Navigator.pop(ctx, true);
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await _authRepository.deleteAccount(DeleteAccountRequestModel(
+          confirmation: confirmationController.text,
+          password: passwordController.text.isEmpty ? null : passwordController.text,
+        ));
+        if (!mounted) return;
+        await _logout();
+      } catch (e, st) {
+        AppLogger.error('Delete account failed: $e', e, st);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete account: $e')),
         );
       }
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return Container(
-      color: const Color(0xFF232B5D),
-      child: SafeArea(
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(child: Text('Error: $_error', style: TextStyle(color: Colors.white)))
-                : _user == null
-                    ? const Center(child: Text('No profile data available', style: TextStyle(color: Colors.white)))
-                    : ListView(
-                        padding: const EdgeInsets.all(12),
-                        children: [
-                          // Profile Info
-                          Center(
-                            child: Column(
-                              children: [
-                                CustomAvatar(
-                                  name: _user!.name,
-                                  size: 60,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _user!.name ?? '',
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    fontSize: (size.width * 0.05).clamp(16.0, 20.0),
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _user!.email,
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    fontSize: (size.width * 0.035).clamp(12.0, 15.0),
-                                    color: Color(0xFFD6D9E6),
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                ElevatedButton(
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFF4C5C8A),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                  ),
-                                  onPressed: () {
-                                    // Navigate to edit profile
-                                  },
-                                  child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Purchased Features Section
-                          Card(
-                            color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 18.0), fontWeight: FontWeight.w500, color: Colors.white)),
-                                  const SizedBox(height: 8),
-                                  _buildFeatureTile('See Who Likes You', 'Find out who has liked your profile before you match', Icons.favorite, true, size),
-                                  _buildFeatureTile('Unlimited Likes', 'No daily limit on the number of profiles you can like', Icons.all_inclusive, true, size),
-                                  _buildFeatureTile('Advanced Filters', 'Filter by education, height, and more', Icons.filter_list, false, size),
-                                  _buildFeatureTile('Read Receipts', 'See when your messages are read', Icons.done_all, false, size),
-                                  _buildFeatureTile('Priority Likes', 'Get seen by more people with priority placement', Icons.star, false, size),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          // Notifications Section
-                          Card(
-                            color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              leading: const Icon(Icons.notifications, color: Colors.white, size: 20),
-                              title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
-                              onTap: () {
-                                // Navigate to notifications page
-                              },
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          // Settings Section
-                          Card(
-                            color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            child: Column(
-                              children: [
-                                _buildSettingsTile(Icons.privacy_tip, 'Privacy', _openPrivacyPolicy, size),
-                                _buildSettingsTile(Icons.help, 'Help & Support', () {}, size),
-                                _buildSettingsTile(Icons.info, 'About', () {}, size),
-                                _buildSettingsTile(Icons.logout, 'Logout', () {}, size),
-                              ],
-                            ),
-                          ),
-                        ],
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Text('Error: $_error'))
+              : ListView(
+                  children: [
+                    if (_user != null)
+                      ListTile(
+                        leading: const Icon(Icons.person),
+                        title: Text(_user!.name ?? ''),
+                        subtitle: Text(_user!.email),
                       ),
-      ),
+                    const Divider(),
+                    ListTile(
+                      leading: const Icon(Icons.edit),
+                      title: const Text('Edit Profile'),
+                      onTap: () async {
+                        if (_user == null) return;
+                        final updated = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(builder: (_) => EditProfilePage(user: _user!)),
+                        );
+                        if (updated == true) _load();
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip),
+                      title: const Text('Privacy Policy'),
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => const AlertDialog(
+                            title: Text('Privacy Policy'),
+                            content: Text('Privacy policy content will appear here.'),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.delete_forever, color: Colors.red),
+                      title: const Text('Delete Account'),
+                      onTap: _confirmDeleteAccount,
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.logout),
+                      title: const Text('Logout'),
+                      onTap: _logout,
+                    ),
+                  ],
+                ),
     );
   }
+}
 
-  Widget _buildFeatureTile(String title, String description, IconData icon, bool isActive, Size size) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      leading: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: isActive ? const Color(0xFF4C5C8A) : Colors.grey.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 18),
-      ),
-      title: Text(title, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
-      subtitle: Text(description, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 14.0), color: Color(0xFFD6D9E6))),
-      trailing: isActive ? Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.03).clamp(10.0, 13.0))), backgroundColor: Color(0xFF4C5C8A)) : null,
-    );
-  }
 
-  Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap, Size size) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title, 
-                style: TextStyle(
-                  fontFamily: 'Nunito', 
-                  fontSize: (size.width * 0.04).clamp(13.0, 16.0), 
-                  color: Colors.white, 
-                  fontWeight: FontWeight.w500
-                )
-              ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white, size: 20),
-          ],
-        ),
-      ),
-    );
-  }
-} 

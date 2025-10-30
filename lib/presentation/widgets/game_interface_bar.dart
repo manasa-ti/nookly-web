@@ -92,7 +92,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
         ),
         const SizedBox(width: 6),
         Text(
-          'Play 2 Bond',
+          'Get Close',
           style: TextStyle(
             color: Colors.white.withOpacity(0.9),
             fontSize: 14,
@@ -194,113 +194,117 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
 
   Widget _buildNormalInterface(BuildContext context) {
     AppLogger.info('🔵 GAMES TOOLTIP: _buildNormalInterface called, _showGamesTooltip: $_showGamesTooltip');
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        // Conversation Starters
-        Flexible(
-          flex: 1,
-          child: ConversationStarterWidget(
-            matchUserId: widget.matchUserId,
-            priorMessages: widget.priorMessages,
-            onSuggestionSelected: widget.onSuggestionSelected,
-            onTutorialCompleted: _onConversationStarterCompleted,
+    // Compact, responsive three-segment bar with equal widths
+    return SizedBox(
+      height: 42,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Open Up (conversation starters) - reuse existing widget for behavior
+          Expanded(
+            child: Center(
+              child: ConversationStarterWidget(
+                matchUserId: widget.matchUserId,
+                priorMessages: widget.priorMessages,
+                onSuggestionSelected: widget.onSuggestionSelected,
+                onTutorialCompleted: _onConversationStarterCompleted,
+              ),
+            ),
           ),
-        ),
-        
-        // Play to Bond - always show when other user is online
-        Flexible(
-          flex: 1,
-          child: _showGamesTooltip
-              ? ContextualTooltip(
-                  message: 'Choose a game to play together and have fun getting to know each other!',
-                  position: TooltipPosition.bottom,
-                  onDismiss: () {
-                    AppLogger.info('🔵 GAMES TOOLTIP: Tooltip dismissed');
-                    setState(() {
-                      _showGamesTooltip = false;
-                    });
-                    OnboardingService.markGamesTutorialCompleted();
-                  },
-                  child: GestureDetector(
-                    onTap: () {
-                      if (widget.currentUserId.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Please wait while we connect...'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                        return;
-                      }
-                      context.read<GamesBloc>().add(const ShowGameMenu());
-                    },
-                    child: _buildPlayToBondButton(),
-                  ),
-                )
-              : GestureDetector(
-                  onTap: () {
-                    if (widget.currentUserId.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please wait while we connect...'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      return;
-                    }
-                    context.read<GamesBloc>().add(const ShowGameMenu());
-                  },
-                  child: _buildPlayToBondButton(),
-                ),
-        ),
-        
-        // Spice it Up - coming soon (compact version)
-        Flexible(
-          flex: 1,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.local_fire_department,
-                    color: Colors.white.withOpacity(0.5),
-                    size: 16, // Reduced from 20
-                  ),
-                  const SizedBox(width: 4), // Reduced from 6
-                  Flexible(
-                    child: Text(
-                      'Spice it Up',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.5),
-                        fontSize: 12, // Reduced from 14
-                        fontFamily: 'Nunito',
-                        fontWeight: FontWeight.w500,
+          // Get Close (games)
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  if (widget.currentUserId.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please wait while we connect...'),
+                        duration: Duration(seconds: 2),
                       ),
-                      overflow: TextOverflow.ellipsis,
+                    );
+                    return;
+                  }
+                  context.read<GamesBloc>().add(const ShowGameMenu());
+                },
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.games, size: 18, color: Colors.white.withOpacity(0.85)),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        'Get Close',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.95),
+                          fontSize: 13,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w600,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(left: 20), // Reduced from 26 (16 + 4)
-                child: Text(
-                  'Coming soon',
-                  style: TextStyle(
-                    color: Colors.orange.withOpacity(0.8),
-                    fontSize: 9, // Reduced from 10
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w500,
-                  ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+          // Heat Up (coming soon)
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {},
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.local_fire_department, size: 18, color: Colors.white.withOpacity(0.6)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Heat Up',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: 13,
+                            height: 1.1,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    const Padding(
+                      padding: EdgeInsets.only(left: 12),
+                      child: Text(
+                        'Coming soon',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: 9,
+                          height: 1.0,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -473,7 +477,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
   Widget _buildGameMenuGrid(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.1),
         border: Border(
@@ -510,14 +514,14 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 1.8, // Reduced from 2.8 to give more height
+            crossAxisSpacing: 6,
+            mainAxisSpacing: 6,
+            childAspectRatio: 2.4,
             children: [
               _buildGameCard(context, GameType.truthOrThrill, 'Truth or Thrill', 'Choose adventure'),
               _buildGameCard(context, GameType.memorySparks, 'Memory Sparks', 'Share memories'),
@@ -537,12 +541,12 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
         // Don't immediately send invite - show game board first
       },
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
           color: isComingSoon 
               ? Colors.white.withOpacity(0.05)
               : Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isComingSoon 
                 ? Colors.white.withOpacity(0.1)
@@ -578,7 +582,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                   color: isComingSoon 
                       ? Colors.white.withOpacity(0.4)
                       : Colors.white.withOpacity(0.7),
-                  fontSize: 11,
+                  fontSize: 10,
                   fontFamily: 'Nunito',
                 ),
                 maxLines: 2,
