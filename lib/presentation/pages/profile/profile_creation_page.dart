@@ -46,6 +46,32 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   List<String> _availableAvailability = [];
   bool _usedFallbackObjectives = false;
 
+  // Bio validation and helper text
+  static const List<String> _bioTips = [
+    'One cool thing about you',
+    'What you truly seek',
+    'One limitation of yours',
+  ];
+
+  bool _isBioValid(String? bio) {
+    if (bio == null) return false;
+    final normalized = bio.trim();
+    final nonWhitespaceLen = normalized.replaceAll(RegExp(r"\s"), '').length;
+    return normalized.length >= 100 && nonWhitespaceLen >= 80;
+  }
+
+  int _getBioLength(String? bio) {
+    return bio?.trim().length ?? 0;
+  }
+
+  Color _bioProgressColor(String? bio) {
+    final length = _getBioLength(bio);
+    if (length >= 100) return Colors.green; // valid - green
+    if (length >= 75) return const Color(0xFFE6C65B); // warning - yellow
+    if (length >= 50) return const Color(0xFFFFA84A); // heads-up - orange
+    return Colors.red; // too short - red
+  }
+
   final List<String> _sexOptions = ['Man', 'Woman', 'Other'];
   final List<String> _wishToFindOptions = ['Man', 'Woman', 'Any'];
 
@@ -220,7 +246,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           isValid = _hometownController.text.isNotEmpty;
           break;
         case 2: // Profile Details
-          isValid = _bioController.text.isNotEmpty && _selectedInterests.isNotEmpty;
+          isValid = _isBioValid(_bioController.text) && _selectedInterests.isNotEmpty;
           break;
         case 3: // Objective
           isValid = _selectedObjectives.isNotEmpty;
@@ -270,7 +296,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       case 1:
         return 'Please enter your hometown';
       case 2:
-        return 'Please fill in bio and select at least one interest';
+        return 'Please write a bio of at least 100 characters and select an interest';
       case 3:
         return 'Please select at least one objective';
       case 4:
@@ -286,6 +312,17 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
 
   void _onSaveProfile() {
     if (_formKey.currentState!.validate()) {
+      // Ensure bio minimum length before moderation
+      if (!_isBioValid(_bioController.text)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please write at least 100 characters about yourself'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return;
+      }
       // Final age verification before saving profile
       if (_selectedDate != null) {
         final age = DateTime.now().difference(_selectedDate!).inDays ~/ 365;
@@ -755,14 +792,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               hintText: 'Tell us about yourself',
                               hintStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
                               labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
-                              border: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
+                              border: UnderlineInputBorder(
+                                borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
                               ),
-                              enabledBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
                               ),
-                              focusedBorder: const UnderlineInputBorder(
-                                borderSide: BorderSide(color: Color(0xFF4C5C8A)),
+                              focusedBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
                               ),
                               errorBorder: const UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.red),
@@ -772,14 +809,93 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               ),
                             ),
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your bio';
-                              }
-                              return null;
+                              return _isBioValid(value)
+                                  ? null
+                                  : 'Please write at least 100 characters about yourself';
                             },
                             onChanged: (value) {
+                              setState(() {}); // Trigger rebuild for dynamic border colors
                               context.read<ProfileBloc>().add(UpdateBio(value));
                             },
+                          ),
+                          const SizedBox(height: 8),
+                          // Character counter
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'min 100 required',
+                              style: TextStyle(
+                                color: _bioProgressColor(_bioController.text),
+                                fontFamily: 'Nunito',
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: const Color(0xFF4C5C8A),
+                                width: 1,
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                              color: const Color(0xFF2A3A5F).withOpacity(0.3),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.lightbulb_outline,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      'Bio Tips',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontFamily: 'Nunito',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                ..._bioTips.map((tip) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 4,
+                                        height: 4,
+                                        margin: const EdgeInsets.only(top: 6, right: 8),
+                                        decoration: const BoxDecoration(
+                                          color: Color(0xFF4C5C8A),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        child: Text(
+                                          tip,
+                                          style: const TextStyle(
+                                            color: Color(0xFFB0B3C7),
+                                            fontFamily: 'Nunito',
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )).toList(),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 24),
                           const Text('Interests', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
