@@ -1,4 +1,3 @@
-import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/interest_chips.dart';
 import 'package:nookly/presentation/widgets/objective_chips.dart';
@@ -45,32 +44,32 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
   }
 
   Future<void> _saveFilterPreferences() async {
-    AppLogger.info('🔵 FILTER DEBUG: Saving filter preferences');
-    AppLogger.info('🔵 FILTER DEBUG: Physical Activeness: $_selectedPhysicalActiveness');
-    AppLogger.info('🔵 FILTER DEBUG: Availability: $_selectedAvailability');
+    print('🔵 FILTER DEBUG: Saving filter preferences');
+    print('🔵 FILTER DEBUG: Physical Activeness: $_selectedPhysicalActiveness');
+    print('🔵 FILTER DEBUG: Availability: $_selectedAvailability');
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('filter_physical_activeness', jsonEncode(_selectedPhysicalActiveness));
     await prefs.setString('filter_availability', jsonEncode(_selectedAvailability));
-    AppLogger.info('🔵 FILTER DEBUG: Filter preferences saved successfully');
+    print('🔵 FILTER DEBUG: Filter preferences saved successfully');
   }
 
   Future<void> _loadFilterPreferences() async {
-    AppLogger.info('🔵 FILTER DEBUG: Loading filter preferences');
+    print('🔵 FILTER DEBUG: Loading filter preferences');
     final prefs = await SharedPreferences.getInstance();
     final physicalActivenessJson = prefs.getString('filter_physical_activeness');
     final availabilityJson = prefs.getString('filter_availability');
     
     if (physicalActivenessJson != null) {
       _selectedPhysicalActiveness = List<String>.from(jsonDecode(physicalActivenessJson));
-      AppLogger.info('🔵 FILTER DEBUG: Loaded Physical Activeness: $_selectedPhysicalActiveness');
+      print('🔵 FILTER DEBUG: Loaded Physical Activeness: $_selectedPhysicalActiveness');
     } else {
-      AppLogger.info('🔵 FILTER DEBUG: No Physical Activeness preferences found');
+      print('🔵 FILTER DEBUG: No Physical Activeness preferences found');
     }
     if (availabilityJson != null) {
       _selectedAvailability = List<String>.from(jsonDecode(availabilityJson));
-      AppLogger.info('🔵 FILTER DEBUG: Loaded Availability: $_selectedAvailability');
+      print('🔵 FILTER DEBUG: Loaded Availability: $_selectedAvailability');
     } else {
-      AppLogger.info('🔵 FILTER DEBUG: No Availability preferences found');
+      print('🔵 FILTER DEBUG: No Availability preferences found');
     }
   }
 
@@ -258,7 +257,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                   ),
                 )
               : SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80), // Added bottom padding for keyboard/buttons
+                  padding: const EdgeInsets.all(12),
                   child: Form(
                     key: _formKey,
                     child: Column(

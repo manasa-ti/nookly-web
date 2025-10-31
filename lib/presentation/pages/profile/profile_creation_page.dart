@@ -1,4 +1,3 @@
-import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
@@ -15,11 +14,8 @@ import 'package:intl/intl.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
-import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/main.dart';
 import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:get_it/get_it.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -49,36 +45,6 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   List<String> _availablePhysicalActiveness = [];
   List<String> _availableAvailability = [];
   bool _usedFallbackObjectives = false;
-  Position? _userLocation;
-  bool _isGettingLocation = false;
-
-  // Bio validation and helper text
-  static const List<String> _bioTips = [
-    'One cool thing about you',
-    'What you truly seek',
-    'One limitation of yours',
-  ];
-
-  bool _isBioValid(String? bio) {
-    if (bio == null) return false;
-    final normalized = bio.trim();
-    final nonWhitespaceLen = normalized.replaceAll(RegExp(r"\s"), '').length;
-    return normalized.length >= 150 && nonWhitespaceLen >= 120;
-  }
-
-  int _getBioLength(String? bio) {
-    return bio?.trim().length ?? 0;
-  }
-
-  // Deprecated: superseded by _bioProgressColor
-
-  Color _bioProgressColor(String? bio) {
-    final length = _getBioLength(bio);
-    if (length >= 150) return const Color(0xFF4C5C8A); // valid - app accent blue
-    if (length >= 120) return const Color(0xFFFFA84A); // warning - orange
-    if (length >= 90) return const Color(0xFFE6C65B); // heads-up - soft yellow
-    return const Color(0xFFB0B3C7); // neutral gray
-  }
 
   final List<String> _sexOptions = ['Man', 'Woman', 'Other'];
   final List<String> _wishToFindOptions = ['Man', 'Woman', 'Any'];
@@ -162,11 +128,9 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           _availableAvailability = _fallbackAvailability;
           _usedFallbackObjectives = true;
         });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error loading profile options. Using default lists. Error: $e')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading profile options. Using default lists. Error: $e')),
+        );
       }
     }
   }
@@ -229,7 +193,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     }
   }
 
-  Future<void> _onNextStep() async {
+  void _onNextStep() {
     if (_currentStep < 6) {
       bool isValid = false;
       
@@ -256,7 +220,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           isValid = _hometownController.text.isNotEmpty;
           break;
         case 2: // Profile Details
-          isValid = _isBioValid(_bioController.text) && _selectedInterests.isNotEmpty;
+          isValid = _bioController.text.isNotEmpty && _selectedInterests.isNotEmpty;
           break;
         case 3: // Objective
           isValid = _selectedObjectives.isNotEmpty;
@@ -277,19 +241,17 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           _currentStep++;
         });
       } else {
-        AppLogger.info('ProfileCreationPage: Validation failed for step $_currentStep');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_getValidationErrorMessage()),
-              backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        print('ProfileCreationPage: Validation failed for step $_currentStep');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_getValidationErrorMessage()),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } else {
-      await _onSaveProfile();
+      _onSaveProfile();
     }
   }
 
@@ -308,7 +270,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       case 1:
         return 'Please enter your hometown';
       case 2:
-        return 'Please write a bio of at least 150 characters and select an interest';
+        return 'Please fill in bio and select at least one interest';
       case 3:
         return 'Please select at least one objective';
       case 4:
@@ -322,34 +284,19 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     }
   }
 
-  Future<void> _onSaveProfile() async {
+  void _onSaveProfile() {
     if (_formKey.currentState!.validate()) {
-      // Ensure bio minimum length before moderation
-      if (!_isBioValid(_bioController.text)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Please write at least 150 characters about yourself'),
-              backgroundColor: Colors.orange,
-              duration: Duration(seconds: 3),
-            ),
-          );
-        }
-        return;
-      }
       // Final age verification before saving profile
       if (_selectedDate != null) {
         final age = DateTime.now().difference(_selectedDate!).inDays ~/ 365;
         if (age < 18) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('You must be 18 or older to use Nookly. Please select a different date of birth.'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 4),
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You must be 18 or older to use Nookly. Please select a different date of birth.'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
           return;
         }
       }
@@ -359,51 +306,22 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       final bioModerationResult = moderationService.moderateContent(_bioController.text, ContentType.bio);
       
       if (!bioModerationResult.isAppropriate) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Bio contains inappropriate content. Please revise your bio.',
-                style: const TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Nunito',
-                ),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Bio contains inappropriate content. Please revise your bio.',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Nunito',
               ),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
             ),
-          );
-        }
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
         return;
-      }
-
-      // Get user location if not already obtained
-      if (_userLocation == null) {
-        setState(() {
-          _isGettingLocation = true;
-        });
-
-        final locationService = GetIt.instance<LocationService>();
-        _userLocation = await locationService.getLocationForProfileCreation();
-
-        setState(() {
-          _isGettingLocation = false;
-        });
-
-        if (_userLocation == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Location permission is required to create your profile. Please enable location access in settings.'),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 5),
-              ),
-            );
-          }
-          return;
-        }
       }
       
       final user = User(
@@ -412,8 +330,8 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         age: DateTime.now().difference(_selectedDate!).inDays ~/ 365,
         sex: _selectedSex == 'Man' ? 'm' : _selectedSex == 'Woman' ? 'f' : 'other',
         seekingGender: _selectedWishToFind == 'Man' ? 'm' : _selectedWishToFind == 'Woman' ? 'f' : 'any',
-        location: {
-          'coordinates': [_userLocation!.longitude, _userLocation!.latitude], // [longitude, latitude]
+        location: const {
+          'coordinates': [0.0, 0.0], // [longitude, latitude]
         },
         preferredAgeRange: {
           'lower_limit': _ageRange.start.round(),
@@ -437,14 +355,12 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     if (_usedFallbackObjectives) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_usedFallbackObjectives) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Using default objectives list'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Using default objectives list'),
+              duration: Duration(seconds: 2),
+            ),
+          );
           _usedFallbackObjectives = false;
         }
       });
@@ -483,10 +399,10 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
           Expanded(
             child: BlocListener<ProfileBloc, ProfileState>(
         listener: (context, state) {
-          AppLogger.info('ProfileCreationPage: Received state: ${state.runtimeType}');
+          print('ProfileCreationPage: Received state: ${state.runtimeType}');
           
           if (state is ProfileSaved) {
-            AppLogger.info('ProfileCreationPage: Profile saved successfully');
+            print('ProfileCreationPage: Profile saved successfully');
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(
                 builder: (context) => const HomePage(),
@@ -494,11 +410,11 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
               (route) => false, // Remove all previous routes
             );
           } else if (state is ProfileError) {
-            AppLogger.info('ProfileCreationPage: Profile error: ${state.message}');
+            print('ProfileCreationPage: Profile error: ${state.message}');
             // Use a more explicit approach to ensure the SnackBar shows
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
-                AppLogger.info('ProfileCreationPage: Showing error SnackBar');
+                print('ProfileCreationPage: Showing error SnackBar');
                 try {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -508,7 +424,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                     ),
                   );
                 } catch (e) {
-                  AppLogger.info('ProfileCreationPage: Error showing SnackBar with context: $e');
+                  print('ProfileCreationPage: Error showing SnackBar with context: $e');
                   // Fallback to global ScaffoldMessenger
                   MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
                     SnackBar(
@@ -519,7 +435,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                   );
                 }
               } else {
-                AppLogger.info('ProfileCreationPage: Widget not mounted, cannot show SnackBar');
+                print('ProfileCreationPage: Widget not mounted, cannot show SnackBar');
                 // Fallback to global ScaffoldMessenger
                 MyApp.scaffoldMessengerKey.currentState?.showSnackBar(
                   SnackBar(
@@ -534,7 +450,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         },
         child: BlocBuilder<ProfileBloc, ProfileState>(
           builder: (context, profileState) {
-            final isLoading = profileState is ProfileLoading || _isGettingLocation;
+            final isLoading = profileState is ProfileLoading;
             
             return Form(
               key: _formKey,
@@ -551,7 +467,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                 ),
                 child: Stepper(
                   currentStep: _currentStep,
-                  onStepContinue: isLoading ? null : () async => await _onNextStep(),
+                  onStepContinue: isLoading ? null : _onNextStep,
                   onStepCancel: isLoading ? null : _onPreviousStep,
                   controlsBuilder: (context, details) {
                     return Padding(
@@ -839,14 +755,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               hintText: 'Tell us about yourself',
                               hintStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
                               labelStyle: const TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
-                              border: UnderlineInputBorder(
-                                borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
+                              border: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
                               ),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
+                              enabledBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFFD6D9E6)),
                               ),
-                              focusedBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: _bioProgressColor(_bioController.text)),
+                              focusedBorder: const UnderlineInputBorder(
+                                borderSide: BorderSide(color: Color(0xFF4C5C8A)),
                               ),
                               errorBorder: const UnderlineInputBorder(
                                 borderSide: BorderSide(color: Colors.red),
@@ -856,93 +772,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               ),
                             ),
                             validator: (value) {
-                              return _isBioValid(value)
-                                  ? null
-                                  : 'Please write at least 150 characters about yourself';
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your bio';
+                              }
+                              return null;
                             },
                             onChanged: (value) {
-                              setState(() {}); // Trigger rebuild for dynamic border colors
                               context.read<ProfileBloc>().add(UpdateBio(value));
                             },
-                          ),
-                          const SizedBox(height: 8),
-                          // Character counter
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              '${_getBioLength(_bioController.text)}/150 characters',
-                              style: TextStyle(
-                                color: _bioProgressColor(_bioController.text),
-                                fontFamily: 'Nunito',
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: const Color(0xFF4C5C8A),
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              color: const Color(0xFF2A3A5F).withOpacity(0.3),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.lightbulb_outline,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      'Bio Tips',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontFamily: 'Nunito',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                ..._bioTips.map((tip) => Padding(
-                                  padding: const EdgeInsets.only(bottom: 4),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        width: 4,
-                                        height: 4,
-                                        margin: const EdgeInsets.only(top: 6, right: 8),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF4C5C8A),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Text(
-                                          tip,
-                                          style: const TextStyle(
-                                            color: Color(0xFFB0B3C7),
-                                            fontFamily: 'Nunito',
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w400,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                )).toList(),
-                              ],
-                            ),
                           ),
                           const SizedBox(height: 24),
                           const Text('Interests', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),

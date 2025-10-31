@@ -28,7 +28,7 @@ class _HomePageState extends State<HomePage> {
     const RecommendedProfilesPage(),
     const ReceivedLikesPage(),
     const ChatInboxPage(),
-    const ProfilePage(),
+    const ProfileHubPage(),
   ];
 
   // Helper method to determine if device is tablet
@@ -42,7 +42,15 @@ class _HomePageState extends State<HomePage> {
     return _isTablet(context) ? tabletSize : mobileSize;
   }
 
-  // Removed legacy ProfilePage navigation; profile tab uses ProfileHubPage.
+  // Restore profile navigation helper for toolbar shortcuts/deeplinks
+  void _onProfilePressed() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfilePage(),
+      ),
+    );
+  }
 
   void _onNotificationsPressed() {
     Navigator.push(

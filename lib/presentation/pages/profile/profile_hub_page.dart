@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:nookly/domain/repositories/auth_repository.dart';
-import 'package:nookly/domain/entities/user.dart';
-import 'package:get_it/get_it.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
-import 'package:nookly/presentation/pages/settings/settings_page.dart';
-import 'package:nookly/presentation/pages/notifications/notifications_page.dart';
+import 'package:get_it/get_it.dart';
+import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/presentation/pages/profile/edit_profile_page.dart';
+import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
+import 'package:nookly/presentation/pages/auth/login_page.dart';
+import 'package:nookly/data/models/auth/delete_account_request_model.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -15,52 +19,438 @@ class ProfileHubPage extends StatefulWidget {
 
 class _ProfileHubPageState extends State<ProfileHubPage> {
   final _authRepository = GetIt.instance<AuthRepository>();
-  bool _isLoading = true;
-  String? _error;
   User? _user;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadUserProfile();
+    _loadUser();
   }
 
-  Future<void> _loadUserProfile() async {
+  Future<String> _getAppVersion() async {
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
+      // Lazy import to avoid needing to initialize earlier
+      // ignore: avoid_print
+      print('🔵 Loading app version');
+      final info = await PackageInfo.fromPlatform();
+      return '${info.version}+${info.buildNumber}';
+    } catch (_) {
+      return '';
+    }
+  }
 
+  Future<void> _loadUser() async {
+    setState(() => _isLoading = true);
+    try {
       final user = await _authRepository.getCurrentUser();
-      
+      print('🔵 ProfileHub: Loaded user: ${user?.name} | ${user?.email}');
+      print('🔵 ProfileHub: User object: $user');
       setState(() {
         _user = user;
         _isLoading = false;
       });
     } catch (e) {
+      print('🔵 ProfileHub: Error loading user: $e');
       setState(() {
-        _error = e.toString();
+        _user = null;
         _isLoading = false;
       });
     }
   }
 
-  void _onSettingsPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SettingsPage(),
-      ),
+  Future<void> _openPrivacyPolicy() async {
+    print('🔵 Privacy button tapped!'); // Debug log
+    
+    // Show immediate feedback that button was tapped
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Opening privacy policy...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+    
+    const url = 'https://privacy-policy.nookly.app/';
+    try {
+      print('🔵 Attempting to open URL: $url'); // Debug log
+      final uri = Uri.parse(url);
+      print('🔵 Parsed URI: $uri'); // Debug log
+      
+      final canLaunch = await canLaunchUrl(uri);
+      print('🔵 Can launch URL: $canLaunch'); // Debug log
+      
+      if (canLaunch) {
+        print('🔵 Launching URL...'); // Debug log
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        print('🔵 URL launched successfully'); // Debug log
+      } else {
+        print('🔵 Cannot launch URL'); // Debug log
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open privacy policy'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('🔵 Error opening privacy policy: $e'); // Debug log
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening privacy policy: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _openTermsOfUse() async {
+    const url = 'https://terms-of-use.nookly.app/';
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open terms of use'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening terms of use: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showAboutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF234481),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'About Nookly',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FutureBuilder<String>(
+                  future: _getAppVersion(),
+                  builder: (context, snapshot) {
+                    final text = snapshot.data != null && snapshot.data!.isNotEmpty
+                        ? 'Version ${snapshot.data!}'
+                        : 'Version';
+                    return Text(
+                      text,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontFamily: 'Nunito',
+                        fontSize: 16,
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Nookly is a comprehensive dating application designed to help you find meaningful connections.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontFamily: 'Nunito',
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '© 2024 Nookly. All rights reserved.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontFamily: 'Nunito',
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _openPrivacyPolicy();
+                        },
+                        child: const Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _openTermsOfUse();
+                        },
+                        child: const Text(
+                          'Terms of Use',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Close',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  void _onNotificationsPressed() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const NotificationsPage(),
-      ),
+  void _showDeleteAccountConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF234481),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Delete Account',
+            style: TextStyle(
+              color: Colors.red,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
+            style: TextStyle(
+              color: Colors.white,
+              fontFamily: 'Nunito',
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showDeleteAccountPasswordDialog();
+              },
+              child: const Text(
+                'Yes, Delete',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteAccountPasswordDialog() {
+    final passwordController = TextEditingController();
+    final confirmationController = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            bool isPasswordValid = passwordController.text.isNotEmpty;
+            bool isConfirmationValid = confirmationController.text == 'DELETE';
+            bool canSubmit = isPasswordValid && isConfirmationValid && !isLoading;
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF234481),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                'Confirm Account Deletion',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'To confirm account deletion, please:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Nunito',
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Password',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+                    ),
+                    onChanged: (value) => setState(() {}),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: confirmationController,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: const InputDecoration(
+                      labelText: 'Type "DELETE" to confirm',
+                      labelStyle: TextStyle(color: Colors.white70),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.white30),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.red),
+                      ),
+                    ),
+                    onChanged: (value) => setState(() {}),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: canSubmit
+                      ? () async {
+                          setState(() => isLoading = true);
+                          try {
+                            final request = DeleteAccountRequestModel(
+                              confirmation: 'DELETE',
+                              password: passwordController.text,
+                            );
+                            
+                            await _authRepository.deleteAccount(request);
+                            
+                            if (mounted) {
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Account deleted successfully'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginPage()),
+                                (route) => false,
+                              );
+                            }
+                          } catch (e) {
+                            setState(() => isLoading = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Failed to delete account: $e'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        }
+                      : null,
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                          ),
+                        )
+                      : const Text(
+                          'Delete Account',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
@@ -68,92 +458,219 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Container(
-      color: const Color(0xFF232B5D),
+      color: const Color(0xFF234481),
       child: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? Center(child: Text('Error: $_error', style: const TextStyle(color: Colors.white)))
-                : _user == null
-                    ? const Center(child: Text('No profile data available', style: TextStyle(color: Colors.white)))
-                    : ListView(
-                        padding: const EdgeInsets.all(12),
-                        children: [
-                          // Profile Info
-                          Center(
-                            child: Column(
-                              children: [
-                                CustomAvatar(
-                                  name: _user!.name,
-                                  size: 60,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  _user!.name ?? '',
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    fontSize: (size.width * 0.05).clamp(16.0, 20.0),
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  _user!.email,
-                                  style: TextStyle(
-                                    fontFamily: 'Nunito',
-                                    fontSize: (size.width * 0.035).clamp(12.0, 15.0),
-                                    color: const Color(0xFFD6D9E6),
-                                  ),
-                                ),
-                              ],
+            ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+            : _user == null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Profile Setup Required',
+                          style: TextStyle(color: Colors.white, fontSize: 18),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Please complete your profile setup',
+                          style: TextStyle(color: Colors.white70, fontSize: 14),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const ProfileCreationPage(),
+                              ),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4C5C8A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          const SizedBox(height: 20),
-                          // Quick Actions
-                          Card(
-                            color: const Color(0xFF3A4A7A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            child: Column(
-                              children: [
-                                _buildSettingsTile(Icons.notifications, 'Notifications', _onNotificationsPressed, size),
-                                const Divider(color: Color(0xFF4C5C8A), height: 1),
-                                _buildSettingsTile(Icons.settings, 'Settings', _onSettingsPressed, size),
-                              ],
+                          child: const Text(
+                            'Complete Profile',
+                            style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _loadUser,
+                          child: const Text(
+                            'Retry Loading',
+                            style: TextStyle(color: Colors.white70),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.all(20),
+                    children: [
+                  // Profile Info
+                  Center(
+                    child: Column(
+                      children: [
+                        CustomAvatar(
+                          name: _user?.name,
+                          size: 60,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _user?.name ?? '',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: (size.width * 0.05).clamp(16.0, 24.0),
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _user?.email ?? '',
+                          style: const TextStyle(
+                            fontFamily: 'Nunito',
+                            color: Color(0xFFD6D9E6),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4C5C8A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                        ],
-                      ),
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile(IconData icon, String title, VoidCallback onTap, Size size) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title, 
-                style: TextStyle(
-                  fontFamily: 'Nunito', 
-                  fontSize: (size.width * 0.04).clamp(13.0, 16.0), 
-                  color: Colors.white, 
-                  fontWeight: FontWeight.w500
-                )
+                          onPressed: () async {
+                            if (_user == null) return;
+                            final updated = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditProfilePage(user: _user!),
+                              ),
+                            );
+                            if (updated == true) {
+                              _loadUser();
+                            }
+                          },
+                          child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // TODO: Uncomment Premium Features section when implemented
+                  // const SizedBox(height: 32),
+                  // // Purchased Features Section (Placeholder)
+                  // Card(
+                  //   color: const Color(0xFF35548b),
+                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  //   child: Padding(
+                  //     padding: const EdgeInsets.all(16),
+                  //     child: Column(
+                  //       crossAxisAlignment: CrossAxisAlignment.start,
+                  //       children: [
+                  //         Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 20.0), fontWeight: FontWeight.w500, color: Colors.white)),
+                  //         const SizedBox(height: 12),
+                  //         Text('Your purchased features will appear here.', style: const TextStyle(fontFamily: 'Nunito', color: Color(0xFFD6D9E6))),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
+                  // TODO: Uncomment Notifications section when implemented
+                  // const SizedBox(height: 32),
+                  // // Notifications Section
+                  // Card(
+                  //   color: const Color(0xFF35548b),
+                  //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  //   child: ListTile(
+                  //     leading: const Icon(Icons.notifications, color: Colors.white),
+                  //     title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500, fontSize: (size.width * 0.04).clamp(13.0, 16.0))),
+                  //     trailing: const Icon(Icons.chevron_right, color: Colors.white),
+                  //     onTap: () {
+                  //       // Navigate to notifications page
+                  //     },
+                  //   ),
+                  // ),
+                  const SizedBox(height: 16),
+                  // Settings Section
+                  Card(
+                    color: const Color(0xFF35548b),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    child: Column(
+                      children: [
+                        _SettingsTile(icon: Icons.privacy_tip, title: 'Privacy', onTap: _openPrivacyPolicy),
+                        // TODO: Uncomment when Help & Support page is implemented
+                        // _SettingsTile(icon: Icons.help, title: 'Help & Support', onTap: () {}),
+                        _SettingsTile(icon: Icons.info, title: 'About', onTap: _showAboutDialog),
+                        _SettingsTile(
+                          icon: Icons.delete_forever,
+                          title: 'Delete Account',
+                          onTap: _showDeleteAccountConfirmation,
+                        ),
+                        _SettingsTile(
+                          icon: Icons.logout,
+                          title: 'Logout',
+                          onTap: () async {
+                            await _authRepository.logout();
+                            if (mounted) {
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(builder: (context) => const LoginPage()),
+                                (route) => false,
+                              );
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const Icon(Icons.chevron_right, color: Colors.white, size: 20),
-          ],
-        ),
       ),
     );
   }
 }
 
+class _SettingsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final VoidCallback onTap;
+
+  const _SettingsTile({required this.icon, required this.title, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title, 
+                style: TextStyle(
+                  fontFamily: 'Nunito', 
+                  color: Colors.white, 
+                  fontWeight: FontWeight.w500, 
+                  fontSize: (size.width * 0.04).clamp(13.0, 16.0)
+                )
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.white),
+          ],
+        ),
+      ),
+    );
+  }
+} 

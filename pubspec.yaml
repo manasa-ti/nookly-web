@@ -49,6 +49,7 @@ dependencies:
   url_launcher: ^6.2.2
   geolocator: ^10.1.0
   app_links: ^3.4.5
+  package_info_plus: ^8.0.0
   
   # Encryption for E2EE
   crypto: ^3.0.3
