@@ -394,13 +394,23 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
           final messageId = data['_id'] ?? data['id'];
           final messageTimestamp = DateTime.parse(data['createdAt'] ?? data['timestamp'] ?? DateTime.now().toIso8601String());
           
-          // Skip if this message is older than the last message time (already processed)
-          // Only process messages that are NEWER than what we already have
+          // Skip if message is strictly older than the stored lastMessageTime.
+          // If timestamps are equal, fall back to ID comparison to avoid
+          // dropping a newer message with identical server timestamp.
           if (messageTimestamp.isBefore(conversation.lastMessageTime)) {
             AppLogger.info('⏭️ Skipping old message - already in conversation');
             AppLogger.info('⏭️ Message timestamp: $messageTimestamp');
             AppLogger.info('⏭️ Last message time: ${conversation.lastMessageTime}');
             return; // Skip processing this message
+          }
+          if (messageTimestamp.isAtSameMomentAs(conversation.lastMessageTime)) {
+            final lastId = conversation.lastMessage?.id;
+            if (lastId == messageId) {
+              AppLogger.info('⏭️ Skipping message with same timestamp and same ID');
+              return;
+            }
+            // Different ID with same timestamp – treat as newer to update preview
+            AppLogger.info('🔄 Same timestamp but different IDs; accepting as newer');
           }
           
           // Skip if this is the exact same message
