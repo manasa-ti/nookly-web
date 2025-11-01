@@ -21,7 +21,7 @@ class GenericAvatar extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: const Color(0xFF234481), // Brand blue
+        color: const Color(0xFF2e4781), // Brand blue
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(

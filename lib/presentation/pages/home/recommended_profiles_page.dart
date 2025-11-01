@@ -137,9 +137,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return Container(
-      color: const Color(0xFF234481),
-      child: BlocConsumer<RecommendedProfilesBloc, RecommendedProfilesState>(
+    return BlocConsumer<RecommendedProfilesBloc, RecommendedProfilesState>(
         listener: (context, state) {
           if (state is RecommendedProfilesError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -298,7 +296,6 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             child: Text('Something went wrong. Please try again.', style: TextStyle(color: Colors.white)),
           );
         },
-      ),
-    );
+      );
   }
 } 

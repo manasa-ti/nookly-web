@@ -16,7 +16,7 @@ class GameInviteModal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),

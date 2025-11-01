@@ -63,10 +63,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       appBar: AppBar(
         title: const Text('Reset Password', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
       ),

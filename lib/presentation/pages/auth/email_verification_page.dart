@@ -52,9 +52,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         elevation: 0,
         title: const Text('Verify Your Email', style: TextStyle(color: Colors.white, fontFamily: 'Nunito')),
         centerTitle: true,

@@ -5,16 +5,25 @@ import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/data/repositories/notification_repository.dart';
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/services/crash_reporting_service.dart';
+import 'package:nookly/core/di/injection_container.dart' as di;
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
   final NotificationRepository _notificationRepository;
+  final AnalyticsService _analyticsService;
+  final CrashReportingService _crashReportingService;
 
   AuthBloc({
     required AuthRepository authRepository,
     required NotificationRepository notificationRepository,
+    AnalyticsService? analyticsService,
+    CrashReportingService? crashReportingService,
   })  : _authRepository = authRepository,
         _notificationRepository = notificationRepository,
+        _analyticsService = analyticsService ?? di.sl<AnalyticsService>(),
+        _crashReportingService = crashReportingService ?? di.sl<CrashReportingService>(),
         super(AuthInitial()) {
     on<SignInWithEmailAndPassword>(_onSignInWithEmailAndPassword);
     on<SignUpWithEmailAndPassword>(_onSignUpWithEmailAndPassword);
@@ -59,6 +68,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Register device for push notifications
         await _notificationRepository.registerDevice();
         
+        // Track analytics and set user context
+        await _analyticsService.logLogin(method: 'email');
+        await _analyticsService.setUserId(user.id);
+        await _crashReportingService.setUserId(user.id);
+        
         emit(Authenticated(user));
       }
     } catch (e) {
@@ -94,6 +108,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Register device for push notifications
         await _notificationRepository.registerDevice();
         
+        // Track analytics and set user context
+        await _analyticsService.logSignUp(method: 'email');
+        await _analyticsService.setUserId(user.id);
+        await _crashReportingService.setUserId(user.id);
+        
         emit(Authenticated(user));
       }
     } catch (e) {
@@ -116,6 +135,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Register device for push notifications
       await _notificationRepository.registerDevice();
       
+      // Track analytics and set user context
+      await _analyticsService.logLogin(method: 'google');
+      await _analyticsService.setUserId(user.id);
+      await _crashReportingService.setUserId(user.id);
+      
       emit(Authenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -128,10 +152,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Track logout before clearing data
+      await _analyticsService.logLogout();
+      
       // Unregister device from push notifications
       await _notificationRepository.unregisterDevice();
       
       await _authRepository.signOut();
+      
+      // Reset analytics and crash reporting user data
+      await _analyticsService.resetAnalyticsData();
+      await _crashReportingService.clearUserData();
+      
       emit(Unauthenticated());
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -144,9 +176,18 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
+      // Track forced logout
+      await _analyticsService.logLogout();
+      await _crashReportingService.log('Force logout: ${event.reason}');
+      
       // Unregister device from push notifications
       await _notificationRepository.unregisterDevice();
       await _authRepository.signOut();
+      
+      // Reset analytics and crash reporting user data
+      await _analyticsService.resetAnalyticsData();
+      await _crashReportingService.clearUserData();
+      
       emit(AuthError('Invalid Token: ${event.reason}'));
     } catch (e) {
       emit(AuthError('Failed to logout: ${e.toString()}'));
@@ -193,6 +234,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         // Register device for push notifications (in case not registered)
         await _notificationRepository.registerDevice();
         
+        // Set user context for analytics and crash reporting
+        await _analyticsService.setUserId(user.id);
+        await _crashReportingService.setUserId(user.id);
+        
         emit(Authenticated(user));
       } else {
         emit(Unauthenticated());
@@ -228,6 +273,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final verifyResponse = await _authRepository.verifyOtp(event.email, event.otp);
       final user = _mapUserModelToEntity(verifyResponse.user);
+      
+      // Track signup/login via OTP
+      await _analyticsService.logSignUp(method: 'otp');
+      await _analyticsService.setUserId(user.id);
+      await _crashReportingService.setUserId(user.id);
+      
       emit(OtpVerified(user));
     } catch (e) {
       emit(OtpError(e.toString()));

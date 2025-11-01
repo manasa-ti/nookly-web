@@ -31,16 +31,27 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            keyAlias = keystoreProperties["keyAlias"] as String?
-            keyPassword = keystoreProperties["keyPassword"] as String?
-            storeFile = keystoreProperties["storeFile"]?.let { file(it) }
-            storePassword = keystoreProperties["storePassword"] as String?
+        if (keystorePropertiesFile.exists()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String?
+                keyPassword = keystoreProperties["keyPassword"] as String?
+                storeFile = keystoreProperties["storeFile"]?.let { file(it) }
+                storePassword = keystoreProperties["storePassword"] as String?
+            }
+        } else {
+            // Create a dummy release config to avoid errors
+            create("release") {
+                // Will use debug signing for local builds
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            // Only use signing config if key.properties exists and has valid properties
+            val storeFile = keystoreProperties["storeFile"] as String?
+            if (keystorePropertiesFile.exists() && storeFile != null && storeFile.isNotEmpty()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             // Enables code shrinking, obfuscation, and optimization for only
             // your project's release build type.
             isMinifyEnabled = true

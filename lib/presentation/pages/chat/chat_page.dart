@@ -1588,7 +1588,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void _showImagePicker() {
     showModalBottomSheet(
         context: context,
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -2464,9 +2464,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Widget _buildScaffold() {
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -2856,7 +2856,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                             if (!isLoading) return const SizedBox.shrink();
                             
                             return Container(
-                              color: const Color(0xFF234481).withOpacity(0.8),
+                              color: const Color(0xFF2e4781).withOpacity(0.8),
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -3035,7 +3035,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           Container(
             padding: EdgeInsets.all(inputPadding),
             decoration: BoxDecoration(
-              color: const Color(0xFF234481),
+              color: const Color(0xFF2e4781),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -3223,7 +3223,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           child: Material(
             elevation: 8,
             child: Container(
-              color: const Color(0xFF234481),
+              color: const Color(0xFF2e4781),
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -3825,7 +3825,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Existing logic for showing conversation starters modal
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

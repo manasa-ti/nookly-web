@@ -403,7 +403,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       });
     }
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       appBar: AppBar(
         title: Text(
           'Create Profile',
@@ -414,7 +414,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
             color: Colors.white,
           ),
         ),
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         elevation: 0,
       ),
       body: Column(

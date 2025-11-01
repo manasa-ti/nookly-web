@@ -42,6 +42,8 @@ import 'package:nookly/data/repositories/games_repository_impl.dart';
 import 'package:nookly/core/services/call_api_service.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
 import 'package:nookly/core/services/call_manager_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/network/network_service.dart';
 
 final GetIt sl = GetIt.instance;
@@ -125,6 +127,15 @@ Future<void> init() async {
   
   sl.registerLazySingleton<CallManagerService>(
     () => CallManagerService(),
+  );
+  
+  // Analytics & Crash Reporting Services
+  sl.registerLazySingleton<AnalyticsService>(
+    () => AnalyticsService(),
+  );
+  
+  sl.registerLazySingleton<CrashReportingService>(
+    () => CrashReportingService(),
   );
   
   // Blocs

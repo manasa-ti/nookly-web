@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'environments/development_config.dart';
 import 'environments/staging_config.dart';
 import 'environments/production_config.dart';
@@ -72,5 +71,17 @@ class EnvironmentManager {
       case Environment.production:
         return ProductionConfig.enableDebugMode;
     }
+  }
+  
+  /// Whether analytics should be enabled
+  /// Enabled in all environments (separate Firebase projects per environment)
+  static bool get enableAnalytics {
+    return true;
+  }
+  
+  /// Whether crash reporting should be enabled
+  /// Enabled in all environments (separate Firebase projects per environment)
+  static bool get enableCrashReporting {
+    return true;
   }
 } 

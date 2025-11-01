@@ -118,7 +118,7 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
     AppLogger.info('DEBUGGING STARTERS: Opening modal and triggering API call');
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:nookly/domain/entities/received_like.dart';
 import 'package:nookly/domain/repositories/received_likes_repository.dart';
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/di/injection_container.dart' as di;
 
 // Events
 abstract class ReceivedLikesEvent extends Equatable {
@@ -66,8 +68,13 @@ class ReceivedLikesError extends ReceivedLikesState {
 // Bloc
 class ReceivedLikesBloc extends Bloc<ReceivedLikesEvent, ReceivedLikesState> {
   final ReceivedLikesRepository repository;
+  final AnalyticsService _analyticsService;
 
-  ReceivedLikesBloc({required this.repository}) : super(ReceivedLikesInitial()) {
+  ReceivedLikesBloc({
+    required this.repository,
+    AnalyticsService? analyticsService,
+  }) : _analyticsService = analyticsService ?? di.sl<AnalyticsService>(),
+        super(ReceivedLikesInitial()) {
     on<LoadReceivedLikes>(_onLoadReceivedLikes);
     on<AcceptLike>(_onAcceptLike);
     on<RejectLike>(_onRejectLike);
@@ -101,6 +108,8 @@ class ReceivedLikesBloc extends Bloc<ReceivedLikesEvent, ReceivedLikesState> {
       try {
         await repository.acceptLike(event.likeId);
         // API call successful - conversation will be created automatically
+        // Track match event
+        await _analyticsService.logMatch(matchId: event.likeId);
       } catch (e) {
         // API call failed - restore the profile to the list
         final restoredLikes = [...updatedLikes, ...currentState.likes.where((like) => like.id == event.likeId)];

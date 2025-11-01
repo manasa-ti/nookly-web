@@ -1,4 +1,3 @@
-import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:flutter_svg/flutter_svg.dart'; // Temporarily unused
@@ -11,8 +10,6 @@ import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
-import 'package:nookly/presentation/pages/onboarding/welcome_tour_page.dart';
-import 'package:nookly/core/services/onboarding_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -65,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) async {
           if (state is Authenticated) {
@@ -73,59 +70,26 @@ class _LoginPageState extends State<LoginPage> {
               _isEmailLoading = false;
             });
             
-            // Check if welcome tour should be shown
-            final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
-            AppLogger.info('🔵 LOGIN: shouldShowWelcomeTour = $shouldShowWelcomeTour');
-            
-            if (shouldShowWelcomeTour) {
-              AppLogger.info('🔵 LOGIN: Showing welcome tour');
-              // Show welcome tour first
+            // Navigate directly based on profile completion
+            // Welcome tour is now shown before login (in splash screen) for first-time users
+            if (state.user.isProfileComplete) {
+              // Navigate to home page and clear navigation stack
               Navigator.pushAndRemoveUntil(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => WelcomeTourPage(
-                    onComplete: () {
-                      // After welcome tour, navigate based on profile completion
-                      if (state.user.isProfileComplete) {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const HomePage(),
-                          ),
-                        );
-                      } else {
-                        Navigator.of(context).pushReplacement(
-                          MaterialPageRoute(
-                            builder: (context) => const ProfileCreationPage(),
-                          ),
-                        );
-                      }
-                    },
-                  ),
+                  builder: (context) => const HomePage(),
                 ),
                 (route) => false, // Remove all previous routes
               );
             } else {
-              AppLogger.info('🔵 LOGIN: Welcome tour already completed, navigating directly');
-              // Welcome tour already completed, navigate directly
-              if (state.user.isProfileComplete) {
-                // Navigate to home page and clear navigation stack
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomePage(),
-                  ),
-                  (route) => false, // Remove all previous routes
-                );
-              } else {
-                // Navigate to profile creation and clear navigation stack
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProfileCreationPage(),
-                  ),
-                  (route) => false, // Remove all previous routes
-                );
-              }
+              // Navigate to profile creation and clear navigation stack
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ProfileCreationPage(),
+                ),
+                (route) => false, // Remove all previous routes
+              );
             }
           } else if (state is EmailVerificationRequired) {
             setState(() {
@@ -205,8 +169,9 @@ class _LoginPageState extends State<LoginPage> {
                           errorBorder: InputBorder.none,
                           focusedErrorBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                           floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          isDense: true,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -252,8 +217,9 @@ class _LoginPageState extends State<LoginPage> {
                           errorBorder: InputBorder.none,
                           focusedErrorBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
                           floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          isDense: true,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

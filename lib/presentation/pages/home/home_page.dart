@@ -115,15 +115,40 @@ class _HomePageState extends State<HomePage> {
         // Allow app to exit when back button is pressed on home screen
         return true;
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF234481),
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF2e4781), // #2e4781
+              Color(0xFF2D4B8A), // #2D4B8A
+              Color(0xFF5A4B7A), // #5A4B7A
+            ],
+            stops: [0.0, 0.5, 1.0],
+          ),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.transparent,
+          body: _pages[_currentIndex],
         appBar: PreferredSize(
           preferredSize: Size.fromHeight(appBarHeight),
           child: SafeArea(
             top: true, // Exclude status bar from colored background
             bottom: false,
             child: Container(
-              color: const Color(0xFF35548b).withOpacity(0.7), // Match bottom nav bar color and opacity
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFF2e4781), // #2e4781
+                    Color(0xFF2D4B8A), // #2D4B8A
+                    Color(0xFF5A4B7A), // #5A4B7A
+                  ],
+                  stops: [0.0, 0.5, 1.0],
+                ),
+              ),
               child: SizedBox(
                 height: appBarHeight,
                 child: Stack(
@@ -182,7 +207,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        body: _pages[_currentIndex],
         bottomNavigationBar: SafeArea(
           bottom: true,
           child: ClipRRect(
@@ -280,11 +304,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              ),
             ),
           ),
         ),
       ),
+      ),
+    ),
     );
   }
 } 

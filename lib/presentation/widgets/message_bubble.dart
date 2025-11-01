@@ -434,7 +434,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             height: 200,
             child: Center(
               child: CircularProgressIndicator(
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF234481)),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2e4781)),
                 value: loadingProgress.expectedTotalBytes != null
                     ? loadingProgress.cumulativeBytesLoaded /
                         loadingProgress.expectedTotalBytes!
@@ -468,7 +468,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             width: 200,
             height: 200,
             child: Center(
-              child: Icon(Icons.error_outline, size: 40, color: Color(0xFF234481)),
+              child: Icon(Icons.error_outline, size: 40, color: Color(0xFF2e4781)),
             ),
           );
         },
@@ -491,9 +491,9 @@ class _MessageBubbleState extends State<MessageBubble> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF234481).withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF2e4781).withOpacity(0.3 + (0.2 * value)),
                 const Color(0xFF4CAF50).withOpacity(0.3 + (0.2 * value)),
-                const Color(0xFF234481).withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF2e4781).withOpacity(0.3 + (0.2 * value)),
               ],
             ),
             border: Border.all(
@@ -502,7 +502,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF234481).withOpacity(0.3 * value),
+                color: const Color(0xFF2e4781).withOpacity(0.3 * value),
                 blurRadius: 10 + (10 * value),
                 spreadRadius: 2 * value,
               ),

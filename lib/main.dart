@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/deep_link_service.dart';
 import 'package:nookly/core/services/heartbeat_service.dart';
 import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/core/services/firebase_messaging_service.dart';
+import 'package:nookly/core/services/crash_reporting_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/services/analytics_route_observer.dart';
 import 'package:nookly/data/repositories/notification_repository.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -78,6 +82,35 @@ void main() async {
     
     await di.init();
     logger.i('Dependency injection initialized');
+    
+    // Initialize Crash Reporting and Analytics (must be after di.init())
+    try {
+      final crashReportingService = di.sl<CrashReportingService>();
+      await crashReportingService.initialize();
+      logger.i('✅ Crash reporting initialized');
+      
+      final analyticsService = di.sl<AnalyticsService>();
+      await analyticsService.initialize();
+      logger.i('✅ Analytics initialized');
+      
+      // Initialize Performance Monitoring
+      final performance = FirebasePerformance.instance;
+      await performance.setPerformanceCollectionEnabled(true); // Enabled for all environments
+      logger.i('✅ Performance monitoring initialized');
+      
+      // Track app startup time
+      final startupTrace = performance.newTrace('app_startup');
+      startupTrace.start();
+      startupStopwatch.stop();
+      startupTrace.putAttribute('startup_time_ms', startupStopwatch.elapsedMilliseconds.toString());
+      startupTrace.putAttribute('environment', EnvironmentManager.currentEnvironment.toString());
+      startupTrace.stop();
+      logger.i('📊 App startup tracked: ${startupStopwatch.elapsedMilliseconds}ms');
+    } catch (e, stackTrace) {
+      logger.e('❌ Error initializing analytics/crash reporting: $e');
+      logger.e('Stack trace: $stackTrace');
+      // Continue - analytics failures shouldn't block app startup
+    }
     
   // Initialize Firebase Messaging
   final firebaseMessagingService = FirebaseMessagingService();
@@ -235,6 +268,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           navigatorKey: FirebaseMessagingService.navigatorKey ?? AuthHandler.navigatorKey, // Firebase notifications and auth navigation
           scaffoldMessengerKey: MyApp.scaffoldMessengerKey, // Add global scaffold messenger key
           theme: AppTheme.theme,
+          navigatorObservers: [
+            AnalyticsRouteObserver(), // Track screen views automatically
+          ],
           home: const SplashScreen(),
           routes: {
             '/login': (context) => const LoginPage(),

@@ -142,12 +142,38 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             }
           }
         } else if (state is Unauthenticated) {
-          Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(
-              builder: (context) => const LoginPage(),
-            ),
-            (route) => false, // Remove all previous routes
-          );
+          // Check if welcome tour should be shown BEFORE login/signup
+          final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
+          AppLogger.info('🔵 SPLASH: Unauthenticated - shouldShowWelcomeTour = $shouldShowWelcomeTour');
+          
+          if (shouldShowWelcomeTour) {
+            AppLogger.info('🔵 SPLASH: Showing welcome tour before login');
+            // Show welcome tour first, then navigate to login
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => WelcomeTourPage(
+                  onComplete: () {
+                    // After welcome tour, navigate to login page
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              (route) => false, // Remove all previous routes
+            );
+          } else {
+            AppLogger.info('🔵 SPLASH: Welcome tour already completed, navigating directly to login');
+            // Welcome tour already completed, navigate directly to login
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(
+                builder: (context) => const LoginPage(),
+              ),
+              (route) => false, // Remove all previous routes
+            );
+          }
         }
       },
       child: Scaffold(
@@ -161,7 +187,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF234481), // #234481
+                    Color(0xFF2e4781), // #2e4781
                     Color(0xFF2D4B8A), // #2D4B8A
                     Color(0xFF5A4B7A), // #5A4B7A
                   ],
@@ -249,7 +275,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF234481), // #234481
+            Color(0xFF2e4781), // #2e4781
             Color(0xFF5A4B7A), // #5A4B7A
           ],
         ),
@@ -260,7 +286,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF234481).withOpacity(0.5),
+            color: const Color(0xFF2e4781).withOpacity(0.5),
             blurRadius: 40,
             offset: const Offset(0, 15),
           ),
@@ -393,7 +419,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
-                    Color(0xFF234481), // #234481
+                    Color(0xFF2e4781), // #2e4781
                     Color(0xFF5A4B7A), // #5A4B7A
                   ],
                 ),

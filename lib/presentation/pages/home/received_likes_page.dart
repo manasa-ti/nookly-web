@@ -20,9 +20,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color(0xFF234481),
-      child: BlocConsumer<ReceivedLikesBloc, ReceivedLikesState>(
+    return BlocConsumer<ReceivedLikesBloc, ReceivedLikesState>(
         listener: (context, state) {
           if (state is ReceivedLikesError) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -124,8 +122,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
             child: Text('Something went wrong. Please try again.'),
           );
         },
-      ),
-    );
+      );
   }
 
   String _getTimeAgo(DateTime dateTime) {

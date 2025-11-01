@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io' show Platform;
+import 'package:firebase_performance/firebase_performance.dart';
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
@@ -62,6 +62,7 @@ class NetworkService {
           }
         },
       ))
+      ..interceptors.add(_createPerformanceInterceptor())
       ..interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) async {
           try {
@@ -153,5 +154,66 @@ class NetworkService {
   static void clearAuthToken() {
     _dio?.options.headers.remove('Authorization');
     _prefs?.remove('token');
+  }
+
+  /// Create performance monitoring interceptor for Firebase Performance
+  static Interceptor _createPerformanceInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        // Only track performance in staging/production
+        if (EnvironmentManager.currentEnvironment != Environment.development) {
+          final httpMethod = _getHttpMethod(options.method);
+          final trace = FirebasePerformance.instance.newHttpMetric(
+            options.uri.toString(),
+            httpMethod,
+          );
+          options.extra['firebase_performance_trace'] = trace;
+          trace.start();
+        }
+        return handler.next(options);
+      },
+      onResponse: (response, handler) {
+        final trace = response.requestOptions.extra['firebase_performance_trace'] as HttpMetric?;
+        if (trace != null) {
+          trace.httpResponseCode = response.statusCode ?? 0;
+          if (response.headers.value('content-length') != null) {
+            trace.responsePayloadSize =
+              int.tryParse(response.headers.value('content-length')!) ?? 0;
+          }
+          trace.stop();
+        }
+        return handler.next(response);
+      },
+      onError: (error, handler) {
+        final trace = error.requestOptions.extra['firebase_performance_trace'] as HttpMetric?;
+        if (trace != null) {
+          trace.httpResponseCode = error.response?.statusCode ?? 0;
+          trace.stop();
+        }
+        return handler.next(error);
+      },
+    );
+  }
+
+  /// Convert Dio HTTP method string to Firebase HttpMethod enum
+  static HttpMethod _getHttpMethod(String method) {
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return HttpMethod.Get;
+      case 'POST':
+        return HttpMethod.Post;
+      case 'PUT':
+        return HttpMethod.Put;
+      case 'DELETE':
+        return HttpMethod.Delete;
+      case 'PATCH':
+        return HttpMethod.Patch;
+      case 'HEAD':
+        return HttpMethod.Head;
+      case 'OPTIONS':
+        return HttpMethod.Options;
+      default:
+        return HttpMethod.Get;
+    }
   }
 } 

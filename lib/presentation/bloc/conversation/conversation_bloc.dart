@@ -6,6 +6,8 @@ import 'package:nookly/domain/entities/message.dart'; // Import Message entity
 import 'package:nookly/domain/repositories/conversation_repository.dart';
 import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/di/injection_container.dart' as di;
 
 part 'conversation_event.dart';
 part 'conversation_state.dart';
@@ -13,6 +15,7 @@ part 'conversation_state.dart';
 class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   final ConversationRepository _conversationRepository;
   final SocketService _socketService;
+  final AnalyticsService _analyticsService;
   String _currentUserId;
   int _currentPage = 0;
   static const int _pageSize = 20;
@@ -25,8 +28,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     required ConversationRepository conversationRepository,
     required SocketService socketService,
     required String currentUserId,
+    AnalyticsService? analyticsService,
   }) : _conversationRepository = conversationRepository,
        _socketService = socketService,
+       _analyticsService = analyticsService ?? di.sl<AnalyticsService>(),
        _currentUserId = currentUserId,
        super(ConversationInitial()) {
     on<LoadConversation>(_onLoadConversation);
@@ -208,6 +213,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       // No need to check (state is ConversationLoaded) if send can happen regardless
       // The repository call handles the sending. UI might disable send if not loaded.
       await _conversationRepository.sendTextMessage(event.conversationId, event.content);
+      // Track analytics
+      await _analyticsService.logMessageSent(
+        conversationId: event.conversationId,
+        messageType: 'text',
+      );
       // Messages will update via the stream from listenToMessages
     } catch (e) {
       emit(ConversationError(e.toString()));
@@ -267,6 +277,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         event.audioPath,
         event.duration,
       );
+      
+      // Track analytics
+      await _analyticsService.logMessageSent(
+        conversationId: event.conversationId,
+        messageType: 'voice',
+      );
 
       // The real message will be received via socket and replace the temp message
     } catch (e) {
@@ -298,6 +314,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
       await _conversationRepository.sendImageMessage(
         event.conversationId,
         event.imagePath,
+      );
+      // Track analytics
+      await _analyticsService.logMessageSent(
+        conversationId: event.conversationId,
+        messageType: 'image',
       );
     } catch (e) {
       emit(ConversationError(e.toString()));

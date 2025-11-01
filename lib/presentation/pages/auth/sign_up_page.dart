@@ -62,10 +62,10 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       appBar: AppBar(
         title: const Text('Sign Up', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         elevation: 0,
       ),
       body: BlocListener<AuthBloc, AuthState>(
@@ -143,7 +143,14 @@ class _SignUpPageState extends State<SignUpPage> {
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8),
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          isDense: true,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -184,7 +191,14 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          isDense: true,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {
@@ -225,7 +239,14 @@ class _SignUpPageState extends State<SignUpPage> {
                             },
                           ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          floatingLabelBehavior: FloatingLabelBehavior.auto,
+                          isDense: true,
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

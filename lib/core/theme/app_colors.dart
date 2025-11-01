@@ -25,7 +25,7 @@ class AppColors {
   // ===== BACKGROUND COLORS =====
   
   /// Main app background color
-  static const Color background = Color(0xFF234481);
+  static const Color background = Color(0xFF2e4781);
   
   /// Surface color for cards, dialogs, and elevated elements
   static const Color surface = Color(0xFF35548b);
@@ -86,14 +86,14 @@ class AppColors {
   
   /// Gradient colors for backgrounds
   static const List<Color> backgroundGradient = [
-    Color(0xFF234481), // #234481
+    Color(0xFF2e4781), // #2e4781
     Color(0xFF2D4B8A), // #2D4B8A
     Color(0xFF5A4B7A), // #5A4B7A
   ];
 
   /// Gradient colors for logo
   static const List<Color> logoGradient = [
-    Color(0xFF234481), // #234481
+    Color(0xFF2e4781), // #2e4781
     Color(0xFF5A4B7A), // #5A4B7A
   ];
 

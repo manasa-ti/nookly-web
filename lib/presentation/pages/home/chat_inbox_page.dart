@@ -1107,11 +1107,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
 
     return Stack(
       children: [
-        Container(
-          color: const Color(0xFF234481),
-      child: BlocProvider.value(
-        value: _inboxBloc!,
-        child: BlocBuilder<InboxBloc, InboxState>(
+        BlocProvider.value(
+          value: _inboxBloc!,
+          child: BlocBuilder<InboxBloc, InboxState>(
           builder: (context, state) {
             if (state is InboxLoading || state is InboxInitial) {
               return const Center(
@@ -1254,9 +1252,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             return const Center(child: Text('Something went wrong.')); // Fallback for unhandled state
           },
         ),
-          ),
         ),
-        
         // Messaging tutorial overlay
         if (_showMessagingTutorial)
           MessagingTutorialOverlay(

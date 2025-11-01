@@ -446,10 +446,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
     AppLogger.debug("Profile pic : ${_currentUser.profilePic.toString()}");
     return Scaffold(
-      backgroundColor: const Color(0xFF234481),
+      backgroundColor: const Color(0xFF2e4781),
       appBar: AppBar(
         title: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.045).clamp(14.0, 18.0), fontWeight: FontWeight.w500)),
-        backgroundColor: const Color(0xFF234481),
+        backgroundColor: const Color(0xFF2e4781),
         elevation: 0,
       ),
       body: _isLoading
