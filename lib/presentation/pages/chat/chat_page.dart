@@ -48,6 +48,7 @@ import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/core/services/call_manager_service.dart';
 import 'package:nookly/core/services/call_api_service.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -140,9 +141,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   bool _isGifPickerVisible = false;
   bool _isStickerPickerVisible = false;
 
+  // Screen protection
+  late ScreenProtectionService _screenProtectionService;
+
   @override
   void initState() {
     super.initState();
+    
+    // Initialize screen protection service
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for chat screen
+    _enableScreenProtection();
     
     // Initialize DisappearingImageManager
     _disappearingImageManager = DisappearingImageManager(
@@ -191,6 +200,31 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         curve: Curves.easeInOut,
       ),
     );
+  }
+
+  /// Enable screenshot and screen recording protection for chat screen
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'chat',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for chat screen');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
   }
 
   @override
@@ -260,6 +294,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     // Reset the listeners registered flag
     _listenersRegistered = false;
+    
+    // Disable screen protection when leaving chat screen
+    _disableScreenProtection();
     
     _messageController.dispose();
     _scrollController.dispose();

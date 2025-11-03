@@ -9,6 +9,9 @@ import 'package:nookly/presentation/pages/auth/login_page.dart';
 import 'package:nookly/data/models/auth/delete_account_request_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -21,11 +24,46 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
   final _authRepository = GetIt.instance<AuthRepository>();
   User? _user;
   bool _isLoading = true;
+  late ScreenProtectionService _screenProtectionService;
 
   @override
   void initState() {
     super.initState();
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for profile pages
+    _enableScreenProtection();
     _loadUser();
+  }
+
+  /// Enable screenshot and screen recording protection for profile pages
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'profile',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for profile hub');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
+  }
+
+  @override
+  void dispose() {
+    _disableScreenProtection();
+    super.dispose();
   }
 
   Future<String> _getAppVersion() async {

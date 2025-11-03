@@ -4,6 +4,8 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:get_it/get_it.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/di/injection_container.dart';
 import 'dart:math';
 
 class ProfileViewPage extends StatefulWidget {
@@ -24,11 +26,46 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
   User? _currentUser;
   bool _isLoading = true;
   String? _error;
+  late ScreenProtectionService _screenProtectionService;
 
   @override
   void initState() {
     super.initState();
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for profile pages
+    _enableScreenProtection();
     _loadUserProfile();
+  }
+
+  /// Enable screenshot and screen recording protection for profile pages
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'profile',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for profile view');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
+  }
+
+  @override
+  void dispose() {
+    _disableScreenProtection();
+    super.dispose();
   }
 
   Future<void> _loadUserProfile() async {

@@ -12,6 +12,7 @@ import 'package:nookly/core/services/firebase_messaging_service.dart';
 import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/analytics_route_observer.dart';
+import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/data/repositories/notification_repository.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -97,6 +98,11 @@ void main() async {
       final performance = FirebasePerformance.instance;
       await performance.setPerformanceCollectionEnabled(true); // Enabled for all environments
       logger.i('✅ Performance monitoring initialized');
+      
+      // Initialize Remote Config (must be after di.init())
+      final remoteConfigService = di.sl<RemoteConfigService>();
+      await remoteConfigService.initialize();
+      logger.i('✅ Remote Config initialized');
       
       // Track app startup time
       final startupTrace = performance.newTrace('app_startup');

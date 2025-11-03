@@ -14,6 +14,9 @@ import 'package:intl/intl.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/di/injection_container.dart';
+import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/main.dart';
 import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
 
@@ -28,6 +31,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
   bool _showSafetyTips = true; // Control safety tips visibility
+  late ScreenProtectionService _screenProtectionService;
   final _bioController = TextEditingController();
   final _hometownController = TextEditingController();
   DateTime? _selectedDate;
@@ -129,7 +133,35 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
   @override
   void initState() {
     super.initState();
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for profile pages
+    _enableScreenProtection();
     _loadProfileOptions();
+  }
+
+  /// Enable screenshot and screen recording protection for profile pages
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'profile',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for profile creation');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
   }
 
   Future<void> _loadProfileOptions() async {
@@ -163,6 +195,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
 
   @override
   void dispose() {
+    _disableScreenProtection();
     _bioController.dispose();
     _hometownController.dispose();
     super.dispose();

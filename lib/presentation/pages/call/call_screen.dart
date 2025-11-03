@@ -3,6 +3,7 @@ import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 
 /// Call Screen - Main UI for audio/video calls
@@ -36,6 +37,7 @@ class CallScreen extends StatefulWidget {
 
 class _CallScreenState extends State<CallScreen> {
   late HMSCallService _callService;
+  late ScreenProtectionService _screenProtectionService;
   
   bool _isConnecting = true;
   bool _isCallActive = false;
@@ -54,7 +56,35 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for video calls
+    _enableScreenProtection();
     _initializeCall();
+  }
+
+  /// Enable screenshot and screen recording protection for video calls
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'video_call',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for video call');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
   }
 
   Future<void> _initializeCall() async {
@@ -123,6 +153,8 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void dispose() {
     AppLogger.info('🔚 CallScreen dispose called');
+    // Disable screen protection when leaving call screen
+    _disableScreenProtection();
     // Don't dispose the service here - it's managed by CallManager
     super.dispose();
   }

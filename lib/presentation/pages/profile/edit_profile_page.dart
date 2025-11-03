@@ -10,6 +10,8 @@ import 'package:nookly/presentation/widgets/personality_type_chips.dart';
 import 'package:nookly/presentation/widgets/physical_activeness_chips.dart';
 import 'package:nookly/presentation/widgets/availability_chips.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/di/injection_container.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -27,6 +29,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _bioController = TextEditingController();
   
   bool _isLoading = false;
+  late ScreenProtectionService _screenProtectionService;
   String? _selectedImagePath;
   List<String> _selectedInterests = [];
   List<String> _selectedObjectives = [];
@@ -144,6 +147,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void initState() {
     super.initState();
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for profile pages
+    _enableScreenProtection();
     _currentUser = widget.user;
     // Initialize age range from user's preferred age range
     AppLogger.debug("preferredAgeRange initState:$_currentUser.preferredAgeRange.toString()");
@@ -154,6 +160,31 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
     }
     _initializeData();
+  }
+
+  /// Enable screenshot and screen recording protection for profile pages
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'profile',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for edit profile');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
   }
 
   Future<void> _initializeData() async {
@@ -833,6 +864,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   void dispose() {
+    _disableScreenProtection();
     _nameController.dispose();
     _bioController.dispose();
     super.dispose();
