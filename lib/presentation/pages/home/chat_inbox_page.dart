@@ -22,6 +22,7 @@ import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/core/services/games_service.dart';
 import 'package:nookly/data/repositories/games_repository_impl.dart';
 import 'package:nookly/domain/entities/game_invite.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
 
 class ChatInboxPage extends StatefulWidget {
   const ChatInboxPage({super.key});
@@ -50,10 +51,19 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
   Function(dynamic)? _gameNotificationListener;
   Function(dynamic)? _errorListener;
 
+  // Screen protection
+  late ScreenProtectionService _screenProtectionService;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Initialize screen protection service
+    _screenProtectionService = sl<ScreenProtectionService>();
+    // Enable screenshot protection for chat inbox
+    _enableScreenProtection();
+    
     _initializeChatInbox();
     _checkMessagingTutorial();
   }
@@ -67,9 +77,38 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     }
   }
 
+  /// Enable screenshot and screen recording protection for chat inbox
+  Future<void> _enableScreenProtection() async {
+    if (!mounted) return;
+    
+    try {
+      await _screenProtectionService.enableProtection(
+        screenType: 'chat',
+        context: context,
+      );
+      AppLogger.info('🔒 Screen protection enabled for chat inbox');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection', e);
+    }
+  }
+
+  /// Disable screenshot protection
+  Future<void> _disableScreenProtection() async {
+    try {
+      await _screenProtectionService.disableProtection();
+      AppLogger.info('🔓 Screen protection disabled');
+    } catch (e) {
+      AppLogger.error('Failed to disable screen protection', e);
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    
+    // Disable screenshot protection
+    _disableScreenProtection();
+    
     _leaveAllChatRooms();
     _inboxBloc?.close();
     _gamesBloc?.close();
