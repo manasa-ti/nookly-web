@@ -15,10 +15,12 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/services/location_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/main.dart';
 import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
+import 'package:geolocator/geolocator.dart';
 
 class ProfileCreationPage extends StatefulWidget {
   const ProfileCreationPage({super.key});
@@ -252,7 +254,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     }
   }
 
-  void _onNextStep() {
+  void _onNextStep() async {
     if (_currentStep < 6) {
       bool isValid = false;
       
@@ -310,7 +312,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         );
       }
     } else {
-      _onSaveProfile();
+      await _onSaveProfile();
     }
   }
 
@@ -343,7 +345,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
     }
   }
 
-  void _onSaveProfile() {
+  Future<void> _onSaveProfile() async {
     if (_formKey.currentState!.validate()) {
       // Ensure bio minimum length before moderation
       if (!_isBioValid(_bioController.text)) {
@@ -394,15 +396,43 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         return;
       }
       
+      final locationService = sl<LocationService>();
+      Position? position;
+      Map<String, dynamic> profileLocation = const {
+        'coordinates': [0.0, 0.0],
+      };
+
+      try {
+        position = await locationService.getLocationForProfileCreation();
+        if (position != null) {
+          profileLocation = {
+            'coordinates': [position.longitude, position.latitude],
+          };
+          AppLogger.info(
+            '📍 Profile creation captured location: ${position.latitude}, ${position.longitude}',
+          );
+        } else {
+          AppLogger.warning('📍 Profile creation could not retrieve location; using fallback coordinates.');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Unable to access location. Using default coordinates. You can enable location permissions later.'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      } catch (e) {
+        AppLogger.error('📍 Error fetching location during profile creation: $e');
+      }
+
       final user = User(
         id: '', // This will be set by the backend
         email: '', // This will be set by the backend
         age: DateTime.now().difference(_selectedDate!).inDays ~/ 365,
         sex: _selectedSex == 'Man' ? 'm' : _selectedSex == 'Woman' ? 'f' : 'other',
         seekingGender: _selectedWishToFind == 'Man' ? 'm' : _selectedWishToFind == 'Woman' ? 'f' : 'any',
-        location: const {
-          'coordinates': [0.0, 0.0], // [longitude, latitude]
-        },
+        location: profileLocation,
         preferredAgeRange: {
           'lower_limit': _ageRange.start.round(),
           'upper_limit': _ageRange.end.round(),

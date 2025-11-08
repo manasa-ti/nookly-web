@@ -95,18 +95,40 @@ class LocationService {
   Future<void> updateUserLocationOnServer(Position position) async {
     try {
       AppLogger.info('Updating user location on server...');
-      
-      // Create a minimal user object with updated location
-      final user = User(
-        id: '', // Will be set by backend
-        email: '', // Will be set by backend
+
+      final currentUser = await _authRepository.getCurrentUser();
+      if (currentUser == null) {
+        AppLogger.warning('Cannot update location: current user not available');
+        return;
+      }
+
+      final updatedUser = User(
+        id: currentUser.id,
+        email: currentUser.email,
+        name: currentUser.name,
+        age: currentUser.age,
+        sex: currentUser.sex,
+        seekingGender: currentUser.seekingGender,
         location: {
-          'coordinates': [position.longitude, position.latitude], // [longitude, latitude]
+          'coordinates': [position.longitude, position.latitude],
         },
+        preferredAgeRange: currentUser.preferredAgeRange,
+        hometown: currentUser.hometown,
+        bio: currentUser.bio,
+        interests: currentUser.interests,
+        objectives: currentUser.objectives,
+        personalityType: currentUser.personalityType,
+        physicalActiveness: currentUser.physicalActiveness,
+        availability: currentUser.availability,
+        profilePic: currentUser.profilePic,
+        preferredDistanceRadius: currentUser.preferredDistanceRadius,
+        isOnline: currentUser.isOnline,
+        lastSeen: currentUser.lastSeen,
+        connectionStatus: currentUser.connectionStatus,
+        lastActive: currentUser.lastActive,
       );
 
-      // Update profile with new location
-      await _authRepository.updateUserProfile(user);
+      await _authRepository.updateUserProfile(updatedUser);
       AppLogger.info('User location updated successfully on server');
     } catch (e) {
       AppLogger.error('Error updating user location on server: $e');
@@ -120,8 +142,19 @@ class LocationService {
       AppLogger.info('📍 Updating location on app launch...');
       
       // First check permission status
-      final permission = await checkLocationPermission();
+      LocationPermission permission = await checkLocationPermission();
       AppLogger.info('📍 Location permission status: $permission');
+
+      if (permission == LocationPermission.denied) {
+        AppLogger.info('📍 Permission currently denied, requesting permission...');
+        permission = await requestLocationPermission();
+        AppLogger.info('📍 Permission status after request: $permission');
+      }
+
+      if (permission != LocationPermission.always && permission != LocationPermission.whileInUse) {
+        AppLogger.warning('⚠️ Location permission not granted (status: $permission)');
+        return;
+      }
       
       // Check if location services are enabled
       final serviceEnabled = await isLocationServiceEnabled();
