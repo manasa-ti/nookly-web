@@ -1,19 +1,31 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/services/analytics_super_properties.dart';
 
 /// Service for tracking user analytics events using Firebase Analytics
 class AnalyticsService {
   final FirebaseAnalytics _analytics;
+  final AnalyticsSuperProperties _superProperties;
   bool _isEnabled = true;
 
-  AnalyticsService({FirebaseAnalytics? analytics})
-      : _analytics = analytics ?? FirebaseAnalytics.instance {
+  AnalyticsService({
+    FirebaseAnalytics? analytics,
+    AnalyticsSuperProperties? superProperties,
+  })  : _analytics = analytics ?? FirebaseAnalytics.instance,
+        _superProperties = superProperties ?? AnalyticsSuperProperties() {
     // Enable analytics for all environments (separate Firebase projects per environment)
     _isEnabled = true;
     
+    // Initialize platform
+    _superProperties.initializePlatform();
+    
     AppLogger.info('Analytics enabled for ${EnvironmentManager.currentEnvironment} environment');
   }
+
+  /// Get super properties instance
+  AnalyticsSuperProperties get superProperties => _superProperties;
 
   /// Initialize analytics service
   Future<void> initialize() async {
@@ -23,7 +35,14 @@ class AnalyticsService {
 
     try {
       await _analytics.setAnalyticsCollectionEnabled(true);
-      AppLogger.info('Analytics service initialized');
+      
+      // Enable debug mode in development for real-time viewing in DebugView
+      if (kDebugMode) {
+        await _analytics.setAnalyticsCollectionEnabled(true);
+        AppLogger.info('Analytics service initialized (Debug mode enabled - use DebugView for real-time events)');
+      } else {
+        AppLogger.info('Analytics service initialized');
+      }
     } catch (e) {
       AppLogger.error('Failed to initialize analytics', e);
     }
@@ -51,6 +70,26 @@ class AnalyticsService {
     } catch (e) {
       AppLogger.error('Failed to log analytics event: $eventName', e);
     }
+  }
+
+  /// Log a custom event with super properties automatically included
+  /// 
+  /// This method automatically merges super properties (platform, location, gender, user_id)
+  /// with the provided parameters. Super properties take precedence if there's a conflict.
+  Future<void> logEventWithSuperProperties({
+    required String eventName,
+    Map<String, Object>? parameters,
+  }) async {
+    // Merge super properties with event parameters
+    final allParameters = <String, Object>{
+      ..._superProperties.allProperties,
+      if (parameters != null) ...parameters,
+    };
+
+    await logEvent(
+      eventName: eventName,
+      parameters: allParameters.isNotEmpty ? allParameters : null,
+    );
   }
 
   /// Track a screen view
@@ -233,14 +272,250 @@ class AnalyticsService {
     required String endpoint,
     required int statusCode,
     String? errorMessage,
+    String? errorCode,
   }) async {
-    await logEvent(
+    await logEventWithSuperProperties(
       eventName: 'api_error',
       parameters: {
-        'endpoint': endpoint,
-        'status_code': statusCode,
-        if (errorMessage != null) 'error_message': errorMessage,
+        'error_code': errorCode ?? statusCode.toString(),
+        'error_message': errorMessage ?? 'Unknown error',
       },
+    );
+  }
+
+  /// Track network request
+  Future<void> logNetworkRequest({
+    required String name,
+    required int responseTime,
+    required int statusCode,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'network_request',
+      parameters: {
+        'name': name,
+        'response_time': responseTime,
+        'status_code': statusCode,
+      },
+    );
+  }
+
+  /// Track profile viewed (other user's profile)
+  Future<void> logProfileViewed() async {
+    await logEventWithSuperProperties(
+      eventName: 'profile_viewed',
+    );
+  }
+
+  /// Track game selected
+  Future<void> logGameSelected({
+    required String gameName,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'game_selected',
+      parameters: {
+        'game_name': gameName,
+      },
+    );
+  }
+
+  /// Track game invite sent
+  Future<void> logGameInviteSent({
+    required String gameName,
+    required String recipientUserId,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'game_invite_sent',
+      parameters: {
+        'game_name': gameName,
+        'recipient_user_id': recipientUserId,
+      },
+    );
+  }
+
+  /// Track game started
+  Future<void> logGameStarted({
+    required String gameName,
+    required String user1Id,
+    required String user2Id,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'game_started',
+      parameters: {
+        'game_name': gameName,
+        'user_1_id': user1Id,
+        'user_2_id': user2Id,
+      },
+    );
+  }
+
+  /// Track game ended
+  Future<void> logGameEnded({
+    required String gameName,
+    required int turnsPlayed,
+    required int gameDuration, // in seconds
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'game_ended',
+      parameters: {
+        'game_name': gameName,
+        'turns_played': turnsPlayed,
+        'game_duration': gameDuration,
+      },
+    );
+  }
+
+  /// Track image sent
+  Future<void> logImageSent({
+    required String recipientId,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'image_sent',
+      parameters: {
+        'recipient_id': recipientId,
+      },
+    );
+  }
+
+  /// Track image viewed
+  Future<void> logImageViewed() async {
+    await logEventWithSuperProperties(
+      eventName: 'image_viewed',
+    );
+  }
+
+  /// Track GIF sent
+  Future<void> logGifSent({
+    required String recipientId,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'GIF_sent',
+      parameters: {
+        'recipient_id': recipientId,
+      },
+    );
+  }
+
+  /// Track sticker sent
+  Future<void> logStickerSent({
+    required String recipientId,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'sticker_sent',
+      parameters: {
+        'recipient_id': recipientId,
+      },
+    );
+  }
+
+  /// Track open up clicked
+  Future<void> logOpenUpClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'open_up_clicked',
+    );
+  }
+
+  /// Track get close clicked
+  Future<void> logGetCloseClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'get_close_clicked',
+    );
+  }
+
+  /// Track heat up clicked
+  Future<void> logHeatUpClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'heat_up_clicked',
+    );
+  }
+
+  /// Track conversation starter selected
+  Future<void> logConversationStarterSelected() async {
+    await logEventWithSuperProperties(
+      eventName: 'conversation_starter_selected',
+    );
+  }
+
+  /// Track audio call clicked
+  Future<void> logAudioCallClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'audio_call_clicked',
+    );
+  }
+
+  /// Track video call clicked
+  Future<void> logVideoCallClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'video_call_clicked',
+    );
+  }
+
+  /// Track audio call joined
+  Future<void> logAudioCallJoined({
+    required String user1Id,
+    required String user2Id,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'audio_call_joined',
+      parameters: {
+        'user_1_id': user1Id,
+        'user_2_id': user2Id,
+      },
+    );
+  }
+
+  /// Track video call joined
+  Future<void> logVideoCallJoined({
+    required String user1Id,
+    required String user2Id,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'video_call_joined',
+      parameters: {
+        'user_1_id': user1Id,
+        'user_2_id': user2Id,
+      },
+    );
+  }
+
+  /// Track report clicked
+  Future<void> logReportClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'report_clicked',
+    );
+  }
+
+  /// Track user reported
+  Future<void> logUserReported({
+    required String reporteeId,
+    required String reporterId,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'user_reported',
+      parameters: {
+        'reportee_id': reporteeId,
+        'reporter': reporterId,
+      },
+    );
+  }
+
+  /// Track user blocked
+  Future<void> logUserBlocked({
+    required String blockedId,
+    required String blockerId,
+  }) async {
+    await logEventWithSuperProperties(
+      eventName: 'user_blocked',
+      parameters: {
+        'blocked_id': blockedId,
+        'blocker_id': blockerId,
+      },
+    );
+  }
+
+  /// Track block clicked
+  Future<void> logBlockClicked() async {
+    await logEventWithSuperProperties(
+      eventName: 'block_clicked',
     );
   }
 }

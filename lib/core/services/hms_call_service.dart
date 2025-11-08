@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:hmssdk_flutter/hmssdk_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 
 /// Simplified HMS Call Service based on official documentation
 /// 
@@ -45,6 +46,7 @@ class HMSCallService implements HMSUpdateListener {
   Function(String)? onUserJoined;
   Function(String)? onUserLeft;
   Function(String)? onError;
+  AnalyticsService Function()? onAnalyticsService;
   
   // API service
   CallApiService? _callApiService;
@@ -373,14 +375,35 @@ class HMSCallService implements HMSUpdateListener {
     print('Local peer: ${_localPeer?.name}, Local video track: ${_localVideoTrack?.trackId}');
     
     // Find remote peer
+    String? user1Id;
+    String? user2Id;
     if (room.peers != null) {
       for (final peer in room.peers!) {
         if (!peer.isLocal) {
           _remotePeer = peer;
           _remoteVideoTrack = peer.videoTrack;
           print('Remote peer: ${peer.name}, Remote video track: ${peer.videoTrack?.trackId}');
+          
+          // Extract user IDs from peer names (assuming format contains user ID)
+          // Try to get from peer.name or peer.customerUserId
+          user1Id = _localPeer?.name ?? _localPeer?.customerUserId;
+          user2Id = peer.name ?? peer.customerUserId;
           break;
         }
+      }
+    }
+    
+    // Track call joined analytics
+    if (user1Id != null && user2Id != null && onAnalyticsService != null) {
+      try {
+        final analyticsService = onAnalyticsService!();
+        if (_isAudioCall) {
+          analyticsService.logAudioCallJoined(user1Id: user1Id, user2Id: user2Id);
+        } else {
+          analyticsService.logVideoCallJoined(user1Id: user1Id, user2Id: user2Id);
+        }
+      } catch (e) {
+        print('Failed to track call joined analytics: $e');
       }
     }
     

@@ -236,10 +236,13 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
+      backgroundColor: const Color(0xFF2d457f),
       appBar: AppBar(
         title: Text('Profile Filters', style: TextStyle(fontSize: (size.width * 0.045).clamp(16.0, 18.0), fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+        backgroundColor: const Color(0xFF2d457f),
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context, false),
         ),
       ),
@@ -278,6 +281,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           style: TextStyle(
                             fontSize: (size.width * 0.04).clamp(14.0, 16.0),
                             fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -309,8 +314,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text('${_ageRange.start.round()} years'),
-                            Text('${_ageRange.end.round()} years'),
+                            Text('${_ageRange.start.round()} years', style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito')),
+                            Text('${_ageRange.end.round()} years', style: const TextStyle(color: Colors.white70, fontFamily: 'Nunito')),
                           ],
                         ),
                         const SizedBox(height: 16),
@@ -333,6 +338,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           style: TextStyle(
                             fontSize: (size.width * 0.04).clamp(14.0, 16.0),
                             fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         const SizedBox(height: 6),
@@ -349,6 +356,8 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           style: TextStyle(
                             fontSize: (size.width * 0.04).clamp(14.0, 16.0),
                             fontWeight: FontWeight.w500,
+                            color: Colors.white,
+                            fontFamily: 'Nunito',
                           ),
                         ),
                         const SizedBox(height: 6),

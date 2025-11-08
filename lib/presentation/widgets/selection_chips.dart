@@ -63,7 +63,7 @@ class SelectionChips extends StatelessWidget {
                 onSelectionChanged(updatedOptions);
               },
               selectedColor: const Color(0xFF4C5C8A),
-              backgroundColor: const Color(0xFF35548b),
+              backgroundColor: const Color(0xFF384E85),
               checkmarkColor: Colors.white,
               side: BorderSide(
                 color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),

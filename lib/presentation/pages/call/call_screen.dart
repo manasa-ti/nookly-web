@@ -3,6 +3,7 @@ import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 
@@ -115,6 +116,9 @@ class _CallScreenState extends State<CallScreen> {
       // Set API service
       final callApiService = sl<CallApiService>();
       _callService.setCallApiService(callApiService);
+      
+      // Set analytics service callback
+      _callService.onAnalyticsService = () => sl<AnalyticsService>();
       
       setState(() {
         _connectionStatus = 'Joining call room...';

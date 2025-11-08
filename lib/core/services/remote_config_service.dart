@@ -51,6 +51,44 @@ class RemoteConfigService {
     }
   }
 
+  /// Initialize Remote Config with defaults only (no network fetch)
+  /// This allows the app to start immediately with default values,
+  /// while Remote Config can be fetched in the background later
+  Future<void> initializeDefaultsOnly() async {
+    if (_isInitialized && _remoteConfig != null) {
+      AppLogger.info('Remote Config already initialized');
+      return;
+    }
+
+    try {
+      _remoteConfig = FirebaseRemoteConfig.instance;
+
+      // Set default values for development/fallback
+      await _remoteConfig!.setConfigSettings(
+        RemoteConfigSettings(
+          fetchTimeout: const Duration(seconds: 10),
+          minimumFetchInterval: const Duration(hours: 1),
+        ),
+      );
+
+      // Set default parameter values
+      await _remoteConfig!.setDefaults({
+        _enableScreenshotProtectionKey: true,
+        _protectVideoCallsKey: true,
+        _protectChatScreenKey: true,
+        _protectProfilePagesKey: true,
+      });
+
+      // Don't fetch yet - just mark as initialized with defaults
+      _isInitialized = true;
+      AppLogger.info('✅ Remote Config initialized with defaults (fetch deferred)');
+    } catch (e) {
+      AppLogger.error('Failed to initialize Remote Config defaults', e);
+      // Continue with defaults if Remote Config fails
+      _isInitialized = false;
+    }
+  }
+
   /// Fetch latest configuration from Firebase and activate it
   Future<void> fetchAndActivate() async {
     if (_remoteConfig == null) {

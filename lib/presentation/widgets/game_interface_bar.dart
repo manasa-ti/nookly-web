@@ -9,6 +9,8 @@ import 'package:nookly/presentation/widgets/game_board_widget.dart';
 import 'package:nookly/presentation/widgets/contextual_tooltip.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/di/injection_container.dart';
 
 class GameInterfaceBar extends StatefulWidget {
   final String matchUserId;
@@ -81,27 +83,63 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
     _checkGamesTutorial();
   }
 
-  Widget _buildPlayToBondButton() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.games,
-          color: Colors.white.withOpacity(0.8),
-          size: 20,
+  Widget _buildGetCloseButton() {
+    final getCloseButton = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Track get close clicked
+          sl<AnalyticsService>().logGetCloseClicked();
+          
+          if (widget.currentUserId.isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Please wait while we connect...'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+          context.read<GamesBloc>().add(const ShowGameMenu());
+        },
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.games, size: 18, color: Colors.white.withOpacity(0.85)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'Get Close',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.95),
+                  fontSize: 13,
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w600,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 6),
-        Text(
-          'Get Close',
-          style: TextStyle(
-            color: Colors.white.withOpacity(0.9),
-            fontSize: 14,
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+      ),
     );
+
+    if (_showGamesTooltip) {
+      return ContextualTooltip(
+        message: 'Play interactive games together when both users are present to deepen your connection',
+        position: TooltipPosition.bottom,
+        onDismiss: () {
+          setState(() {
+            _showGamesTooltip = false;
+          });
+          OnboardingService.markGamesTutorialCompleted();
+        },
+        child: getCloseButton,
+      );
+    }
+
+    return getCloseButton;
   }
 
   @override
@@ -122,6 +160,13 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
         }
       },
       builder: (context, state) {
+        final content = _buildContent(context, state);
+
+        // The game menu grid provides its own styled container; avoid wrapping it twice.
+        if (state is GameMenuVisible) {
+          return content;
+        }
+
         return Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
@@ -134,7 +179,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
               ),
             ),
           ),
-          child: _buildContent(context, state),
+          child: content,
         );
       },
     );
@@ -213,50 +258,17 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
           ),
           // Get Close (games)
           Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  if (widget.currentUserId.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please wait while we connect...'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    return;
-                  }
-                  context.read<GamesBloc>().add(const ShowGameMenu());
-                },
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.games, size: 18, color: Colors.white.withOpacity(0.85)),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        'Get Close',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.95),
-                          fontSize: 13,
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            child: _buildGetCloseButton(),
           ),
           // Heat Up (coming soon)
           Expanded(
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {},
+                onTap: () {
+                  // Track heat up clicked
+                  sl<AnalyticsService>().logHeatUpClicked();
+                },
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -477,13 +489,13 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
   Widget _buildGameMenuGrid(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+      decoration: const BoxDecoration(
+        color: Color(0xFF384E85), // Solid lighter blue for better visibility
         border: Border(
           bottom: BorderSide(
-            color: Colors.white.withOpacity(0.2),
-            width: 0.5,
+            color: Color(0xFF2d457f),
+            width: 1,
           ),
         ),
       ),
@@ -534,7 +546,31 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
     );
   }
 
+  // Get game-specific color with subtle variations
+  Color _getGameCardColor(GameType gameType, bool isComingSoon) {
+    if (isComingSoon) {
+      return const Color(0xFF384E85).withOpacity(0.5);
+    }
+    
+    switch (gameType) {
+      case GameType.truthOrThrill:
+        // Warm accent for adventure/thrill - orange/coral accent
+        return const Color(0xFF7A6B8E); // Warm purple-grey accent
+      case GameType.memorySparks:
+        // Cooler blue for memories
+        return const Color(0xFF3E5F8F); // Cooler blue
+      case GameType.wouldYouRather:
+        // Teal-cyan accent for choices
+        return const Color(0xFF3F6B95); // Teal-tinted blue
+      case GameType.guessMe:
+        // Subtle purple-blue blend
+        return const Color(0xFF49548A); // Subtle purple-blue blend
+    }
+  }
+
   Widget _buildGameCard(BuildContext context, GameType gameType, String title, String description, {bool isComingSoon = false}) {
+    final cardColor = _getGameCardColor(gameType, isComingSoon);
+    
     return GestureDetector(
       onTap: isComingSoon ? null : () {
         context.read<GamesBloc>().add(SelectGame(gameType: gameType));
@@ -543,22 +579,20 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isComingSoon 
-              ? Colors.white.withOpacity(0.05)
-              : Colors.white.withOpacity(0.1),
+          color: cardColor,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
             color: isComingSoon 
-                ? Colors.white.withOpacity(0.1)
-                : Colors.white.withOpacity(0.2),
-            width: 1,
+                ? Colors.white.withOpacity(0.2)
+                : Colors.white.withOpacity(0.3),
+            width: 2,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min, // Prevent overflow
-          children: [
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
             Flexible(
               child: Text(
                 title,
@@ -572,6 +606,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
             ),
             const SizedBox(height: 4),

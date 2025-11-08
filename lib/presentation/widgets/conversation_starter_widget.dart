@@ -7,6 +7,7 @@ import 'package:nookly/presentation/bloc/conversation_starter/conversation_start
 import 'package:nookly/presentation/bloc/conversation_starter/conversation_starter_state.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/services/conversation_starter_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/presentation/widgets/contextual_tooltip.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 
@@ -116,9 +117,13 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
 
   void _showConversationStartersModal(BuildContext context) {
     AppLogger.info('DEBUGGING STARTERS: Opening modal and triggering API call');
+    
+    // Track open up clicked
+    sl<AnalyticsService>().logOpenUpClicked();
+    
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2e4781),
+      backgroundColor: const Color(0xFF2d457f),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -337,8 +342,10 @@ class _ConversationStartersModal extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
+          child: InkWell(
           onTap: () {
+            // Track conversation starter selected
+            sl<AnalyticsService>().logConversationStarterSelected();
             Navigator.of(context).pop();
             onSuggestionSelected(suggestion.text);
           },

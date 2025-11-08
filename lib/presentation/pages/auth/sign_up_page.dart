@@ -62,10 +62,10 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2e4781),
+      backgroundColor: const Color(0xFF2d457f),
       appBar: AppBar(
         title: const Text('Sign Up', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
-        backgroundColor: const Color(0xFF2e4781),
+        backgroundColor: const Color(0xFF2d457f),
         elevation: 0,
       ),
       body: BlocListener<AuthBloc, AuthState>(
@@ -130,7 +130,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 32), // Match login page spacing
                   Card(
-                    color: const Color(0xFF35548b),
+                    color: const Color(0xFF384E85),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -166,7 +166,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: const Color(0xFF35548b),
+                    color: const Color(0xFF384E85),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -214,7 +214,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: const Color(0xFF35548b),
+                    color: const Color(0xFF384E85),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

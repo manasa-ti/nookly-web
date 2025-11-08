@@ -15,7 +15,9 @@ import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/core/services/key_management_service.dart';
 import 'package:nookly/core/services/api_cache_service.dart';
 import 'package:nookly/core/services/conversation_key_cache.dart';
-import 'package:nookly/core/utils/e2ee_utils.dart'; 
+import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/utils/e2ee_utils.dart';
+import 'package:nookly/core/di/injection_container.dart' as di; 
 
 class ConversationRepositoryImpl implements ConversationRepository {
   // Dio instance is now managed by NetworkService
@@ -767,6 +769,21 @@ class ConversationRepositoryImpl implements ConversationRepository {
 
       if (response.statusCode == 200) {
         AppLogger.info('✅ Successfully blocked user: $userId');
+        
+        // Track user blocked
+        try {
+          final currentUser = await _authRepository.getCurrentUser();
+          if (currentUser != null) {
+            final analyticsService = di.sl<AnalyticsService>();
+            analyticsService.logUserBlocked(
+              blockedId: userId,
+              blockerId: currentUser.id,
+            );
+          }
+        } catch (e) {
+          // Analytics failure shouldn't block the operation
+          AppLogger.warning('Failed to track user blocked analytics: $e');
+        }
       } else {
         throw Exception('Failed to block user: ${response.statusCode}');
       }

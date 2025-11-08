@@ -3,6 +3,7 @@ import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_performance/firebase_performance.dart';
 import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 
@@ -11,6 +12,7 @@ class NetworkService {
   static SharedPreferences? _prefs;
   static String? _customBaseUrl;
   static AuthHandler? _authHandler;
+  static AnalyticsService? _analyticsService;
 
   static String get baseUrl {
     final url = _customBaseUrl ?? EnvironmentManager.baseUrl;
@@ -26,6 +28,10 @@ class NetworkService {
 
   static void setAuthHandler(AuthHandler authHandler) {
     _authHandler = authHandler;
+  }
+
+  static void setAnalyticsService(AnalyticsService analyticsService) {
+    _analyticsService = analyticsService;
   }
 
   static Dio get dio {
@@ -63,6 +69,7 @@ class NetworkService {
         },
       ))
       ..interceptors.add(_createPerformanceInterceptor())
+      ..interceptors.add(_createAnalyticsInterceptor())
       ..interceptors.add(InterceptorsWrapper(
         onRequest: (options, handler) async {
           try {
@@ -189,6 +196,72 @@ class NetworkService {
         if (trace != null) {
           trace.httpResponseCode = error.response?.statusCode ?? 0;
           trace.stop();
+        }
+        return handler.next(error);
+      },
+    );
+  }
+
+  /// Create analytics interceptor for tracking network requests and errors
+  static Interceptor _createAnalyticsInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        // Store request start time for calculating response time
+        options.extra['request_start_time'] = DateTime.now().millisecondsSinceEpoch;
+        return handler.next(options);
+      },
+      onResponse: (response, handler) {
+        // Track successful network request
+        if (_analyticsService != null) {
+          final startTime = response.requestOptions.extra['request_start_time'] as int?;
+          if (startTime != null) {
+            final responseTime = DateTime.now().millisecondsSinceEpoch - startTime;
+            final endpoint = response.requestOptions.path;
+            final statusCode = response.statusCode ?? 200;
+            
+            _analyticsService!.logNetworkRequest(
+              name: endpoint,
+              responseTime: responseTime,
+              statusCode: statusCode,
+            );
+          }
+        }
+        return handler.next(response);
+      },
+      onError: (error, handler) {
+        // Track API error
+        if (_analyticsService != null) {
+          final endpoint = error.requestOptions.path;
+          final statusCode = error.response?.statusCode ?? 0;
+          String? errorMessage;
+          String? errorCode;
+          
+          // Extract error message from response
+          try {
+            if (error.response?.data != null) {
+              if (error.response!.data is Map) {
+                errorMessage = error.response!.data['message']?.toString() ?? 
+                              error.response!.data['error']?.toString();
+                errorCode = error.response!.data['code']?.toString() ?? 
+                           error.response!.data['error_code']?.toString();
+              } else if (error.response!.data is String) {
+                errorMessage = error.response!.data;
+              }
+            }
+          } catch (e) {
+            AppLogger.warning('Failed to extract error message: $e');
+          }
+          
+          // Fallback error message
+          errorMessage ??= error.message ?? 'Unknown error';
+          errorCode ??= statusCode.toString();
+          
+          _analyticsService!.logApiError(
+            endpoint: endpoint,
+            statusCode: statusCode,
+            errorMessage: errorMessage,
+            errorCode: errorCode,
+          );
         }
         return handler.next(error);
       },

@@ -54,9 +54,9 @@ class _ReportPageState extends State<ReportPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2e4781),
+      backgroundColor: const Color(0xFF2d457f),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2e4781),
+        backgroundColor: const Color(0xFF2d457f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),

@@ -180,7 +180,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2e4781),
+          backgroundColor: const Color(0xFF2d457f),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -291,7 +291,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2e4781),
+          backgroundColor: const Color(0xFF2d457f),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -358,7 +358,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
             bool canSubmit = isPasswordValid && isConfirmationValid && !isLoading;
 
             return AlertDialog(
-              backgroundColor: const Color(0xFF2e4781),
+              backgroundColor: const Color(0xFF2d457f),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
@@ -496,7 +496,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Container(
-      color: const Color(0xFF2e4781),
+      color: const Color(0xFF2d457f),
       child: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
@@ -606,7 +606,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   // const SizedBox(height: 32),
                   // // Purchased Features Section (Placeholder)
                   // Card(
-                  //   color: const Color(0xFF35548b),
+                  //   color: const Color(0xFF384E85),
                   //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   //   child: Padding(
                   //     padding: const EdgeInsets.all(16),
@@ -624,7 +624,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   // const SizedBox(height: 32),
                   // // Notifications Section
                   // Card(
-                  //   color: const Color(0xFF35548b),
+                  //   color: const Color(0xFF384E85),
                   //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   //   child: ListTile(
                   //     leading: const Icon(Icons.notifications, color: Colors.white),
@@ -638,7 +638,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   const SizedBox(height: 16),
                   // Settings Section
                   Card(
-                    color: const Color(0xFF35548b),
+                    color: const Color(0xFF384E85),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Column(
                       children: [

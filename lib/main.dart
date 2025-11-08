@@ -13,6 +13,7 @@ import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/analytics_route_observer.dart';
 import 'package:nookly/core/services/remote_config_service.dart';
+import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/data/repositories/notification_repository.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -92,6 +93,10 @@ void main() async {
       
       final analyticsService = di.sl<AnalyticsService>();
       await analyticsService.initialize();
+      
+      // Set analytics service for network tracking
+      NetworkService.setAnalyticsService(analyticsService);
+      
       logger.i('✅ Analytics initialized');
       
       // Initialize Performance Monitoring
@@ -99,10 +104,11 @@ void main() async {
       await performance.setPerformanceCollectionEnabled(true); // Enabled for all environments
       logger.i('✅ Performance monitoring initialized');
       
-      // Initialize Remote Config (must be after di.init())
+      // Initialize Remote Config with defaults only (defer network fetch)
+      // This allows the app to start immediately without blocking on network
       final remoteConfigService = di.sl<RemoteConfigService>();
-      await remoteConfigService.initialize();
-      logger.i('✅ Remote Config initialized');
+      await remoteConfigService.initializeDefaultsOnly();
+      logger.i('✅ Remote Config defaults initialized (fetch deferred)');
       
       // Track app startup time
       final startupTrace = performance.newTrace('app_startup');
@@ -155,12 +161,28 @@ void main() async {
   startupStopwatch.stop();
   logger.i('🚀 App initialization completed in ${startupStopwatch.elapsedMilliseconds}ms');
   
-  // Start the app immediately - don't block UI on location
+  // Start the app immediately - don't block UI on location or remote config
   runApp(const MyApp());
   logger.i('Application started');
   
+  // Fetch Remote Config in background after app starts (non-blocking)
+  _fetchRemoteConfigInBackground();
+  
   // Update location in background after app starts (non-blocking)
   _updateLocationInBackground();
+}
+
+/// Fetch Remote Config in background without blocking app startup
+Future<void> _fetchRemoteConfigInBackground() async {
+  try {
+    logger.i('🔧 Starting background Remote Config fetch...');
+    final remoteConfigService = di.sl<RemoteConfigService>();
+    await remoteConfigService.fetchAndActivate();
+    logger.i('✅ Background Remote Config fetch completed');
+  } catch (e) {
+    logger.e('❌ Background Remote Config fetch failed: $e');
+    // Silent failure - app will use defaults
+  }
 }
 
 /// Update location in background without blocking app startup

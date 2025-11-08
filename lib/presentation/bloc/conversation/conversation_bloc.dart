@@ -315,11 +315,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         event.conversationId,
         event.imagePath,
       );
-      // Track analytics
-      await _analyticsService.logMessageSent(
-        conversationId: event.conversationId,
-        messageType: 'image',
-      );
+      // Track analytics - conversationId is the recipient user ID
+      await _analyticsService.logImageSent(recipientId: event.conversationId);
     } catch (e) {
       emit(ConversationError(e.toString()));
     }
@@ -374,6 +371,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         event.gifMetadata,
       );
 
+      // Track analytics - conversationId is the recipient user ID
+      await _analyticsService.logGifSent(recipientId: event.conversationId);
+
       // The real message will be received via socket and replace the temp message
     } catch (e) {
       emit(ConversationError(e.toString()));
@@ -427,6 +427,9 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         event.conversationId,
         event.stickerMetadata,
       );
+
+      // Track analytics - conversationId is the recipient user ID
+      await _analyticsService.logStickerSent(recipientId: event.conversationId);
 
       // The real message will be received via socket and replace the temp message
     } catch (e) {

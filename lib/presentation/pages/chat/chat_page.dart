@@ -48,6 +48,7 @@ import 'package:nookly/core/services/user_cache_service.dart';
 import 'package:nookly/core/services/call_manager_service.dart';
 import 'package:nookly/core/services/call_api_service.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
@@ -508,7 +509,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF35548b),
+        backgroundColor: const Color(0xFF384E85),
         title: Text(
           _currentScamAlert != null 
               ? ScamAlertService().getAlertTitle(_currentScamAlert!)
@@ -1625,7 +1626,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void _showImagePicker() {
     showModalBottomSheet(
         context: context,
-        backgroundColor: const Color(0xFF2e4781),
+        backgroundColor: const Color(0xFF2d457f),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -1701,7 +1702,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF35548b),
+                            backgroundColor: const Color(0xFF384E85),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           ),
                           child: Row(
@@ -2179,14 +2180,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     AppLogger.info('🔵 Opening options menu');
     showModalBottomSheet(
       context: context,
+      backgroundColor: const Color(0xFF2d457f),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo),
-                title: const Text('Image'),
+                leading: const Icon(Icons.photo, color: Colors.white),
+                title: const Text('Image', style: TextStyle(color: Colors.white)),
                 onTap: () {
                   AppLogger.info('🔵 Image option tapped');
                   Navigator.pop(context);
@@ -2194,8 +2199,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.gif_box),
-              title: const Text('GIF'),
+              leading: const Icon(Icons.gif_box, color: Colors.white),
+              title: const Text('GIF', style: TextStyle(color: Colors.white)),
               onTap: () {
                 AppLogger.info('🔵 GIF option tapped');
                 Navigator.pop(context);
@@ -2203,8 +2208,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               },
             ),
             ListTile(
-              leading: const Icon(Icons.emoji_emotions),
-              title: const Text('Sticker'),
+              leading: const Icon(Icons.emoji_emotions, color: Colors.white),
+              title: const Text('Sticker', style: TextStyle(color: Colors.white)),
               onTap: () {
                 AppLogger.info('🔵 Sticker option tapped');
                 Navigator.pop(context);
@@ -2242,6 +2247,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       AppLogger.info('🔵 Opening full screen image');
       AppLogger.info('🔵 Original image URL: $imageUrl');
       AppLogger.info('🔵 Is sender: $isSender');
+      
+      // Track image viewed analytics
+      sl<AnalyticsService>().logImageViewed();
       
       // Find the message that contains this image URL
       final state = context.read<ConversationBloc>().state;
@@ -2501,9 +2509,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Widget _buildScaffold() {
     return Scaffold(
-      backgroundColor: const Color(0xFF2e4781),
+      backgroundColor: const Color(0xFF2d457f),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2e4781),
+        backgroundColor: const Color(0xFF2d457f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -2646,8 +2654,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
                   // Emit bulk events if there are messages to update
                   if (_socketService != null) {
-                    // TODO: Temporarily commented out bulk_message_delivered processing
-                    /*
                     if (messagesToDeliver.isNotEmpty) {
                       final timestamp = DateTime.now().toIso8601String();
                       AppLogger.info('🔵 Emitting bulk_message_delivered for messages: ${messagesToDeliver.join(', ')}');
@@ -2667,7 +2673,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         AppLogger.error('❌ Failed to emit bulk_message_delivered event: $e');
                       }
                     }
-                    */
 
                     // Emit bulk_message_read for unread messages
                     if (messagesToRead.isNotEmpty) {
@@ -2893,7 +2898,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                             if (!isLoading) return const SizedBox.shrink();
                             
                             return Container(
-                              color: const Color(0xFF2e4781).withOpacity(0.8),
+                              color: const Color(0xFF2d457f).withOpacity(0.8),
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -3072,7 +3077,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           Container(
             padding: EdgeInsets.all(inputPadding),
             decoration: BoxDecoration(
-              color: const Color(0xFF2e4781),
+              color: const Color(0xFF2d457f),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -3260,7 +3265,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           child: Material(
             elevation: 8,
             child: Container(
-              color: const Color(0xFF2e4781),
+              color: const Color(0xFF2d457f),
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -3347,6 +3352,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
                     ),
                     onTap: () {
+                      // Track block clicked
+                      sl<AnalyticsService>().logBlockClicked();
+                      
                       context.read<ConversationBloc>().add(
                         BlockUser(userId: conversation.participantId),
                       );
@@ -3359,6 +3367,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
                     ),
                     onTap: () {
+                      // Track report clicked
+                      sl<AnalyticsService>().logReportClicked();
+                      
                       Navigator.of(context).push(
                         MaterialPageRoute(
                           builder: (context) => ReportPage(
@@ -3862,7 +3873,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Existing logic for showing conversation starters modal
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2e4781),
+      backgroundColor: const Color(0xFF2d457f),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -3911,6 +3922,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void _startCall(bool isAudioCall) {
     try {
       AppLogger.info('🚀 [CALL] Initiating ${isAudioCall ? 'audio' : 'video'} call');
+      
+      // Track call clicked
+      if (isAudioCall) {
+        sl<AnalyticsService>().logAudioCallClicked();
+      } else {
+        sl<AnalyticsService>().logVideoCallClicked();
+      }
       
       // Get call manager service
       final callManagerService = sl<CallManagerService>();

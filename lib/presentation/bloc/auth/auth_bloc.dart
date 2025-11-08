@@ -73,6 +73,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _analyticsService.setUserId(user.id);
         await _crashReportingService.setUserId(user.id);
         
+        // Initialize super properties
+        await _analyticsService.superProperties.updateFromUser(user);
+        
         emit(Authenticated(user));
       }
     } catch (e) {
@@ -113,6 +116,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _analyticsService.setUserId(user.id);
         await _crashReportingService.setUserId(user.id);
         
+        // Initialize super properties
+        await _analyticsService.superProperties.updateFromUser(user);
+        
         emit(Authenticated(user));
       }
     } catch (e) {
@@ -140,6 +146,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _analyticsService.setUserId(user.id);
       await _crashReportingService.setUserId(user.id);
       
+      // Initialize super properties
+      await _analyticsService.superProperties.updateFromUser(user);
+      
       emit(Authenticated(user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -162,6 +171,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       // Reset analytics and crash reporting user data
       await _analyticsService.resetAnalyticsData();
+      _analyticsService.superProperties.clear();
       await _crashReportingService.clearUserData();
       
       emit(Unauthenticated());
@@ -238,6 +248,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await _analyticsService.setUserId(user.id);
         await _crashReportingService.setUserId(user.id);
         
+        // Initialize super properties
+        await _analyticsService.superProperties.updateFromUser(user);
+        
         emit(Authenticated(user));
       } else {
         emit(Unauthenticated());
@@ -278,6 +291,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _analyticsService.logSignUp(method: 'otp');
       await _analyticsService.setUserId(user.id);
       await _crashReportingService.setUserId(user.id);
+      
+      // Initialize super properties
+      await _analyticsService.superProperties.updateFromUser(user);
       
       emit(OtpVerified(user));
     } catch (e) {

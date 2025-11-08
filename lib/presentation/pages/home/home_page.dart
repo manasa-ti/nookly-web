@@ -89,6 +89,7 @@ class _HomePageState extends State<HomePage> {
       
       final recommendedProfilesBloc = context.read<RecommendedProfilesBloc>();
       recommendedProfilesBloc.add(LoadRecommendedProfiles(
+        skip: 0, // Force fresh load when filters are applied
         physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
         availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
       ));
@@ -117,16 +118,7 @@ class _HomePageState extends State<HomePage> {
       },
       child: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF2e4781), // #2e4781
-              Color(0xFF2D4B8A), // #2D4B8A
-              Color(0xFF5A4B7A), // #5A4B7A
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
+          color: Color(0xFF2d457f), // #2d457f - solid primary blue
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -137,17 +129,8 @@ class _HomePageState extends State<HomePage> {
             top: true, // Exclude status bar from colored background
             bottom: false,
             child: Container(
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF2e4781), // #2e4781
-                    Color(0xFF2D4B8A), // #2D4B8A
-                    Color(0xFF5A4B7A), // #5A4B7A
-                  ],
-                  stops: [0.0, 0.5, 1.0],
-                ),
+              decoration: const BoxDecoration(
+                color: Color(0xFF384E85), // #384E85 - 5% lighter shade of #2d457f
               ),
               child: SizedBox(
                 height: appBarHeight,
@@ -217,9 +200,9 @@ class _HomePageState extends State<HomePage> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFF35548b).withOpacity(0.7),
-                  borderRadius: const BorderRadius.only(
+                decoration: const BoxDecoration(
+                  color: Color(0xFF384E85), // #384E85 - 5% lighter shade of #2d457f
+                  borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),
                   ),

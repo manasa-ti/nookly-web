@@ -43,6 +43,7 @@ import 'package:nookly/core/services/call_api_service.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
 import 'package:nookly/core/services/call_manager_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/services/analytics_super_properties.dart';
 import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
@@ -132,8 +133,12 @@ Future<void> init() async {
   );
   
   // Analytics & Crash Reporting Services
+  sl.registerLazySingleton<AnalyticsSuperProperties>(
+    () => AnalyticsSuperProperties(),
+  );
+  
   sl.registerLazySingleton<AnalyticsService>(
-    () => AnalyticsService(),
+    () => AnalyticsService(superProperties: sl<AnalyticsSuperProperties>()),
   );
   
   sl.registerLazySingleton<CrashReportingService>(
@@ -193,7 +198,11 @@ Future<void> init() async {
   );
   
   sl.registerFactory(
-    () => ReportBloc(reportRepository: sl()),
+    () => ReportBloc(
+      reportRepository: sl(),
+      analyticsService: sl(),
+      authRepository: sl(),
+    ),
   );
   
   sl.registerFactory(

@@ -5,6 +5,7 @@ import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:get_it/get_it.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'dart:math';
 
@@ -93,6 +94,11 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           _isLoading = false;
         });
         AppLogger.info('✅ Profile loaded successfully for user: ${user?.name}');
+        
+        // Track profile viewed (only for other users' profiles, not own)
+        if (user != null && currentUser != null && user.id != currentUser.id) {
+          sl<AnalyticsService>().logProfileViewed();
+        }
       }
     } catch (e) {
       AppLogger.error('❌ Failed to load profile: $e');
@@ -192,7 +198,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2e4781),
+      backgroundColor: const Color(0xFF2d457f),
       appBar: AppBar(
         title: const Text(
           'Profile',
@@ -202,7 +208,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: const Color(0xFF2e4781),
+        backgroundColor: const Color(0xFF2d457f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -605,7 +611,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       margin: const EdgeInsets.only(right: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF35548b),
+        color: const Color(0xFF384E85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFF8FA3C8),

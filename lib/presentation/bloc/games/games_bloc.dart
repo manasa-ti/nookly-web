@@ -3,19 +3,24 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/presentation/bloc/games/games_state.dart';
 import 'package:nookly/core/services/games_service.dart';
+import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 import 'package:nookly/domain/entities/game_prompt.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/di/injection_container.dart' as di;
 
 class GamesBloc extends Bloc<GamesEvent, GamesState> {
   final GamesService _gamesService;
   final GameTimeoutManager _timeoutManager;
+  final AnalyticsService? _analyticsService;
 
   GamesBloc({
     required GamesService gamesService,
     required GameTimeoutManager timeoutManager,
+    AnalyticsService? analyticsService,
   }) : _gamesService = gamesService,
        _timeoutManager = timeoutManager,
+       _analyticsService = analyticsService ?? di.sl<AnalyticsService>(),
        super(const GamesInitial()) {
     AppLogger.info('🎮 GamesBloc instance created: ${hashCode}');
     
@@ -68,6 +73,14 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
         gameType: event.gameType,
         otherUserId: event.otherUserId,
         conversationId: event.conversationId,
+      );
+      
+      // Track game invite sent
+      // Convert gameType string to display name
+      final gameName = _getGameDisplayName(event.gameType);
+      _analyticsService?.logGameInviteSent(
+        gameName: gameName,
+        recipientUserId: event.otherUserId,
       );
       
       emit(GameInviteSentState(
@@ -169,6 +182,16 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     AppLogger.info('🎮 - gameType: ${event.gameSession.gameType.displayName}');
     AppLogger.info('🎮 - currentTurn: ${event.gameSession.currentTurn.userId}');
     AppLogger.info('🎮 - selectedChoice: ${event.gameSession.selectedChoice}');
+    
+    // Track game started
+    final players = event.gameSession.players;
+    if (players.length >= 2) {
+      _analyticsService?.logGameStarted(
+        gameName: event.gameSession.gameType.displayName,
+        user1Id: players[0].userId,
+        user2Id: players[1].userId,
+      );
+    }
     
     // Clear the invite timeout since the game has started
     // _gamesService.clearInviteTimeout();
@@ -388,6 +411,29 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     Emitter<GamesState> emit,
   ) {
     AppLogger.info('🎮 Game ended: ${event.sessionId} - ${event.reason}');
+    
+    // Track game ended
+    if (state is GameActive) {
+      final currentState = state as GameActive;
+      final gameSession = currentState.gameSession;
+      
+      // Calculate game duration
+      int gameDuration = 0;
+      if (gameSession.startedAt != null) {
+        gameDuration = DateTime.now().difference(gameSession.startedAt!).inSeconds;
+      }
+      
+      // Get turns played from game progress or estimate
+      int turnsPlayed = gameSession.gameProgress?.completedTurns ?? 
+                       gameSession.gameProgress?.totalTurns ?? 0;
+      
+      _analyticsService?.logGameEnded(
+        gameName: gameSession.gameType.displayName,
+        turnsPlayed: turnsPlayed,
+        gameDuration: gameDuration,
+      );
+    }
+    
     emit(GameEndedState(
       sessionId: event.sessionId,
       reason: event.reason,
@@ -439,6 +485,9 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     SelectGame event,
     Emitter<GamesState> emit,
   ) {
+    // Track game selected
+    _analyticsService?.logGameSelected(gameName: event.gameType.displayName);
+    
     // Create a mock game session for the selected game
     final mockGameSession = GameSession(
       sessionId: 'pending_${event.gameType.apiValue}',
@@ -480,6 +529,22 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
   ) {
     _gamesService.clearGameInvite();
     emit(const GamesInitial());
+  }
+
+  /// Helper method to convert game type string to display name
+  String _getGameDisplayName(String gameType) {
+    switch (gameType) {
+      case 'truth_or_thrill':
+        return 'Truth or Thrill';
+      case 'memory_sparks':
+        return 'Memory Sparks';
+      case 'would_you_rather':
+        return 'Would You Rather';
+      case 'guess_me':
+        return 'Guess Me';
+      default:
+        return gameType; // Return as-is if unknown
+    }
   }
 
   @override
