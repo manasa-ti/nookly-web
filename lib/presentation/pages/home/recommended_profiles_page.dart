@@ -17,7 +17,7 @@ class RecommendedProfilesPage extends StatefulWidget {
 
 class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   final ScrollController _scrollController = ScrollController();
-  bool _isLoadingMore = false;
+  bool _isPrefetching = false;
   bool _isInitialLoad = false;
   bool _tutorialDialogShown = false; // Prevent duplicate dialogs
 
@@ -39,35 +39,43 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     final state = context.read<RecommendedProfilesBloc>().state;
     if (state is RecommendedProfilesLoaded && 
         state.hasMore && 
-        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        !_isPrefetching &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 400) {
       AppLogger.info('🔵 PAGINATION: Scroll triggered pagination at position: ${_scrollController.position.pixels}');
-      _loadMoreProfiles();
+      _prefetchNextBatch();
     }
   }
 
-  void _loadMoreProfiles() async {
-    if (!_isLoadingMore) {
-      final state = context.read<RecommendedProfilesBloc>().state;
-      if (state is RecommendedProfilesLoaded && state.hasMore) {
-        setState(() {
-          _isLoadingMore = true;
-        });
-        
-        AppLogger.info('🔵 DEBUG: _loadMoreProfiles called - loading more profiles');
-        
-        // Load filter preferences for pagination
-        final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
-        final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
-        
-        // Use current skip value for pagination
-        context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
-          physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
-          availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
-        ));
-        
-        // Don't reset _isLoadingMore here - let the bloc state change handle it
-        // The loading state will be reset when the bloc emits a new state
-      }
+  void _prefetchNextBatch() async {
+    if (_isPrefetching) return;
+
+    final bloc = context.read<RecommendedProfilesBloc>();
+    final state = bloc.state;
+    if (state is! RecommendedProfilesLoaded || !state.hasMore) return;
+
+    AppLogger.info('🔵 DEBUG: _prefetchNextBatch requested');
+    if (!mounted) return;
+    setState(() {
+      _isPrefetching = true;
+    });
+
+    try {
+      // Load filter preferences for pagination
+      final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
+      final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
+
+      if (!mounted) return;
+
+      bloc.add(LoadRecommendedProfiles(
+        physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
+        availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
+      ));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isPrefetching = false;
+      });
+      AppLogger.info('🔵 DEBUG: Prefetch failed to initiate: $e');
     }
   }
 
@@ -77,7 +85,8 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
       return;
     }
     
-    final currentState = context.read<RecommendedProfilesBloc>().state;
+    final bloc = context.read<RecommendedProfilesBloc>();
+    final currentState = bloc.state;
     if (currentState is RecommendedProfilesLoaded && currentState.profiles.isNotEmpty) {
       AppLogger.info('🔵 DEBUG: _loadProfiles called but profiles already loaded, skipping');
       return;
@@ -92,8 +101,10 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     
     AppLogger.info('🔵 DEBUG: Loaded filters - Physical Activeness: $physicalActivenessFilters, Availability: $availabilityFilters');
     
-    context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
-      skip: 0, // Explicitly set skip to 0 for initial load
+    if (!mounted) return;
+    
+    bloc.add(LoadRecommendedProfiles(
+      reset: true, // Explicitly reset for initial load
       physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
       availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
     ));
@@ -140,6 +151,12 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     return BlocConsumer<RecommendedProfilesBloc, RecommendedProfilesState>(
         listener: (context, state) {
           if (state is RecommendedProfilesError) {
+            if (_isPrefetching) {
+              setState(() {
+                _isPrefetching = false;
+              });
+              AppLogger.info('🔵 DEBUG: Reset _isPrefetching flag after error');
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -150,11 +167,11 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           
           // Reset loading state when bloc state changes
           if (state is RecommendedProfilesLoaded) {
-            if (_isLoadingMore) {
+            if (_isPrefetching) {
               setState(() {
-                _isLoadingMore = false;
+                _isPrefetching = false;
               });
-              AppLogger.info('🔵 DEBUG: Reset _isLoadingMore flag');
+              AppLogger.info('🔵 DEBUG: Reset _isPrefetching flag');
             }
             if (_isInitialLoad) {
               setState(() {
@@ -201,7 +218,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                       'Check back later for new recommendations',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -209,23 +226,25 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
               );
             }
             
-            AppLogger.info('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isLoadingMore: $_isLoadingMore');
+            AppLogger.info('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isPrefetching: $_isPrefetching');
             
             // Adaptive padding for different screen sizes
             final isTablet = MediaQuery.of(context).size.width > 600;
-            final listPadding = isTablet ? EdgeInsets.all(32.0) : EdgeInsets.all(MediaQuery.of(context).size.width * 0.04);
+            final listPadding = isTablet ? const EdgeInsets.all(32.0) : EdgeInsets.all(MediaQuery.of(context).size.width * 0.04);
             
             return RefreshIndicator(
               onRefresh: () async {
                 AppLogger.info('🔵 DEBUG: Pull to refresh triggered');
+                final bloc = context.read<RecommendedProfilesBloc>();
                 
                 // Load filter preferences for refresh
                 final physicalActivenessFilters = await FilterPreferencesService.getPhysicalActivenessFilters();
                 final availabilityFilters = await FilterPreferencesService.getAvailabilityFilters();
                 
                 // Force fresh load by explicitly setting skip to 0
-                context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles(
-                  skip: 0, // Explicitly set skip to 0 for fresh load
+                if (!mounted) return;
+                bloc.add(LoadRecommendedProfiles(
+                  reset: true, // Explicitly set reset for fresh load
                   physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
                   availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
                 ));
@@ -234,23 +253,10 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()), // Fix iOS pull-to-refresh for short lists
                 padding: listPadding,
-                itemCount: state.profiles.length + (_isLoadingMore ? 1 : 0),
+                itemCount: state.profiles.length,
                 itemBuilder: (context, index) {
-                if (index == state.profiles.length) {
-                  if (_isLoadingMore) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                }
-                
                 final profile = state.profiles[index];
+                _maybePrefetch(state, index);
                 AppLogger.info('🔵 DEBUG: Rendering profile ${index + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
                 return ProfileCard(
                   key: ValueKey(profile.id), // Add unique key based on profile ID
@@ -297,5 +303,19 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           );
         },
       );
+  }
+
+  void _maybePrefetch(RecommendedProfilesLoaded state, int index) {
+    if (!state.hasMore || _isPrefetching) return;
+
+    const prefetchThreshold = 3;
+    if (state.profiles.length - index <= prefetchThreshold) {
+      AppLogger.info('🔵 PAGINATION: Prefetch triggered from builder at index $index');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _prefetchNextBatch();
+        }
+      });
+    }
   }
 } 

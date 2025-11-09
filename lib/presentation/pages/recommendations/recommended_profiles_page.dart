@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/domain/entities/recommended_profile.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});
@@ -13,12 +14,13 @@ class RecommendedProfilesPage extends StatefulWidget {
 
 class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   final ScrollController _scrollController = ScrollController();
+  bool _isPrefetching = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
+    context.read<RecommendedProfilesBloc>().add(const LoadRecommendedProfiles(reset: true));
   }
 
   @override
@@ -28,11 +30,41 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
-      final state = context.read<RecommendedProfilesBloc>().state;
-      if (state is RecommendedProfilesLoaded && state.hasMore) {
-        context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
-      }
+    if (_scrollController.position.pixels < _scrollController.position.maxScrollExtent - 400) {
+      return;
+    }
+
+    final state = context.read<RecommendedProfilesBloc>().state;
+    if (state is RecommendedProfilesLoaded && state.hasMore && !_isPrefetching) {
+      _prefetchNextBatch();
+    }
+  }
+
+  Future<void> _prefetchNextBatch() async {
+    if (_isPrefetching || !mounted) return;
+
+    final state = context.read<RecommendedProfilesBloc>().state;
+    if (state is! RecommendedProfilesLoaded || !state.hasMore) return;
+
+    AppLogger.info('🔵 DEBUG: RecommendationsPage prefetch triggered');
+    setState(() {
+      _isPrefetching = true;
+    });
+
+    context.read<RecommendedProfilesBloc>().add(const LoadRecommendedProfiles());
+  }
+
+  void _maybePrefetch(RecommendedProfilesLoaded state, int index) {
+    if (!state.hasMore || _isPrefetching) return;
+
+    const prefetchThreshold = 3;
+    if (state.profiles.length - index <= prefetchThreshold) {
+      AppLogger.info('🔵 DEBUG: RecommendationsPage builder prefetch at index $index');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _prefetchNextBatch();
+        }
+      });
     }
   }
 
@@ -42,7 +74,22 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
       appBar: AppBar(
         title: const Text('Recommended Profiles'),
       ),
-      body: BlocBuilder<RecommendedProfilesBloc, RecommendedProfilesState>(
+      body: BlocConsumer<RecommendedProfilesBloc, RecommendedProfilesState>(
+        listener: (context, state) {
+          if (state is RecommendedProfilesLoaded && _isPrefetching) {
+            setState(() {
+              _isPrefetching = false;
+            });
+            AppLogger.info('🔵 DEBUG: RecommendationsPage reset _isPrefetching after load');
+          }
+
+          if (state is RecommendedProfilesError && _isPrefetching) {
+            setState(() {
+              _isPrefetching = false;
+            });
+            AppLogger.info('🔵 DEBUG: RecommendationsPage reset _isPrefetching after error');
+          }
+        },
         builder: (context, state) {
           if (state is RecommendedProfilesInitial) {
             return const Center(child: CircularProgressIndicator());
@@ -57,7 +104,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
+                      context.read<RecommendedProfilesBloc>().add(const LoadRecommendedProfiles(reset: true));
                     },
                     child: const Text('Retry'),
                   ),
@@ -76,20 +123,13 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             return RefreshIndicator(
               onRefresh: () async {
                 context.read<RecommendedProfilesBloc>().resetPagination();
-                context.read<RecommendedProfilesBloc>().add(LoadRecommendedProfiles());
+                context.read<RecommendedProfilesBloc>().add(const LoadRecommendedProfiles(reset: true));
               },
               child: ListView.builder(
                 controller: _scrollController,
-                itemCount: state.profiles.length + (state.hasMore ? 1 : 0),
+                itemCount: state.profiles.length,
                 itemBuilder: (context, index) {
-                  if (index == state.profiles.length) {
-                    return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  }
+                  _maybePrefetch(state, index);
                   return ProfileCard(
                     key: ValueKey(state.profiles[index].id), // Add unique key based on profile ID
                     profile: state.profiles[index],
@@ -210,8 +250,8 @@ class ProfileCard extends StatelessWidget {
                       icon: const Icon(Icons.close),
                       label: const Text('Skip'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.colorScheme.surfaceVariant,
-                        foregroundColor: theme.colorScheme.onSurfaceVariant,
+                        backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                        foregroundColor: theme.colorScheme.onSurface,
                       ),
                     ),
                     ElevatedButton.icon(

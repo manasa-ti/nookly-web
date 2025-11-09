@@ -1,10 +1,11 @@
 import 'package:nookly/domain/entities/recommended_profile.dart';
+import 'package:nookly/domain/entities/recommended_profiles_page.dart';
 
 abstract class RecommendedProfilesRepository {
-  Future<List<RecommendedProfile>> getRecommendedProfiles({
+  Future<RecommendedProfilesPage> getRecommendedProfiles({
     double? radius,
     int? limit,
-    int? skip,
+    String? cursor,
     List<String>? physicalActiveness,
     List<String>? availability,
   });

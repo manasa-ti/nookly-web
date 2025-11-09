@@ -4,19 +4,23 @@ import 'package:nookly/domain/entities/recommended_profile.dart';
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 
 // Events
-abstract class RecommendedProfilesEvent {}
+abstract class RecommendedProfilesEvent {
+  const RecommendedProfilesEvent();
+}
 
 class LoadRecommendedProfiles extends RecommendedProfilesEvent {
   final double? radius;
   final int? limit;
-  final int? skip;
+  final String? cursor;
+  final bool reset;
   final List<String>? physicalActiveness;
   final List<String>? availability;
 
-  LoadRecommendedProfiles({
+  const LoadRecommendedProfiles({
     this.radius,
     this.limit,
-    this.skip,
+    this.cursor,
+    this.reset = false,
     this.physicalActiveness,
     this.availability,
   });
@@ -44,7 +48,17 @@ class RecommendedProfilesLoading extends RecommendedProfilesState {}
 class RecommendedProfilesLoaded extends RecommendedProfilesState {
   final List<RecommendedProfile> profiles;
   final bool hasMore;
-  RecommendedProfilesLoaded(this.profiles, {this.hasMore = true});
+  final String? nextCursor;
+  final String? currentCursor;
+  final int? totalCandidates;
+
+  RecommendedProfilesLoaded(
+    this.profiles, {
+    this.hasMore = true,
+    this.nextCursor,
+    this.currentCursor,
+    this.totalCandidates,
+  });
 }
 
 class RecommendedProfilesError extends RecommendedProfilesState {
@@ -55,8 +69,14 @@ class RecommendedProfilesError extends RecommendedProfilesState {
 // Bloc
 class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, RecommendedProfilesState> {
   final RecommendedProfilesRepository repository;
-  int _currentSkip = 0;
   static const int _defaultLimit = 20;
+  String? _nextCursor;
+  String? _currentCursor;
+  double? _activeRadius;
+  int? _activeLimit;
+  List<String>? _activePhysicalActiveness;
+  List<String>? _activeAvailability;
+  bool _isFetching = false;
 
   RecommendedProfilesBloc({required this.repository}) : super(RecommendedProfilesInitial()) {
     on<LoadRecommendedProfiles>(_onLoadRecommendedProfiles);
@@ -69,55 +89,118 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     LoadRecommendedProfiles event,
     Emitter<RecommendedProfilesState> emit,
   ) async {
+    final bool isFreshLoad = event.reset;
+    final String? explicitCursor = event.cursor;
+    String? requestCursor;
+
+    if (isFreshLoad) {
+      requestCursor = null;
+    } else {
+      requestCursor = explicitCursor ?? _nextCursor;
+      if (requestCursor == null) {
+        AppLogger.info('🔵 PAGINATION: Load request ignored - no cursor available for next page');
+        return;
+      }
+    }
+
+    if (_isFetching) {
+      AppLogger.info('🔵 PAGINATION: Load request ignored because another request is in flight');
+      return;
+    }
+
+    _isFetching = true;
+
     try {
-      // If skip is 0 or explicitly set to 0, it's a fresh load, otherwise it's pagination
-      final isFreshLoad = event.skip == 0 || (event.skip == null && _currentSkip == 0);
-      
-      AppLogger.info('🔵 DEBUG: LoadRecommendedProfiles event - skip: ${event.skip}, isFreshLoad: $isFreshLoad, currentSkip: $_currentSkip');
-      
       if (isFreshLoad) {
         AppLogger.info('🔵 DEBUG: Emitting loading state for fresh load');
         emit(RecommendedProfilesLoading());
-        _currentSkip = 0;
       }
-      
-      final skip = event.skip ?? _currentSkip;
-      AppLogger.info('🔵 PAGINATION: Loading profiles with skip: $skip, limit: ${event.limit ?? _defaultLimit}');
-      
-      final profiles = await repository.getRecommendedProfiles(
-        radius: event.radius,
-        limit: event.limit ?? _defaultLimit,
-        skip: skip,
-        physicalActiveness: event.physicalActiveness,
-        availability: event.availability,
+
+      final double? radius =
+          isFreshLoad ? event.radius : event.radius ?? _activeRadius;
+      final int limit = isFreshLoad
+          ? (event.limit ?? _defaultLimit)
+          : (event.limit ?? _activeLimit ?? _defaultLimit);
+      final List<String>? physicalActiveness = isFreshLoad
+          ? event.physicalActiveness
+          : event.physicalActiveness ?? _activePhysicalActiveness;
+      final List<String>? availability = isFreshLoad
+          ? event.availability
+          : event.availability ?? _activeAvailability;
+
+      final List<String>? effectivePhysicalActiveness =
+          physicalActiveness?.toList();
+      final List<String>? effectiveAvailability = availability?.toList();
+
+      AppLogger.info(
+        '🔵 PAGINATION: Loading profiles | cursor: $requestCursor | limit: $limit | fresh: $isFreshLoad',
       );
 
-      // Update skip counter for next pagination
-      _currentSkip = skip + (event.limit ?? _defaultLimit);
-      final hasMore = profiles.length == (event.limit ?? _defaultLimit);
-      AppLogger.info('🔵 PAGINATION: Received ${profiles.length} profiles, hasMore: $hasMore, next skip: $_currentSkip');
-      AppLogger.info('🔵 DEBUG: Profile IDs received: ${profiles.map((p) => p.id).toList()}');
-      
+      final page = await repository.getRecommendedProfiles(
+        radius: radius,
+        limit: limit,
+        cursor: requestCursor,
+        physicalActiveness: effectivePhysicalActiveness,
+        availability: effectiveAvailability,
+      );
+
+      _currentCursor = page.cursor;
+      _nextCursor = page.nextCursor;
+      _activeRadius = radius;
+      _activeLimit = limit;
+      _activePhysicalActiveness = effectivePhysicalActiveness;
+      _activeAvailability = effectiveAvailability;
+
+      final hasMore = page.hasMore;
+
+      AppLogger.info(
+        '🔵 PAGINATION: Received ${page.profiles.length} profiles | hasMore: $hasMore | nextCursor: $_nextCursor',
+      );
+      AppLogger.info(
+        '🔵 DEBUG: Profile IDs received: ${page.profiles.map((p) => p.id).toList()}',
+      );
+
       if (isFreshLoad) {
-        // Fresh load - replace all profiles
-        AppLogger.info('🔵 DEBUG: Emitting fresh load with ${profiles.length} profiles');
-        emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
+        emit(
+          RecommendedProfilesLoaded(
+            page.profiles,
+            hasMore: hasMore,
+            nextCursor: _nextCursor,
+            currentCursor: _currentCursor,
+            totalCandidates: page.totalCandidates,
+          ),
+        );
       } else {
-        // Pagination - append to existing profiles
         final currentState = state;
         if (currentState is RecommendedProfilesLoaded) {
-          final updatedProfiles = [...currentState.profiles, ...profiles];
-          AppLogger.info('🔵 DEBUG: Appending ${profiles.length} profiles to existing ${currentState.profiles.length} profiles');
-          AppLogger.info('🔵 DEBUG: Updated profile IDs: ${updatedProfiles.map((p) => p.id).toList()}');
-          emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: hasMore));
+          final updatedProfiles = [...currentState.profiles, ...page.profiles];
+          emit(
+            RecommendedProfilesLoaded(
+              updatedProfiles,
+              hasMore: hasMore,
+              nextCursor: _nextCursor,
+              currentCursor: _currentCursor,
+              totalCandidates:
+                  page.totalCandidates ?? currentState.totalCandidates,
+            ),
+          );
         } else {
-          AppLogger.info('🔵 DEBUG: Current state is not loaded, emitting new state with ${profiles.length} profiles');
-          emit(RecommendedProfilesLoaded(profiles, hasMore: hasMore));
+          emit(
+            RecommendedProfilesLoaded(
+              page.profiles,
+              hasMore: hasMore,
+              nextCursor: _nextCursor,
+              currentCursor: _currentCursor,
+              totalCandidates: page.totalCandidates,
+            ),
+          );
         }
       }
     } catch (e) {
       AppLogger.info('🔵 DEBUG: Error loading profiles: $e');
       emit(RecommendedProfilesError(e.toString()));
+    } finally {
+      _isFetching = false;
     }
   }
 
@@ -135,18 +218,23 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
             .toList();
         
         // Emit updated state immediately for smooth UX
-        emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: currentState.hasMore));
+        emit(
+          RecommendedProfilesLoaded(
+            updatedProfiles,
+            hasMore: currentState.hasMore,
+            nextCursor: currentState.nextCursor,
+            currentCursor: currentState.currentCursor,
+            totalCandidates: currentState.totalCandidates,
+          ),
+        );
         
         // Handle the backend call in the background
         await repository.likeProfile(event.profileId);
-        
-        // Reset pagination counter since backend list has changed
-        AppLogger.info('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to like');
-        _currentSkip = 0;
-        
+
         // Only refresh if we have 0 profiles left (empty state)
-        if (updatedProfiles.isEmpty) {
-          add(LoadRecommendedProfiles(skip: 0)); // Reset pagination for fresh start
+        if (updatedProfiles.isEmpty && currentState.hasMore) {
+          AppLogger.info('🔵 PAGINATION: Requesting next page after like');
+          add(const LoadRecommendedProfiles());
         }
       }
     } catch (e) {
@@ -172,18 +260,23 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
             .toList();
         
         // Emit updated state immediately for smooth UX
-        emit(RecommendedProfilesLoaded(updatedProfiles, hasMore: currentState.hasMore));
+        emit(
+          RecommendedProfilesLoaded(
+            updatedProfiles,
+            hasMore: currentState.hasMore,
+            nextCursor: currentState.nextCursor,
+            currentCursor: currentState.currentCursor,
+            totalCandidates: currentState.totalCandidates,
+          ),
+        );
         
         // Handle the backend call in the background
         await repository.dislikeProfile(event.profileId);
-        
-        // Reset pagination counter since backend list has changed
-        AppLogger.info('🔵 PAGINATION: Resetting skip counter from $_currentSkip to 0 due to dislike');
-        _currentSkip = 0;
-        
+
         // Only refresh if we have 0 profiles left (empty state)
-        if (updatedProfiles.isEmpty) {
-          add(LoadRecommendedProfiles(skip: 0)); // Reset pagination for fresh start
+        if (updatedProfiles.isEmpty && currentState.hasMore) {
+          AppLogger.info('🔵 PAGINATION: Requesting next page after dislike');
+          add(const LoadRecommendedProfiles());
         }
       }
     } catch (e) {
@@ -200,10 +293,22 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     Emitter<RecommendedProfilesState> emit,
   ) async {
     AppLogger.info('🔵 DEBUG: ResetPagination event received');
-    _currentSkip = 0;
+    _nextCursor = null;
+    _currentCursor = null;
+    _activeRadius = null;
+    _activeLimit = null;
+    _activePhysicalActiveness = null;
+    _activeAvailability = null;
+    _isFetching = false;
   }
 
   void resetPagination() {
-    _currentSkip = 0;
+    _nextCursor = null;
+    _currentCursor = null;
+    _activeRadius = null;
+    _activeLimit = null;
+    _activePhysicalActiveness = null;
+    _activeAvailability = null;
+    _isFetching = false;
   }
 } 

@@ -89,7 +89,7 @@ class _HomePageState extends State<HomePage> {
       
       final recommendedProfilesBloc = context.read<RecommendedProfilesBloc>();
       recommendedProfilesBloc.add(LoadRecommendedProfiles(
-        skip: 0, // Force fresh load when filters are applied
+        reset: true, // Force fresh load when filters are applied
         physicalActiveness: physicalActivenessFilters.isNotEmpty ? physicalActivenessFilters : null,
         availability: availabilityFilters.isNotEmpty ? availabilityFilters : null,
       ));
