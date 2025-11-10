@@ -6,7 +6,7 @@ This document explains how to use the new environment configuration system for t
 
 The app now supports three different environments:
 - **Development**: `https://dev.nookly.app/api`
-- **Staging**: `https://staging-api.nookly.app/api`
+- **Staging**: `https://staging.nookly.app/api`
 - **Production**: `https://api.nookly.app/api`
 
 ## Environment Configuration
