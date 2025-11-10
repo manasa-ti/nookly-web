@@ -7,6 +7,7 @@ import 'dart:async' as _i3;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:nookly/domain/entities/recommended_profile.dart' as _i4;
+import 'package:nookly/domain/entities/recommended_profiles_page.dart' as _i5;
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart'
     as _i2;
 
@@ -34,10 +35,10 @@ class MockRecommendedProfilesRepository extends _i1.Mock
   }
 
   @override
-  _i3.Future<List<_i4.RecommendedProfile>> getRecommendedProfiles({
+  _i3.Future<_i5.RecommendedProfilesPage> getRecommendedProfiles({
     double? radius,
     int? limit,
-    int? skip,
+    String? cursor,
     List<String>? physicalActiveness,
     List<String>? availability,
   }) =>
@@ -48,14 +49,17 @@ class MockRecommendedProfilesRepository extends _i1.Mock
           {
             #radius: radius,
             #limit: limit,
-            #skip: skip,
+            #cursor: cursor,
             #physicalActiveness: physicalActiveness,
             #availability: availability,
           },
         ),
-        returnValue: _i3.Future<List<_i4.RecommendedProfile>>.value(
-            <_i4.RecommendedProfile>[]),
-      ) as _i3.Future<List<_i4.RecommendedProfile>>);
+        returnValue: _i3.Future<_i5.RecommendedProfilesPage>.value(
+            _i5.RecommendedProfilesPage(
+          profiles: const <_i4.RecommendedProfile>[],
+          hasMore: false,
+        )),
+      ) as _i3.Future<_i5.RecommendedProfilesPage>);
 
   @override
   _i3.Future<void> likeProfile(String? profileId) => (super.noSuchMethod(

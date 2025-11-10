@@ -43,7 +43,7 @@ class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository
       }
 
       final response = await NetworkService.dio.get(
-        '/api/users/recommendations',
+        '/users/recommendations',
         queryParameters: queryParams,
       );
 
