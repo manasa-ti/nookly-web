@@ -18,32 +18,42 @@ class GameBoardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Determine if Done button will be shown to adjust bottom padding
+    final showDoneButton = !_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice();
+    
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 8,
+        bottom: showDoneButton ? 4 : 8, // Less bottom padding when Done button is shown
+      ),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.3),
-          width: 1,
-        ),
+        // Remove background color and border - outer container provides it
+        // Keep only for visual consistency, but make it transparent
+        color: Colors.transparent,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Game title and close button
+          // Game title, turn indicator badge, and close button in one row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Game title
               Text(
                 gameSession.gameType.displayName,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
-                  fontSize: 16,
+                  fontSize: 14,
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
                 ),
               ),
+              // Turn indicator badge (small chip style)
+              _buildTurnIndicatorBadge(),
+              // Close button
               GestureDetector(
                 onTap: () => onGameAction('end_game'),
                 child: Icon(
@@ -54,11 +64,6 @@ class GameBoardWidget extends StatelessWidget {
               ),
             ],
           ),
-          
-          const SizedBox(height: 12),
-          
-          // Turn indicator and Done button - combined in one row when applicable
-          _buildTurnIndicatorWithButton(),
           
           const SizedBox(height: 8),
           
@@ -81,10 +86,39 @@ class GameBoardWidget extends StatelessWidget {
             ],
           ],
           
-          const SizedBox(height: 12),
+          // Done button (only shown when it's user's turn and they've selected a choice)
+          // Placed below the prompt
+          if (!_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice()) ...[
+            const SizedBox(height: 4),
+            // Compact Done button - not full width
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () => onGameAction('next_turn'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.withOpacity(0.8),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  minimumSize: const Size(0, 0), // Allow button to be as small as content
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Nunito',
+                  ),
+                ),
+              ),
+            ),
+          ],
           
           // Show Send Invite button if game is pending (not started yet)
           if (_isGamePending()) ...[
+            const SizedBox(height: 6),
             _buildSendInviteButton(),
           ],
         ],
@@ -291,89 +325,59 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTurnIndicatorWithButton() {
-    // If it's user's turn and they have selected a choice, show both in a row
-    if (!_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice()) {
-      return Row(
-        children: [
-          // Turn indicator on the left
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.8),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Text(
-                'Your turn',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Nunito',
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          // Done button on the right
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => onGameAction('next_turn'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green.withOpacity(0.8),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-              child: const Text(
-                'Done',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  fontFamily: 'Nunito',
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-    
-    // Otherwise, show just the turn indicator
+  // Build turn indicator as a small badge/chip
+  Widget _buildTurnIndicatorBadge() {
     String turnText;
-    Color indicatorColor;
+    Color badgeColor;
+    Color textColor;
+    IconData icon;
     
     if (_isGamePending()) {
-      turnText = 'Game pending';
-      indicatorColor = Colors.orange.withOpacity(0.8);
+      turnText = 'Pending';
+      badgeColor = Colors.orange.withOpacity(0.2);
+      textColor = Colors.orange.withOpacity(0.9);
+      icon = Icons.schedule;
     } else if (_isCurrentUserTurn()) {
       turnText = 'Your turn';
-      indicatorColor = Colors.green.withOpacity(0.8);
+      badgeColor = Colors.green.withOpacity(0.2);
+      textColor = Colors.green.withOpacity(0.9);
+      icon = Icons.access_time;
     } else {
-      turnText = 'Your partner\'s turn';
-      indicatorColor = Colors.blue.withOpacity(0.8);
+      turnText = 'Partner\'s turn';
+      badgeColor = Colors.orange.withOpacity(0.2);
+      textColor = Colors.orange.withOpacity(0.9);
+      icon = Icons.person_outline;
     }
     
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: indicatorColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        turnText,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          fontFamily: 'Nunito',
+        color: badgeColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: textColor.withOpacity(0.4),
+          width: 0.5,
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 12,
+            color: textColor,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            turnText,
+            style: TextStyle(
+              color: textColor,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Nunito',
+            ),
+          ),
+        ],
       ),
     );
   }

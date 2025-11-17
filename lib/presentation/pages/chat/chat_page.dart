@@ -148,6 +148,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // Cache messages to prevent blank screen during state transitions
   // This ensures messages persist even if state temporarily changes to non-ConversationLoaded
   List<Message> _cachedMessages = [];
+  
+  // Store GamesBloc reference for safe access in dispose()
+  GamesBloc? _gamesBloc;
 
   @override
   void initState() {
@@ -205,6 +208,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         curve: Curves.easeInOut,
       ),
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Store GamesBloc reference for safe access in dispose()
+    _gamesBloc ??= context.read<GamesBloc>();
   }
 
   /// Enable screenshot and screen recording protection for chat screen
@@ -299,6 +309,39 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     
     // Reset the listeners registered flag
     _listenersRegistered = false;
+    
+    // Clear game state when leaving chat page to prevent games from persisting
+    // across different conversations. If a game is active, properly end it first
+    // to notify the backend and other participant.
+    // Use stored GamesBloc reference instead of context.read() as context is unsafe in dispose()
+    try {
+      if (_gamesBloc != null) {
+        final currentState = _gamesBloc!.state;
+        
+        // Check if there's an active game session that needs to be ended
+        if (currentState is GameActive || currentState is GameTurnCompleted) {
+          final gameSession = currentState is GameActive 
+              ? currentState.gameSession 
+              : (currentState as GameTurnCompleted).gameSession;
+          
+          AppLogger.info('🎮 ChatPage: Ending active game on dispose for conversation: ${widget.conversationId}');
+          AppLogger.info('🎮 - SessionId: ${gameSession.sessionId}');
+          
+          // Properly end the game to notify backend and other participant
+          _gamesBloc!.add(EndGame(
+            sessionId: gameSession.sessionId,
+            reason: 'user_left_chat',
+            conversationId: widget.conversationId,
+          ));
+        } else {
+          // No active game, just clear any pending state
+          AppLogger.info('🎮 ChatPage: Clearing game state on dispose for conversation: ${widget.conversationId}');
+          _gamesBloc!.add(const ClearGameState());
+        }
+      }
+    } catch (e) {
+      AppLogger.error('❌ ChatPage: Failed to clear/end game state on dispose: $e');
+    }
     
     // Disable screen protection when leaving chat screen
     _disableScreenProtection();
@@ -2582,24 +2625,56 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       ),
       body: Stack(
         children: [
+          // Main content in Column to respect keyboard insets
           Column(
             key: const ValueKey('chat_column'), // Preserve Column identity during rebuilds
             children: [
-              // Game Interface Bar (includes conversation starters and games)
-              // Isolated with RepaintBoundary to prevent affecting messages list
-              RepaintBoundary(
-                child: BlocBuilder<GamesBloc, GamesState>(
-                  builder: (context, gamesState) {
-                    return GameInterfaceBar(
-                      matchUserId: widget.conversationId,
-                      priorMessages: _getRecentMessages(),
-                      onSuggestionSelected: _onConversationStarterSelected,
-                      currentUserId: _currentUserId ?? '',
-                      isOtherUserOnline: true, // Always show games - remove online check
-                      serverConversationId: _serverConversationId, // Pass server-provided conversation ID
-                    );
-                  },
-                ),
+              // Game Interface Bar - Show compact prompt-only when keyboard is open
+              // Use LayoutBuilder to rebuild when keyboard opens/closes (constraints change)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+                  
+                  return BlocBuilder<GamesBloc, GamesState>(
+                    builder: (context, gamesState) {
+                      if (keyboardOpen && (gamesState is GameActive || gamesState is GameTurnCompleted)) {
+                        // Show only prompt in compact form when keyboard is open
+                        final gameSession = gamesState is GameActive 
+                            ? gamesState.gameSession 
+                            : (gamesState as GameTurnCompleted).gameSession;
+                        
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            border: Border(
+                              bottom: BorderSide(
+                                color: Colors.white.withOpacity(0.2),
+                                width: 0.5,
+                              ),
+                            ),
+                          ),
+                          child: _buildCompactPromptView(
+                            gameSession,
+                            gamesState is GameTurnCompleted,
+                          ),
+                        );
+                      }
+                      
+                      // Full game interface when keyboard is closed
+                      return RepaintBoundary(
+                        child: GameInterfaceBar(
+                          matchUserId: widget.conversationId,
+                          priorMessages: _getRecentMessages(),
+                          onSuggestionSelected: _onConversationStarterSelected,
+                          currentUserId: _currentUserId ?? '',
+                          isOtherUserOnline: true, // Always show games - remove online check
+                          serverConversationId: _serverConversationId, // Pass server-provided conversation ID
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
               // Messages list - isolated to prevent rebuilds from game interface
               Expanded(
@@ -2979,26 +3054,27 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   ),
                 ],
               ),
-                ),
               ),
+              ),
+            ),
+            // Input at bottom - will move up with keyboard
+            _buildMessageInput(),
+            ],
           ),
-          _buildMessageInput(),
-        ],
-      ),
-      // Add side menu overlay with backdrop
-      if (_isMenuOpen) _buildSideMenuWithBackdrop(Conversation(
-        id: widget.conversationId,
-        participantId: widget.conversationId,
-        participantName: widget.participantName,
-        participantAvatar: widget.participantAvatar,
-        messages: [],
-        lastMessageTime: DateTime.now(),
-        unreadCount: 0,
-        userId: _currentUserId ?? '',
-        lastMessage: null,
-        updatedAt: DateTime.now(),
-        isOnline: widget.isOnline,
-      )),
+          // Side menu overlay (positioned on top)
+          if (_isMenuOpen) _buildSideMenuWithBackdrop(Conversation(
+            id: widget.conversationId,
+            participantId: widget.conversationId,
+            participantName: widget.participantName,
+            participantAvatar: widget.participantAvatar,
+            messages: [],
+            lastMessageTime: DateTime.now(),
+            unreadCount: 0,
+            userId: _currentUserId ?? '',
+            lastMessage: null,
+            updatedAt: DateTime.now(),
+            isOnline: widget.isOnline,
+          )),
         ],
       ),
     );
@@ -4004,5 +4080,59 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         );
       }
     }
+  }
+
+  Widget _buildCompactPromptView(GameSession gameSession, bool isTurnCompleted) {
+    String? promptText;
+    
+    if (gameSession.gameType == GameType.truthOrThrill) {
+      // For Truth or Thrill, show the selected prompt
+      if (gameSession.selectedChoice != null) {
+        promptText = gameSession.currentPrompt.getDisplayText(gameSession.selectedChoice);
+      }
+    } else {
+      // For other games, show the direct prompt
+      promptText = gameSession.currentPrompt.getDisplayText(null);
+    }
+    
+    if (promptText == null || promptText.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    
+    return Row(
+      children: [
+        // Game type icon/indicator (compact)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            gameSession.gameType.displayName,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 10,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Prompt text (compact, single line with ellipsis)
+        Expanded(
+          child: Text(
+            promptText,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 12,
+              fontFamily: 'Nunito',
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
   }
 } 

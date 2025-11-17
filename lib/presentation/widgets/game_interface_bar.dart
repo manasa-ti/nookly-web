@@ -162,14 +162,13 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
       builder: (context, state) {
         final content = _buildContent(context, state);
 
-        // The game menu grid provides its own styled container; avoid wrapping it twice.
-        if (state is GameMenuVisible) {
-          return content;
-        }
-
+        // Wrap all content in outer container for consistent background
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
+          padding: EdgeInsets.symmetric(
+            horizontal: 0,
+            vertical: (state is GameActive || state is GameTurnCompleted || state is GameMenuVisible) ? 0 : 12, // No vertical padding for game board and menu
+          ),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.1),
             border: Border(
@@ -491,13 +490,8 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
       decoration: const BoxDecoration(
-        color: Color(0xFF384E85), // Solid lighter blue for better visibility
-        border: Border(
-          bottom: BorderSide(
-            color: Color(0xFF2d457f),
-            width: 1,
-          ),
-        ),
+        // Make transparent - outer container provides background
+        color: Colors.transparent,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
