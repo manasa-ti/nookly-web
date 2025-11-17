@@ -871,16 +871,24 @@ class ConversationRepositoryImpl implements ConversationRepository {
   @override
   Future<Map<String, dynamic>> getMessages({
     required String participantId,
-    required int page,
+    int? page,
+    String? cursor,
     required int pageSize,
   }) async {
     try {
+      // Build query parameters - cursor-based pagination only
+      final queryParameters = <String, dynamic>{
+        'pageSize': pageSize,
+      };
+      
+      // Always include cursor parameter (empty string for first page, actual cursor for subsequent)
+      // API requires cursor parameter to trigger cursor-based pagination
+      queryParameters['cursor'] = cursor ?? ''; // Empty string if null
+      AppLogger.info('🔵 Using cursor-based pagination: cursor="${cursor ?? ''}"');
+      
       final response = await NetworkService.dio.get(
         '/messages/chat/$participantId',
-        queryParameters: {
-          'page': page,
-          'pageSize': pageSize,
-        },
+        queryParameters: queryParameters,
       );
 
       AppLogger.info('API Response data: ${response.data}');

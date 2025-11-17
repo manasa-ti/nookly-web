@@ -145,6 +145,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // Screen protection
   late ScreenProtectionService _screenProtectionService;
 
+  // Cache messages to prevent blank screen during state transitions
+  // This ensures messages persist even if state temporarily changes to non-ConversationLoaded
+  List<Message> _cachedMessages = [];
+
   @override
   void initState() {
     super.initState();
@@ -324,16 +328,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   void _loadMoreMessages() {
     final state = context.read<ConversationBloc>().state;
-    if (state is ConversationLoaded && state.hasMoreMessages) {
+    if (state is ConversationLoaded && state.hasMoreMessages && !_isLoadingMore) {
+      AppLogger.info('🔵 Loading more messages - hasMore: ${state.hasMoreMessages}, isLoadingMore: $_isLoadingMore');
       setState(() {
         _isLoadingMore = true;
       });
       
       context.read<ConversationBloc>().add(LoadMoreMessages());
-      
-      setState(() {
-        _isLoadingMore = false;
-      });
+      // Don't set _isLoadingMore to false here - wait for state update
+    } else {
+      AppLogger.info('🔵 Cannot load more - hasMore: ${state is ConversationLoaded ? (state as ConversationLoaded).hasMoreMessages : false}, isLoadingMore: $_isLoadingMore');
     }
   }
 
@@ -1097,54 +1101,55 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           }
         }
         
-        // Only process messages from the other participant
-        AppLogger.info('🔍 Checking if message should be processed: sender=${msg.sender}, currentUserId=$_currentUserId');
-        if (msg.sender != _currentUserId) {
-          AppLogger.info('🔍 Message is from other participant, processing...');
-          // Check for scam alerts in text messages
-          if (msg.type == MessageType.text && msg.content.isNotEmpty) {
-            _messageCount++;
-            _checkForScamAlert(msg.content, true);
-          }
-          
-          // Debugging disappearing data - Before adding to ConversationBloc (images only)
-          if (msg.type == MessageType.image) {
-            AppLogger.info('🔍 [Debugging disappearing data] BEFORE ADDING TO CONVERSATION BLOC:');
-            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.isDisappearing: ${msg.metadata?.isDisappearing}');
-            AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.disappearingTime: ${msg.metadata?.disappearingTime}');
-          }
-          
-          AppLogger.info('🔍 Adding MessageReceived event to ConversationBloc');
-          context.read<ConversationBloc>().add(MessageReceived(msg));
-          
-          AppLogger.info('🔍 Adding ConversationUpdated event to ConversationBloc');
-          context.read<ConversationBloc>().add(ConversationUpdated(
-            conversationId: widget.conversationId,
-            lastMessage: msg,
-            updatedAt: DateTime.now(),
-          ));
-          // Mark message as delivered immediately after receiving
-          if (_socketService != null && !_processedMessageIds.contains(msg.id)) {
-            _socketService!.emit('message_delivered', {
-              'messageId': serverMessageId,
-              'conversationId': widget.conversationId,
-              'timestamp': DateTime.now().toIso8601String(),
-            });
-            _processedMessageIds.add(msg.id);
-          }
-          // Scroll to bottom when receiving a new message
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (_scrollController.hasClients) {
-              _scrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          });
-        } else {
-          AppLogger.info('🔍 Message is from current user, ignoring (sender: ${msg.sender}, currentUserId: $_currentUserId)');
+        // Process all messages matching the conversation (both sender and receiver)
+        // The bloc's duplicate check will prevent duplicates based on message ID
+        final isFromOtherParticipant = msg.sender != _currentUserId;
+        AppLogger.info('🔍 Processing message: sender=${msg.sender}, currentUserId=$_currentUserId, isFromOtherParticipant=$isFromOtherParticipant');
+        
+        // Only check for scam alerts if message is from other participant
+        if (isFromOtherParticipant && msg.type == MessageType.text && msg.content.isNotEmpty) {
+          _messageCount++;
+          _checkForScamAlert(msg.content, true);
         }
+        
+        // Debugging disappearing data - Before adding to ConversationBloc (images only)
+        if (msg.type == MessageType.image) {
+          AppLogger.info('🔍 [Debugging disappearing data] BEFORE ADDING TO CONVERSATION BLOC:');
+          AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.isDisappearing: ${msg.metadata?.isDisappearing}');
+          AppLogger.info('🔍 [Debugging disappearing data] - msg.metadata?.disappearingTime: ${msg.metadata?.disappearingTime}');
+        }
+        
+        AppLogger.info('🔍 Adding MessageReceived event to ConversationBloc');
+        context.read<ConversationBloc>().add(MessageReceived(msg));
+        
+        AppLogger.info('🔍 Adding ConversationUpdated event to ConversationBloc');
+        context.read<ConversationBloc>().add(ConversationUpdated(
+          conversationId: widget.conversationId,
+          lastMessage: msg,
+          updatedAt: DateTime.now(),
+        ));
+        
+        // Only mark as delivered if message is from other participant
+        // (we don't need to send delivery receipt for our own messages)
+        if (isFromOtherParticipant && _socketService != null && !_processedMessageIds.contains(msg.id)) {
+          _socketService!.emit('message_delivered', {
+            'messageId': serverMessageId,
+            'conversationId': widget.conversationId,
+            'timestamp': DateTime.now().toIso8601String(),
+          });
+          _processedMessageIds.add(msg.id);
+        }
+        
+        // Scroll to bottom when receiving a new message
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOut,
+            );
+          }
+        });
         
         AppLogger.info('🚨 [CRITICAL] private_message event processing COMPLETED SUCCESSFULLY');
       } catch (e) {
@@ -2510,6 +2515,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildScaffold() {
     return Scaffold(
       backgroundColor: const Color(0xFF2d457f),
+      resizeToAvoidBottomInset: true, // Enable keyboard avoidance - input moves up with keyboard
       appBar: AppBar(
         backgroundColor: const Color(0xFF2d457f),
         elevation: 0,
@@ -2577,25 +2583,43 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       body: Stack(
         children: [
           Column(
+            key: const ValueKey('chat_column'), // Preserve Column identity during rebuilds
             children: [
               // Game Interface Bar (includes conversation starters and games)
-              // Always show the interface - it will handle its own state internally
-              BlocBuilder<GamesBloc, GamesState>(
-                builder: (context, gamesState) {
-                  return GameInterfaceBar(
-                    matchUserId: widget.conversationId,
-                    priorMessages: _getRecentMessages(),
-                    onSuggestionSelected: _onConversationStarterSelected,
-                    currentUserId: _currentUserId ?? '',
-                    isOtherUserOnline: true, // Always show games - remove online check
-                    serverConversationId: _serverConversationId, // Pass server-provided conversation ID
-                  );
-                },
+              // Isolated with RepaintBoundary to prevent affecting messages list
+              RepaintBoundary(
+                child: BlocBuilder<GamesBloc, GamesState>(
+                  builder: (context, gamesState) {
+                    return GameInterfaceBar(
+                      matchUserId: widget.conversationId,
+                      priorMessages: _getRecentMessages(),
+                      onSuggestionSelected: _onConversationStarterSelected,
+                      currentUserId: _currentUserId ?? '',
+                      isOtherUserOnline: true, // Always show games - remove online check
+                      serverConversationId: _serverConversationId, // Pass server-provided conversation ID
+                    );
+                  },
+                ),
               ),
+              // Messages list - isolated to prevent rebuilds from game interface
               Expanded(
-                child: BlocListener<ConversationBloc, ConversationState>(
+                key: const ValueKey('messages_expanded'), // Preserve Expanded identity
+                child: RepaintBoundary(
+                  child: BlocListener<ConversationBloc, ConversationState>(
               listener: (context, state) {
+                // Clear cache when conversation starts loading (new conversation)
+                if (state is ConversationLoading) {
+                  _cachedMessages = [];
+                }
+                
                 if (state is ConversationLoaded) {
+                  // Reset loading flag when state updates
+                  if (_isLoadingMore) {
+                    setState(() {
+                      _isLoadingMore = false;
+                    });
+                  }
+                  
                   // Scroll to bottom when new messages arrive
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     _scrollToBottom();
@@ -2752,21 +2776,34 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   Expanded(
                     child: Stack(
                       children: [
-                        // Existing BlocSelector (unchanged for performance)
+                        // BlocSelector with message caching to prevent blank screen during state transitions
                         BlocSelector<ConversationBloc, ConversationState, List<Message>>(
-                          selector: (state) => state is ConversationLoaded ? state.messages : [],
+                          selector: (state) {
+                            if (state is ConversationLoaded) {
+                              // Always update cache immediately when we have ConversationLoaded state
+                              _cachedMessages = state.messages;
+                              return state.messages;
+                            }
+                            // Return cached messages during state transitions to prevent blank screen
+                            // This handles cases where state temporarily changes (e.g., during rapid game events)
+                            return _cachedMessages;
+                          },
                           builder: (context, messages) {
+                            // Ensure we always have a valid list (defensive programming)
+                            final displayMessages = messages.isNotEmpty ? messages : _cachedMessages;
+                            
                             return NotificationListener<ScrollNotification>(
                               onNotification: (notification) {
                                 return false;
                               },
                               child: ListView.builder(
+                                key: const ValueKey('messages_list'), // Preserve ListView identity during rebuilds
                                 controller: _scrollController,
                                 reverse: true,
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
-                                itemCount: messages.length + (_isLoadingMore ? 1 : 0),
+                                itemCount: displayMessages.length + (_isLoadingMore ? 1 : 0),
                                 itemBuilder: (context, index) {
-                                  if (index == messages.length) {
+                                  if (index == displayMessages.length) {
                                     if (_isLoadingMore) {
                                       return const Center(
                                         child: Padding(
@@ -2780,7 +2817,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                     return const SizedBox.shrink();
                                   }
                                   
-                                  final message = messages[index];
+                                  // Safety check to prevent index out of bounds
+                                  if (index >= displayMessages.length) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  final message = displayMessages[index];
                                   final isMe = message.sender == _currentUserId;
                                   
                                   // Emit message_read when message is visible and from other user
@@ -2816,8 +2858,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   AppLogger.info('  - Message metadata: ${message.metadata}');
                                   AppLogger.info('  - Message isDisappearing: ${message.metadata?.isDisappearing}');
                                   AppLogger.info('  - Message disappearingTime: ${message.metadata?.disappearingTime}');
-                                  AppLogger.info('  - Total messages in list: ${messages.length}');
-                                  AppLogger.info('  - Message index: ${messages.indexOf(message)}');
+                                  AppLogger.info('  - Total messages in list: ${displayMessages.length}');
+                                  AppLogger.info('  - Message index: ${displayMessages.indexOf(message)}');
                                   
                                   // Debugging disappearing data - Before MessageBubble rendering (images only)
                                   if (message.type == MessageType.image) {
@@ -2937,7 +2979,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   ),
                 ],
               ),
-            ),
+                ),
+              ),
           ),
           _buildMessageInput(),
         ],

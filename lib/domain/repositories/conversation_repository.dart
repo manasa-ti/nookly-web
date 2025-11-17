@@ -5,7 +5,8 @@ abstract class ConversationRepository {
   Future<List<Conversation>> getConversations();
   Future<Map<String, dynamic>> getMessages({
     required String participantId,
-    required int page,
+    int? page,
+    String? cursor,
     required int pageSize,
   });
   Future<Conversation> getConversation(

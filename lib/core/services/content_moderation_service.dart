@@ -53,9 +53,17 @@ class ContentModerationService {
     
     final lowerText = text.toLowerCase();
     
-    // Check for prohibited keywords
+    // Check for prohibited keywords using word boundaries
     for (final keyword in _prohibitedKeywords) {
-      if (lowerText.contains(keyword.toLowerCase())) {
+      final lowerKeyword = keyword.toLowerCase();
+      
+      // For multi-word phrases, match the entire phrase
+      // For single words, use word boundaries to avoid false positives
+      final pattern = lowerKeyword.contains(' ')
+          ? RegExp(RegExp.escape(lowerKeyword), caseSensitive: false)
+          : RegExp(r'\b' + RegExp.escape(lowerKeyword) + r'\b', caseSensitive: false);
+      
+      if (pattern.hasMatch(lowerText)) {
         AppLogger.warning('Content moderation: Prohibited keyword detected: $keyword');
         AppLogger.warning('Content moderation: Text that triggered: "$text"');
         return true;
@@ -81,10 +89,17 @@ class ContentModerationService {
     
     String filteredText = text;
     
-    // Replace prohibited keywords with asterisks
+    // Replace prohibited keywords with asterisks using word boundaries
     for (final keyword in _prohibitedKeywords) {
-      final regex = RegExp(keyword, caseSensitive: false);
-      filteredText = filteredText.replaceAll(regex, '*' * keyword.length);
+      final lowerKeyword = keyword.toLowerCase();
+      
+      // For multi-word phrases, match the entire phrase
+      // For single words, use word boundaries to avoid false positives
+      final pattern = lowerKeyword.contains(' ')
+          ? RegExp(RegExp.escape(keyword), caseSensitive: false)
+          : RegExp(r'\b' + RegExp.escape(keyword) + r'\b', caseSensitive: false);
+      
+      filteredText = filteredText.replaceAll(pattern, '*' * keyword.length);
     }
     
     return filteredText;
@@ -119,7 +134,15 @@ class ContentModerationService {
     ];
     
     for (final keyword in commercialKeywords) {
-      if (lowerText.contains(keyword)) {
+      final lowerKeyword = keyword.toLowerCase();
+      
+      // For multi-word phrases, match the entire phrase
+      // For single words, use word boundaries to avoid false positives
+      final pattern = lowerKeyword.contains(' ')
+          ? RegExp(RegExp.escape(lowerKeyword), caseSensitive: false)
+          : RegExp(r'\b' + RegExp.escape(lowerKeyword) + r'\b', caseSensitive: false);
+      
+      if (pattern.hasMatch(lowerText)) {
         AppLogger.warning('Content moderation: Commercial content detected in bio');
         return false;
       }
@@ -133,8 +156,6 @@ class ContentModerationService {
     if (text.isEmpty) return true;
     
     // Additional checks for chat messages
-    final lowerText = text.toLowerCase();
-    
     // Check for spam patterns
     final spamPatterns = [
       r'\b(hi|hello|hey)\s+(hi|hello|hey)\s+(hi|hello|hey)\b', // Repeated greetings

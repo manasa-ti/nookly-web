@@ -17,7 +17,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   final SocketService _socketService;
   final AnalyticsService _analyticsService;
   String _currentUserId;
-  int _currentPage = 0;
+  String? _currentCursor; // Cursor for cursor-based pagination
   static const int _pageSize = 20;
   bool _hasMoreMessages = true;
   StreamSubscription? _messagesSubscription;
@@ -77,19 +77,52 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   ) async {
     emit(ConversationLoading());
     try {
-      _currentPage = 0;
+      // Reset pagination state for new conversation
       _hasMoreMessages = true;
+      
+      // First page - use empty cursor string to trigger cursor-based pagination
+      // API requires cursor= (empty value) for first request to return cursor in response
+      const initialCursor = ''; // Empty string triggers cursor-based pagination
+      _currentCursor = initialCursor;
+      
+      AppLogger.info('🔵 First page - using empty cursor to trigger cursor-based pagination');
       
       final response = await _conversationRepository.getMessages(
         participantId: event.participantId,
-        page: _currentPage,
+        cursor: initialCursor,
+        page: null,
         pageSize: _pageSize,
       );
 
       // API sends messages in descending order (newest first)
       // Keep this order since we want newest at bottom in UI
       final messages = response['messages'] as List<Message>;
-      _hasMoreMessages = response['pagination']['hasMore'] as bool;
+      final pagination = response['pagination'] as Map<String, dynamic>;
+      _hasMoreMessages = pagination['hasMore'] as bool? ?? false;
+      
+      // Debug: Log full pagination structure
+      AppLogger.info('🔵 PAGINATION DEBUG: Full pagination object: $pagination');
+      AppLogger.info('🔵 PAGINATION DEBUG: Pagination keys: ${pagination.keys.toList()}');
+      AppLogger.info('🔵 PAGINATION DEBUG: Has cursor key: ${pagination.containsKey('cursor')}');
+      if (pagination.containsKey('cursor')) {
+        AppLogger.info('🔵 PAGINATION DEBUG: Cursor value: ${pagination['cursor']} (type: ${pagination['cursor'].runtimeType})');
+      }
+      
+      // Extract cursor from pagination response for subsequent requests
+      if (pagination.containsKey('cursor') && pagination['cursor'] != null) {
+        _currentCursor = pagination['cursor'] as String;
+        AppLogger.info('🔵 Initial cursor from first page: $_currentCursor');
+      } else {
+        // If no cursor in response, derive it from the last (oldest) message timestamp
+        // Messages are in descending order, so last message is oldest
+        if (messages.isNotEmpty) {
+          final lastMessage = messages.last;
+          _currentCursor = lastMessage.timestamp.toIso8601String();
+          AppLogger.info('🔵 Derived cursor from last message timestamp: $_currentCursor');
+        } else {
+          AppLogger.warning('⚠️ No cursor in pagination and no messages to derive cursor from');
+        }
+      }
 
       // Debug: Log message types
       AppLogger.info('🔵 Loaded ${messages.length} messages from API');
@@ -173,18 +206,51 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     if (state is ConversationLoaded) {
       final currentState = state as ConversationLoaded;
       try {
-        _currentPage++;
+        // Only use cursor-based pagination - no page fallback
+        // If no cursor available or cursor is empty, we can't load more
+        if (_currentCursor == null || _currentCursor!.isEmpty) {
+          AppLogger.warning('⚠️ Cannot load more messages: no cursor available (cursor: $_currentCursor)');
+          _hasMoreMessages = false; // Mark as no more messages if cursor is invalid
+          return;
+        }
+        
+        AppLogger.info('🔵 LoadMoreMessages - Using cursor: $_currentCursor, hasMore: $_hasMoreMessages');
         
         final response = await _conversationRepository.getMessages(
           participantId: currentState.conversation.participantId,
-          page: _currentPage,
+          cursor: _currentCursor,
+          page: null, // Always null - use cursor only
           pageSize: _pageSize,
         );
 
         // API sends messages in descending order (newest first)
         // Keep this order since we want newest at bottom in UI
         final newMessages = response['messages'] as List<Message>;
-        _hasMoreMessages = response['pagination']['hasMore'] as bool;
+        final pagination = response['pagination'] as Map<String, dynamic>;
+        _hasMoreMessages = pagination['hasMore'] as bool? ?? false;
+        
+        // Debug: Log full pagination structure
+        AppLogger.info('🔵 PAGINATION DEBUG (LoadMore): Full pagination object: $pagination');
+        AppLogger.info('🔵 PAGINATION DEBUG (LoadMore): Pagination keys: ${pagination.keys.toList()}');
+        
+        // Update cursor from pagination response for next request
+        if (pagination.containsKey('cursor') && pagination['cursor'] != null && pagination['cursor'].toString().isNotEmpty) {
+          _currentCursor = pagination['cursor'] as String;
+          AppLogger.info('🔵 Updated cursor for next page: $_currentCursor');
+        } else if (newMessages.isNotEmpty) {
+          // If no cursor in response, derive it from the last (oldest) message timestamp
+          final lastMessage = newMessages.last;
+          _currentCursor = lastMessage.timestamp.toIso8601String();
+          AppLogger.info('🔵 Derived cursor from last message timestamp: $_currentCursor');
+        } else {
+          // If no cursor and no messages, we've reached the end
+          AppLogger.warning('⚠️ No cursor in pagination response and no messages - reached end');
+          _currentCursor = null;
+          _hasMoreMessages = false; // Ensure hasMore is false when we can't get cursor
+        }
+        
+        // Log current state for debugging
+        AppLogger.info('🔵 LoadMore state - hasMore: $_hasMoreMessages, cursor: $_currentCursor, newMessages: ${newMessages.length}');
 
         // Combine existing messages with new messages
         // Since both are in descending order, we can just append

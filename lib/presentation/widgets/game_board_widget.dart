@@ -57,8 +57,8 @@ class GameBoardWidget extends StatelessWidget {
           
           const SizedBox(height: 12),
           
-          // Turn indicator
-          _buildTurnIndicator(),
+          // Turn indicator and Done button - combined in one row when applicable
+          _buildTurnIndicatorWithButton(),
           
           const SizedBox(height: 8),
           
@@ -86,9 +86,6 @@ class GameBoardWidget extends StatelessWidget {
           // Show Send Invite button if game is pending (not started yet)
           if (_isGamePending()) ...[
             _buildSendInviteButton(),
-          ] else if (_isCurrentUserTurn() && _hasSelectedChoice()) ...[
-            // Next Turn button (if it's current user's turn AND they have selected a choice)
-            _buildNextTurnButton(),
           ],
         ],
       ),
@@ -294,7 +291,59 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildTurnIndicator() {
+  Widget _buildTurnIndicatorWithButton() {
+    // If it's user's turn and they have selected a choice, show both in a row
+    if (!_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice()) {
+      return Row(
+        children: [
+          // Turn indicator on the left
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'Your turn',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          // Done button on the right
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () => onGameAction('next_turn'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.withOpacity(0.8),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Otherwise, show just the turn indicator
     String turnText;
     Color indicatorColor;
     
@@ -324,31 +373,6 @@ class GameBoardWidget extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w600,
           fontFamily: 'Nunito',
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNextTurnButton() {
-    return Container(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () => onGameAction('next_turn'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green.withOpacity(0.8),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: const Text(
-          'Done',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Nunito',
-          ),
         ),
       ),
     );

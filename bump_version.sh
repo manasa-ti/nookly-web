@@ -47,6 +47,15 @@ echo "Parsed version: Major=$MAJOR, Minor=$MINOR, Patch=$PATCH, Build=$BUILD_NUM
 # Determine bump type
 BUMP_TYPE=${1:-build}
 
+# Check for --build flag (release build trigger)
+AUTO_BUILD=false
+for arg in "$@"; do
+    if [[ "$arg" == "--build" ]] || [[ "$arg" == "-b" ]]; then
+        AUTO_BUILD=true
+        break
+    fi
+done
+
 case $BUMP_TYPE in
     "major")
         MAJOR=$((MAJOR + 1))
@@ -64,6 +73,7 @@ case $BUMP_TYPE in
         BUILD_NUMBER=$((BUILD_NUMBER + 1))
         ;;
     "build")
+        PATCH=$((PATCH + 1))
         BUILD_NUMBER=$((BUILD_NUMBER + 1))
         ;;
     *)
@@ -82,6 +92,22 @@ esac
 
 # Create new version
 NEW_VERSION="$MAJOR.$MINOR.$PATCH+$BUILD_NUMBER"
+
+PROMPT_FOR_CONFIRMATION=false
+if [ -t 0 ] && [ "$AUTO_BUILD" = false ]; then
+    PROMPT_FOR_CONFIRMATION=true
+fi
+
+if [ "$PROMPT_FOR_CONFIRMATION" = true ]; then
+    echo ""
+    echo "About to bump version from $CURRENT_VERSION to $NEW_VERSION."
+    read -p "Proceed with version bump? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        print_warning "Version bump cancelled. No files were modified."
+        exit 0
+    fi
+fi
 
 print_step "Bumping version from $CURRENT_VERSION to $NEW_VERSION"
 
@@ -142,16 +168,6 @@ echo "   Version Name: $MAJOR.$MINOR.$PATCH"
 echo "   Build Number: $BUILD_NUMBER"
 echo "   Full Version: $NEW_VERSION"
 echo ""
-
-# Check if we should run build
-# Check for --build flag
-AUTO_BUILD=false
-for arg in "$@"; do
-    if [[ "$arg" == "--build" ]] || [[ "$arg" == "-b" ]]; then
-        AUTO_BUILD=true
-        break
-    fi
-done
 
 if [ "$AUTO_BUILD" = true ]; then
     print_step "Running release build automatically..."
