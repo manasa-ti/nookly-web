@@ -81,7 +81,7 @@ dependencies:
   hmssdk_flutter: ^1.10.6
   
   # Screen Protection
-  screen_protector: ^1.0.0
+  screen_protector: ^1.4.5
 
 dev_dependencies:
   flutter_test:

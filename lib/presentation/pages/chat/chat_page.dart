@@ -876,10 +876,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ? DateTime.parse(data['timestamp']) 
             : DateTime.now();
         
+        AppLogger.info('🔵 [Socket Handler] Received image_viewed event for message: $messageId');
+        
         // Read from metadata first, fallback to top-level fields
         final metadata = data['metadata'] as Map<String, dynamic>?;
         final disappearingTime = metadata?['disappearingTime'] ?? data['disappearingTime'];
         final isDisappearing = metadata?['isDisappearing'] ?? data['isDisappearing'] ?? false;
+        
+        AppLogger.info('🔵 [Socket Handler] image_viewed data - messageId: $messageId, isDisappearing: $isDisappearing, disappearingTime: $disappearingTime');
         
         // Check if message exists in state when image_viewed is received
         final state = context.read<ConversationBloc>().state;
@@ -914,10 +918,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
         // Start the disappearing timer (for sender only)
         if (isDisappearing && disappearingTime != null) {
+          AppLogger.info('🔵 [Socket Handler] ✅ Starting timer for sender - messageId: $messageId, disappearingTime: $disappearingTime');
           _startDisappearingImageTimer(messageId, disappearingTime);
+        } else {
+          AppLogger.info('🔵 [Socket Handler] ⚠️ NOT starting timer - isDisappearing: $isDisappearing, disappearingTime: $disappearingTime');
         }
       } catch (e) {
-        // Error processing image_viewed event
+        AppLogger.error('🔵 [Socket Handler] ❌ Error processing image_viewed event: $e');
       }
     });
 
@@ -2332,10 +2339,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           }
         }
 
-        // Emit image_viewed event
-        if (_socketService != null && !isSender) {
-          _socketService!.sendImageViewed(message.id, widget.conversationId);
-        }
+        // Removed: image_viewed event will be sent in onImageUrlReady callback after image loads
       }
       
       // Use the original URL directly - refresh will be called only if we get 403 error
@@ -2380,47 +2384,96 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       return;
     }
 
-
-
-    // Emit image_viewed event for receiver when opening full screen
-    if (!isSender && message.metadata?.isDisappearing == true && message.metadata?.disappearingTime != null) {
-      _socketService?.sendImageViewed(message.id, widget.conversationId);
-    }
+    // Removed: image_viewed event will be sent in onImageUrlReady callback after image loads
 
     _currentlyOpenImageId = message.id; // Set which image is currently open in full-screen
 
     showDialog(
       context: context,
       barrierDismissible: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return WillPopScope(
-            onWillPop: () async {
-              _currentlyOpenImageId = null; // Reset when closing
-              return true;
-            },
-            child: Scaffold(
-              backgroundColor: Colors.black,
-              body: Stack(
-                children: [
-                  Center(
-                    child: InteractiveViewer(
-                      minScale: 0.5,
-                      maxScale: 4.0,
-                      child: Image.network(
-                        imageUrl,
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Center(
-                            child: CircularProgressIndicator(
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                      loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          );
-                        },
+      builder: (context) {
+        // Track loading state to detect when image finishes loading
+        // Using a closure variable that persists across rebuilds
+        bool hasStartedLoading = false;
+        bool imageViewedSent = false;
+        
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return WillPopScope(
+              onWillPop: () async {
+                _currentlyOpenImageId = null; // Reset when closing
+                return true;
+              },
+              child: Scaffold(
+                backgroundColor: Colors.black,
+                body: Stack(
+                  children: [
+                    Center(
+                      child: InteractiveViewer(
+                        minScale: 0.5,
+                        maxScale: 4.0,
+                        child: Image.network(
+                          imageUrl,
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            AppLogger.info('🔵 [FullScreen Image Loading] loadingProgress: ${loadingProgress != null ? "loading (${loadingProgress.cumulativeBytesLoaded}/${loadingProgress.expectedTotalBytes})" : "null"}, hasStartedLoading: $hasStartedLoading, imageViewedSent: $imageViewedSent');
+                            
+                            // Track if loading has started
+                            if (loadingProgress != null) {
+                              if (!hasStartedLoading) {
+                                AppLogger.info('🔵 [FullScreen Image Loading] Image loading started for message: ${message?.id}');
+                              }
+                              hasStartedLoading = true;
+                              // Image is loading - show progress indicator
+                              return Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              );
+                            }
+                            
+                            // loadingProgress is null - check if loading has completed
+                            if (hasStartedLoading && loadingProgress == null) {
+                              // Image has finished loading (was loading, now null = completed)
+                              AppLogger.info('🔵 [FullScreen Image Loading] Image finished loading. isSender: $isSender, imageViewedSent: $imageViewedSent, message: ${message?.id}');
+                              
+                              if (!isSender && !imageViewedSent && message != null) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (message!.metadata?.isDisappearing == true && 
+                                      message!.metadata?.disappearingTime != null) {
+                                    AppLogger.info('🔵 [FullScreen Image Loading] ✅ SENDING image_viewed event and starting timer for message: ${message!.id}, disappearingTime: ${message!.metadata!.disappearingTime}');
+                                    
+                                    // Start receiver's timer locally
+                                    _startDisappearingImageTimer(
+                                      message!.id, 
+                                      message!.metadata!.disappearingTime!
+                                    );
+                                    
+                                    // Send image_viewed event to notify sender
+                                    _socketService?.sendImageViewed(message!.id, widget.conversationId);
+                                    
+                                    setState(() {
+                                      imageViewedSent = true;
+                                    });
+                                  } else {
+                                    AppLogger.info('🔵 [FullScreen Image Loading] ⚠️ NOT sending image_viewed - isDisappearing: ${message!.metadata?.isDisappearing}, disappearingTime: ${message!.metadata?.disappearingTime}');
+                                  }
+                                });
+                              } else {
+                                AppLogger.info('🔵 [FullScreen Image Loading] ⚠️ NOT sending image_viewed - isSender: $isSender, imageViewedSent: $imageViewedSent');
+                              }
+                              return child; // Return the loaded image
+                            }
+                            
+                            // Initial state (hasn't started loading yet) - show loading indicator
+                            AppLogger.info('🔵 [FullScreen Image Loading] Initial state - showing loading indicator');
+                            return Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          },
                         errorBuilder: (context, error, stackTrace) {
                           AppLogger.error('❌ Failed to load image: $error');
                           
@@ -2530,13 +2583,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ),
           );
         },
-      ),
+        );
+      },
     );
   }
 
   void _startDisappearingImageTimer(String messageId, int disappearingTime) {
+    AppLogger.info('🔵 [_startDisappearingImageTimer] Called for messageId: $messageId, disappearingTime: $disappearingTime');
+    
     // Validate message ID
     if (messageId.isEmpty) {
+      AppLogger.info('🔵 [_startDisappearingImageTimer] ⚠️ Empty messageId, returning early');
       return;
     }
     
@@ -2716,14 +2773,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   }
 
                   // Initialize display timers for disappearing image messages
+                  // NOTE: This creates a DISPLAY-ONLY timer (not active countdown)
+                  // The timer becomes active when image_viewed event is received (for sender)
+                  // or when image is viewed in full screen and finishes loading (for receiver)
                   for (final message in state.messages) {
                     if (message.metadata?.isDisappearing == true && 
                         message.metadata?.disappearingTime != null && 
                         message.type == MessageType.image &&
                         !_disappearingImageManager.hasTimer(message.id)) {
-                      AppLogger.info('🔍 [Debugging disappearing data] INITIALIZING TIMER for message ${message.id}:');
-                      AppLogger.info('🔍 [Debugging disappearing data] - isDisappearing: ${message.metadata?.isDisappearing}');
-                      AppLogger.info('🔍 [Debugging disappearing data] - disappearingTime: ${message.metadata?.disappearingTime}');
+                      AppLogger.info('🔵 [ConversationLoaded] Initializing DISPLAY timer (not active) for message ${message.id}, disappearingTime: ${message.metadata!.disappearingTime}');
                       _disappearingImageManager.initializeDisplayTimer(message.id, message.metadata!.disappearingTime!);
                     }
                   }
@@ -2988,6 +3046,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                           AppLogger.info('🔵 Message content: ${message.content}');
                                           _showFullScreenImage(message.content, isMe);
                                         }
+                                      },
+                                      onImageUrlReady: (imageUrl) {
+                                        // REMOVED: image_viewed event is now sent only when image is viewed in full screen
+                                        // and has finished loading (see _showFullScreenImageWithUrl loadingBuilder)
+                                        AppLogger.info('🔵 Image URL ready for message: ${message.id} (NOT sending image_viewed - will send when viewed in full screen)');
                                       },
                                       disappearingTime: shouldShowTimer ? message.metadata?.disappearingTime : null,
                                       timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,

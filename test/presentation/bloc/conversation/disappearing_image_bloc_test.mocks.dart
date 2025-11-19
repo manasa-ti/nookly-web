@@ -57,7 +57,8 @@ class MockConversationRepository extends _i1.Mock
   @override
   _i4.Future<Map<String, dynamic>> getMessages({
     required String? participantId,
-    required int? page,
+    int? page,
+    String? cursor,
     required int? pageSize,
   }) =>
       (super.noSuchMethod(
@@ -67,6 +68,7 @@ class MockConversationRepository extends _i1.Mock
           {
             #participantId: participantId,
             #page: page,
+            #cursor: cursor,
             #pageSize: pageSize,
           },
         ),
@@ -173,6 +175,40 @@ class MockConversationRepository extends _i1.Mock
           [
             conversationId,
             imagePath,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> sendGifMessage(
+    String? conversationId,
+    Map<String, dynamic>? gifMetadata,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendGifMessage,
+          [
+            conversationId,
+            gifMetadata,
+          ],
+        ),
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> sendStickerMessage(
+    String? conversationId,
+    Map<String, dynamic>? stickerMetadata,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendStickerMessage,
+          [
+            conversationId,
+            stickerMetadata,
           ],
         ),
         returnValue: _i4.Future<void>.value(),

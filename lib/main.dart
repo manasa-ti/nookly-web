@@ -12,8 +12,6 @@ import 'package:nookly/core/services/firebase_messaging_service.dart';
 import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/analytics_route_observer.dart';
-import 'package:nookly/core/services/remote_config_service.dart';
-import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/data/repositories/notification_repository.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -31,6 +29,9 @@ import 'package:nookly/presentation/widgets/auth_wrapper.dart';
 import 'package:logger/logger.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 import 'package:nookly/core/theme/app_theme.dart';
+import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/services/remote_config_service.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 // Create a global logger instance
 final logger = Logger(
@@ -85,6 +86,23 @@ void main() async {
     await di.init();
     logger.i('Dependency injection initialized');
     
+    // Initialize Remote Config (needed for screen protection)
+    try {
+      final remoteConfigService = di.sl<RemoteConfigService>();
+      // Use initializeDefaultsOnly() to avoid blocking app startup with network fetch
+      // The fetch will happen in background, but defaults are available immediately
+      await remoteConfigService.initializeDefaultsOnly();
+      logger.i('✅ Remote Config initialized with defaults');
+      
+      // Fetch remote values in background (non-blocking)
+      remoteConfigService.fetchAndActivate().catchError((e) {
+        logger.w('⚠️ Remote Config fetch failed (using defaults): $e');
+      });
+    } catch (e) {
+      logger.w('⚠️ Remote Config initialization failed (using defaults): $e');
+      // Continue - defaults will be used
+    }
+    
     // Initialize Crash Reporting and Analytics (must be after di.init())
     try {
       final crashReportingService = di.sl<CrashReportingService>();
@@ -93,22 +111,12 @@ void main() async {
       
       final analyticsService = di.sl<AnalyticsService>();
       await analyticsService.initialize();
-      
-      // Set analytics service for network tracking
-      NetworkService.setAnalyticsService(analyticsService);
-      
       logger.i('✅ Analytics initialized');
       
       // Initialize Performance Monitoring
       final performance = FirebasePerformance.instance;
       await performance.setPerformanceCollectionEnabled(true); // Enabled for all environments
       logger.i('✅ Performance monitoring initialized');
-      
-      // Initialize Remote Config with defaults only (defer network fetch)
-      // This allows the app to start immediately without blocking on network
-      final remoteConfigService = di.sl<RemoteConfigService>();
-      await remoteConfigService.initializeDefaultsOnly();
-      logger.i('✅ Remote Config defaults initialized (fetch deferred)');
       
       // Track app startup time
       final startupTrace = performance.newTrace('app_startup');
@@ -161,28 +169,12 @@ void main() async {
   startupStopwatch.stop();
   logger.i('🚀 App initialization completed in ${startupStopwatch.elapsedMilliseconds}ms');
   
-  // Start the app immediately - don't block UI on location or remote config
+  // Start the app immediately - don't block UI on location
   runApp(const MyApp());
   logger.i('Application started');
   
-  // Fetch Remote Config in background after app starts (non-blocking)
-  _fetchRemoteConfigInBackground();
-  
   // Update location in background after app starts (non-blocking)
   _updateLocationInBackground();
-}
-
-/// Fetch Remote Config in background without blocking app startup
-Future<void> _fetchRemoteConfigInBackground() async {
-  try {
-    logger.i('🔧 Starting background Remote Config fetch...');
-    final remoteConfigService = di.sl<RemoteConfigService>();
-    await remoteConfigService.fetchAndActivate();
-    logger.i('✅ Background Remote Config fetch completed');
-  } catch (e) {
-    logger.e('❌ Background Remote Config fetch failed: $e');
-    // Silent failure - app will use defaults
-  }
 }
 
 /// Update location in background without blocking app startup
@@ -211,11 +203,30 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool _isLocationUpdateInProgress = false;
+  ScreenProtectionService? _screenProtectionService;
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
+    // Initialize screen protection at app launch for iOS
+    _initializeScreenProtection();
+  }
+
+  Future<void> _initializeScreenProtection() async {
+    try {
+      _screenProtectionService = di.sl<ScreenProtectionService>();
+      // Enable protection globally at app launch (iOS needs early activation)
+      // This ensures protection is active before any screens are shown
+      await _screenProtectionService!.enableProtection(
+        screenType: 'chat', // Default screen type, will be overridden by individual screens
+        context: null, // Context not available yet, but protection can still be enabled
+      );
+      AppLogger.info('🔒 Screen protection enabled at app launch');
+    } catch (e) {
+      AppLogger.error('Failed to enable screen protection at app launch', e);
+    }
   }
 
   @override
@@ -227,6 +238,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
+      // Re-enable protection when app resumes (iOS may need this)
+      _screenProtectionService?.enableProtection(
+        screenType: 'chat',
+        context: null,
+      );
+      
       // App resumed from background (e.g., from settings)
       // Add small delay to let chat observer handle socket reconnection first
       Future.delayed(const Duration(milliseconds: 100), () {

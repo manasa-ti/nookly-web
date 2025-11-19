@@ -3,13 +3,13 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i3;
+import 'dart:async' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:nookly/domain/entities/recommended_profile.dart' as _i4;
-import 'package:nookly/domain/entities/recommended_profiles_page.dart' as _i5;
+import 'package:nookly/domain/entities/recommended_profile.dart' as _i5;
+import 'package:nookly/domain/entities/recommended_profiles_page.dart' as _i2;
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart'
-    as _i2;
+    as _i3;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -25,17 +25,28 @@ import 'package:nookly/domain/repositories/recommended_profiles_repository.dart'
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
+class _FakeRecommendedProfilesPage_0 extends _i1.SmartFake
+    implements _i2.RecommendedProfilesPage {
+  _FakeRecommendedProfilesPage_0(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [RecommendedProfilesRepository].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockRecommendedProfilesRepository extends _i1.Mock
-    implements _i2.RecommendedProfilesRepository {
+    implements _i3.RecommendedProfilesRepository {
   MockRecommendedProfilesRepository() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i3.Future<_i5.RecommendedProfilesPage> getRecommendedProfiles({
+  _i4.Future<_i2.RecommendedProfilesPage> getRecommendedProfiles({
     double? radius,
     int? limit,
     String? cursor,
@@ -54,52 +65,62 @@ class MockRecommendedProfilesRepository extends _i1.Mock
             #availability: availability,
           },
         ),
-        returnValue: _i3.Future<_i5.RecommendedProfilesPage>.value(
-            _i5.RecommendedProfilesPage(
-          profiles: const <_i4.RecommendedProfile>[],
-          hasMore: false,
+        returnValue: _i4.Future<_i2.RecommendedProfilesPage>.value(
+            _FakeRecommendedProfilesPage_0(
+          this,
+          Invocation.method(
+            #getRecommendedProfiles,
+            [],
+            {
+              #radius: radius,
+              #limit: limit,
+              #cursor: cursor,
+              #physicalActiveness: physicalActiveness,
+              #availability: availability,
+            },
+          ),
         )),
-      ) as _i3.Future<_i5.RecommendedProfilesPage>);
+      ) as _i4.Future<_i2.RecommendedProfilesPage>);
 
   @override
-  _i3.Future<void> likeProfile(String? profileId) => (super.noSuchMethod(
+  _i4.Future<void> likeProfile(String? profileId) => (super.noSuchMethod(
         Invocation.method(
           #likeProfile,
           [profileId],
         ),
-        returnValue: _i3.Future<void>.value(),
-        returnValueForMissingStub: _i3.Future<void>.value(),
-      ) as _i3.Future<void>);
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i3.Future<void> dislikeProfile(String? profileId) => (super.noSuchMethod(
+  _i4.Future<void> dislikeProfile(String? profileId) => (super.noSuchMethod(
         Invocation.method(
           #dislikeProfile,
           [profileId],
         ),
-        returnValue: _i3.Future<void>.value(),
-        returnValueForMissingStub: _i3.Future<void>.value(),
-      ) as _i3.Future<void>);
+        returnValue: _i4.Future<void>.value(),
+        returnValueForMissingStub: _i4.Future<void>.value(),
+      ) as _i4.Future<void>);
 
   @override
-  _i3.Future<List<_i4.RecommendedProfile>> getLikedProfiles() =>
+  _i4.Future<List<_i5.RecommendedProfile>> getLikedProfiles() =>
       (super.noSuchMethod(
         Invocation.method(
           #getLikedProfiles,
           [],
         ),
-        returnValue: _i3.Future<List<_i4.RecommendedProfile>>.value(
-            <_i4.RecommendedProfile>[]),
-      ) as _i3.Future<List<_i4.RecommendedProfile>>);
+        returnValue: _i4.Future<List<_i5.RecommendedProfile>>.value(
+            <_i5.RecommendedProfile>[]),
+      ) as _i4.Future<List<_i5.RecommendedProfile>>);
 
   @override
-  _i3.Future<List<_i4.RecommendedProfile>> getProfilesThatLikedMe() =>
+  _i4.Future<List<_i5.RecommendedProfile>> getProfilesThatLikedMe() =>
       (super.noSuchMethod(
         Invocation.method(
           #getProfilesThatLikedMe,
           [],
         ),
-        returnValue: _i3.Future<List<_i4.RecommendedProfile>>.value(
-            <_i4.RecommendedProfile>[]),
-      ) as _i3.Future<List<_i4.RecommendedProfile>>);
+        returnValue: _i4.Future<List<_i5.RecommendedProfile>>.value(
+            <_i5.RecommendedProfile>[]),
+      ) as _i4.Future<List<_i5.RecommendedProfile>>);
 }
