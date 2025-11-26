@@ -112,17 +112,23 @@ class RemoteConfigService {
 
   /// Check if screenshot protection is globally enabled
   bool isScreenshotProtectionEnabled() {
+    AppLogger.debug('📊 [REMOTE_CONFIG] Checking global screenshot protection...');
+    AppLogger.debug('📊 [REMOTE_CONFIG] Remote Config initialized: $_isInitialized');
+    AppLogger.debug('📊 [REMOTE_CONFIG] Remote Config instance: ${_remoteConfig != null}');
+    
     if (_remoteConfig == null || !_isInitialized) {
-      AppLogger.warning('Remote Config not initialized, using default: true');
+      AppLogger.warning('📊 [REMOTE_CONFIG] ⚠️ Remote Config not initialized, using default: true');
       return true; // Default to enabled for security
     }
 
     try {
       final enabled = _remoteConfig!.getBool(_enableScreenshotProtectionKey);
-      AppLogger.debug('Screenshot protection enabled (global): $enabled');
+      AppLogger.debug('📊 [REMOTE_CONFIG] Screenshot protection enabled (global): $enabled');
+      AppLogger.debug('📊 [REMOTE_CONFIG] Config key used: $_enableScreenshotProtectionKey');
       return enabled;
-    } catch (e) {
-      AppLogger.error('Error reading screenshot protection config', e);
+    } catch (e, stackTrace) {
+      AppLogger.error('📊 [REMOTE_CONFIG] ❌ Error reading screenshot protection config', e, stackTrace);
+      AppLogger.error('📊 [REMOTE_CONFIG] Error type: ${e.runtimeType}');
       return true; // Default to enabled
     }
   }
@@ -131,41 +137,51 @@ class RemoteConfigService {
   /// 
   /// [screenType] should be one of: 'video_call', 'chat', 'profile'
   bool shouldProtectScreen(String screenType) {
-    if (!isScreenshotProtectionEnabled()) {
-      AppLogger.debug('Screenshot protection globally disabled');
+    AppLogger.debug('📊 [REMOTE_CONFIG] Checking protection for screen: $screenType');
+    
+    final globalEnabled = isScreenshotProtectionEnabled();
+    if (!globalEnabled) {
+      AppLogger.debug('📊 [REMOTE_CONFIG] Screenshot protection globally disabled - returning false');
       return false;
     }
 
     if (_remoteConfig == null || !_isInitialized) {
-      AppLogger.warning('Remote Config not initialized, using default: true');
+      AppLogger.warning('📊 [REMOTE_CONFIG] ⚠️ Remote Config not initialized, using default: true');
       return true;
     }
 
     try {
       bool shouldProtect = false;
+      String? configKey;
 
       switch (screenType.toLowerCase()) {
         case 'video_call':
         case 'call':
+          configKey = _protectVideoCallsKey;
           shouldProtect = _remoteConfig!.getBool(_protectVideoCallsKey);
           break;
         case 'chat':
         case 'chat_screen':
+          configKey = _protectChatScreenKey;
           shouldProtect = _remoteConfig!.getBool(_protectChatScreenKey);
           break;
         case 'profile':
         case 'profile_pages':
+          configKey = _protectProfilePagesKey;
           shouldProtect = _remoteConfig!.getBool(_protectProfilePagesKey);
           break;
         default:
-          AppLogger.warning('Unknown screen type: $screenType');
+          AppLogger.warning('📊 [REMOTE_CONFIG] ⚠️ Unknown screen type: $screenType - defaulting to protected');
           return true; // Default to protected for unknown types
       }
 
-      AppLogger.debug('Screenshot protection for $screenType: $shouldProtect');
+      AppLogger.debug('📊 [REMOTE_CONFIG] Screen type: $screenType');
+      AppLogger.debug('📊 [REMOTE_CONFIG] Config key: $configKey');
+      AppLogger.debug('📊 [REMOTE_CONFIG] Should protect: $shouldProtect');
       return shouldProtect;
-    } catch (e) {
-      AppLogger.error('Error reading screen protection config for $screenType', e);
+    } catch (e, stackTrace) {
+      AppLogger.error('📊 [REMOTE_CONFIG] ❌ Error reading screen protection config for $screenType', e, stackTrace);
+      AppLogger.error('📊 [REMOTE_CONFIG] Error type: ${e.runtimeType}');
       return true; // Default to protected
     }
   }

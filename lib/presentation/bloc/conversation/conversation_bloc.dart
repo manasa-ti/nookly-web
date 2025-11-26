@@ -23,6 +23,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   StreamSubscription? _messagesSubscription;
   // Store current participantId to manage message subscription
   String? _currentOpenParticipantId;
+  // Store last valid ConversationLoaded state for recovery from error states
+  ConversationLoaded? _lastValidLoadedState;
 
   ConversationBloc({
     required ConversationRepository conversationRepository,
@@ -71,11 +73,22 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     on<UpdateMessageImageData>(_onUpdateMessageImageData);
   }
 
+  /// Helper method to emit ConversationLoaded and save it as last valid state
+  void _emitAndCacheLoadedState(
+    ConversationLoaded state,
+    Emitter<ConversationState> emit,
+  ) {
+    _lastValidLoadedState = state;
+    emit(state);
+  }
+
   Future<void> _onLoadConversation(
     LoadConversation event,
     Emitter<ConversationState> emit,
   ) async {
     emit(ConversationLoading());
+    // Clear stale state from previous conversation to prevent data corruption
+    _lastValidLoadedState = null;
     try {
       // Reset pagination state for new conversation
       _hasMoreMessages = true;
@@ -183,14 +196,15 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         connectionStatus: event.connectionStatus,
       );
 
-      emit(ConversationLoaded(
+      final loadedState = ConversationLoaded(
         conversation: conversation,
         messages: filteredMessages,
         hasMoreMessages: _hasMoreMessages,
         participantName: event.participantName,
         participantAvatar: event.participantAvatar,
         isOnline: event.isOnline,
-      ));
+      );
+      _emitAndCacheLoadedState(loadedState, emit);
 
     } catch (e) {
       emit(ConversationError('Failed to load conversation: ${e.toString()}'));
@@ -256,14 +270,17 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         // Since both are in descending order, we can just append
         final updatedMessages = [...currentState.messages, ...newMessages];
 
-        emit(ConversationLoaded(
-          conversation: currentState.conversation,
-          messages: updatedMessages,
-          hasMoreMessages: _hasMoreMessages,
-          participantName: currentState.participantName,
-          participantAvatar: currentState.participantAvatar,
-          isOnline: currentState.isOnline,
-        ));
+        _emitAndCacheLoadedState(
+          ConversationLoaded(
+            conversation: currentState.conversation,
+            messages: updatedMessages,
+            hasMoreMessages: _hasMoreMessages,
+            participantName: currentState.participantName,
+            participantAvatar: currentState.participantAvatar,
+            isOnline: currentState.isOnline,
+          ),
+          emit,
+        );
 
       } catch (e) {
         emit(ConversationError('Failed to load more messages: ${e.toString()}'));
@@ -634,21 +651,39 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     MessageReceived event,
     Emitter<ConversationState> emit,
   ) {
-    if (state is ConversationLoaded) {
-      final currentState = state as ConversationLoaded;
+    // Try to recover from error state using last valid loaded state
+    ConversationLoaded? currentState = state is ConversationLoaded 
+        ? state as ConversationLoaded 
+        : _lastValidLoadedState;
+    
+    if (currentState != null) {
+      // Verify message belongs to current conversation to prevent cross-conversation contamination
+      // Check if message's sender or receiver matches the conversation's participant ID
+      final messageBelongsToConversation = 
+          event.message.sender == currentState.conversation.participantId ||
+          event.message.receiver == currentState.conversation.participantId ||
+          event.message.sender == currentState.conversation.userId ||
+          event.message.receiver == currentState.conversation.userId;
+      
+      if (!messageBelongsToConversation) {
+        AppLogger.warning('⚠️ MessageReceived for different conversation, ignoring: sender=${event.message.sender}, receiver=${event.message.receiver} vs participantId=${currentState.conversation.participantId}');
+        return;
+      }
       
       // Check if message already exists to prevent duplicates
       final messageExists = currentState.messages.any((msg) => msg.id == event.message.id);
       if (messageExists) {
         AppLogger.warning('⚠️ Message already exists in state, skipping duplicate: ${event.message.id}');
+        // Still emit the state to recover from error if needed
+        if (state is! ConversationLoaded) {
+          _emitAndCacheLoadedState(currentState, emit);
+        }
         return;
       }
       
       final updatedMessages = [event.message, ...currentState.messages];
       
-
-      
-      emit(ConversationLoaded(
+      final newLoadedState = ConversationLoaded(
         conversation: currentState.conversation.copyWith(
           lastMessage: event.message,
           lastMessageTime: event.message.timestamp,
@@ -659,7 +694,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantName: currentState.participantName,
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
-      ));
+      );
+      
+      _emitAndCacheLoadedState(newLoadedState, emit);
+    } else {
+      AppLogger.warning('⚠️ Cannot process MessageReceived: no valid loaded state available');
     }
   }
 
@@ -887,21 +926,39 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     MessageSent event,
     Emitter<ConversationState> emit,
   ) {
-    if (state is ConversationLoaded) {
-      final currentState = state as ConversationLoaded;
+    // Try to recover from error state using last valid loaded state
+    ConversationLoaded? currentState = state is ConversationLoaded 
+        ? state as ConversationLoaded 
+        : _lastValidLoadedState;
+    
+    if (currentState != null) {
+      // Verify message belongs to current conversation to prevent cross-conversation contamination
+      // Check if message's sender or receiver matches the conversation's participant ID
+      final messageBelongsToConversation = 
+          event.message.sender == currentState.conversation.participantId ||
+          event.message.receiver == currentState.conversation.participantId ||
+          event.message.sender == currentState.conversation.userId ||
+          event.message.receiver == currentState.conversation.userId;
+      
+      if (!messageBelongsToConversation) {
+        AppLogger.warning('⚠️ MessageSent for different conversation, ignoring: sender=${event.message.sender}, receiver=${event.message.receiver} vs participantId=${currentState.conversation.participantId}');
+        return;
+      }
       
       // Check if message already exists to prevent duplicates
       final messageExists = currentState.messages.any((msg) => msg.id == event.message.id);
       if (messageExists) {
         AppLogger.warning('⚠️ Sent message already exists in state, skipping duplicate: ${event.message.id}');
+        // Still emit the state to recover from error if needed
+        if (state is! ConversationLoaded) {
+          _emitAndCacheLoadedState(currentState, emit);
+        }
         return;
       }
       
       final updatedMessages = [event.message, ...currentState.messages];
       
-
-      
-      emit(ConversationLoaded(
+      final newLoadedState = ConversationLoaded(
         conversation: currentState.conversation.copyWith(
           lastMessage: event.message,
           lastMessageTime: event.message.timestamp,
@@ -912,7 +969,11 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         participantName: currentState.participantName,
         participantAvatar: currentState.participantAvatar,
         isOnline: currentState.isOnline,
-      ));
+      );
+      
+      _emitAndCacheLoadedState(newLoadedState, emit);
+    } else {
+      AppLogger.warning('⚠️ Cannot process MessageSent: no valid loaded state available');
     }
   }
 
@@ -920,8 +981,20 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationUpdated event,
     Emitter<ConversationState> emit,
   ) {
-    if (state is ConversationLoaded) {
-      final currentState = state as ConversationLoaded;
+    // Try to recover from error state using last valid loaded state
+    ConversationLoaded? currentState = state is ConversationLoaded 
+        ? state as ConversationLoaded 
+        : _lastValidLoadedState;
+    
+    if (currentState != null) {
+      // Verify event belongs to current conversation to prevent cross-conversation contamination
+      if (event.conversationId != currentState.conversation.id &&
+          event.conversationId != currentState.conversation.participantId) {
+        AppLogger.warning('⚠️ ConversationUpdated for different conversation, ignoring: ${event.conversationId} vs ${currentState.conversation.id}');
+        return;
+      }
+      
+      ConversationLoaded newLoadedState;
       
       // If we have a lastMessage, update its status in the messages list
       if (event.lastMessage != null) {
@@ -938,7 +1011,7 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           return msg;
         }).toList();
         
-        emit(ConversationLoaded(
+        newLoadedState = ConversationLoaded(
           conversation: currentState.conversation.copyWith(
             lastMessage: event.lastMessage,
             updatedAt: event.updatedAt,
@@ -952,10 +1025,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           participantName: currentState.participantName,
           participantAvatar: currentState.participantAvatar,
           isOnline: currentState.isOnline,
-        ));
+        );
       } else {
         // If no lastMessage, just update the conversation
-        emit(ConversationLoaded(
+        newLoadedState = ConversationLoaded(
           conversation: currentState.conversation.copyWith(
             updatedAt: event.updatedAt,
             isTyping: event.isTyping,
@@ -968,8 +1041,12 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
           participantName: currentState.participantName,
           participantAvatar: currentState.participantAvatar,
           isOnline: currentState.isOnline,
-        ));
+        );
       }
+      
+      _emitAndCacheLoadedState(newLoadedState, emit);
+    } else {
+      AppLogger.warning('⚠️ Cannot process ConversationUpdated: no valid loaded state available');
     }
   }
 

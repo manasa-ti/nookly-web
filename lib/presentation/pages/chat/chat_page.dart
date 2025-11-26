@@ -88,7 +88,7 @@ class ChatPage extends StatefulWidget {
   State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin {
+class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   bool _isAttachingFile = false;
@@ -149,6 +149,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // This ensures messages persist even if state temporarily changes to non-ConversationLoaded
   List<Message> _cachedMessages = [];
   
+  // Track the current conversation ID to detect when we're loading a NEW conversation
+  String? _cachedConversationId;
+  
   // Store GamesBloc reference for safe access in dispose()
   GamesBloc? _gamesBloc;
 
@@ -156,10 +159,16 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void initState() {
     super.initState();
     
+    // Add lifecycle observer to monitor app state changes
+    WidgetsBinding.instance.addObserver(this);
+    
     // Initialize screen protection service
     _screenProtectionService = sl<ScreenProtectionService>();
-    // Enable screenshot protection for chat screen
-    _enableScreenProtection();
+    // Enable screenshot protection for chat screen AFTER widget is built
+    // iOS requires the widget to be fully built before protection can be enabled
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _enableScreenProtection();
+    });
     
     // Initialize DisappearingImageManager
     _disappearingImageManager = DisappearingImageManager(
@@ -219,31 +228,113 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   /// Enable screenshot and screen recording protection for chat screen
   Future<void> _enableScreenProtection() async {
-    if (!mounted) return;
+    AppLogger.info('🔒 [CHAT_PAGE] Attempting to enable screen protection...');
+    AppLogger.info('🔒 [CHAT_PAGE] Widget mounted: $mounted');
+    AppLogger.info('🔒 [CHAT_PAGE] Conversation ID: ${widget.conversationId}');
+    
+    if (!mounted) {
+      AppLogger.warning('🔒 [CHAT_PAGE] ⚠️ Widget not mounted, skipping protection enable');
+      return;
+    }
     
     try {
-      await _screenProtectionService.enableProtection(
+      // Log protection service status before enabling
+      _screenProtectionService.logProtectionStatus();
+      
+      final success = await _screenProtectionService.enableProtection(
         screenType: 'chat',
         context: context,
       );
-      AppLogger.info('🔒 Screen protection enabled for chat screen');
-    } catch (e) {
-      AppLogger.error('Failed to enable screen protection', e);
+      
+      if (success) {
+        AppLogger.info('🔒 [CHAT_PAGE] ✅ Screen protection enabled successfully for chat screen');
+        
+        // Verify protection is active after a short delay (iOS may need time to apply)
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) {
+            _screenProtectionService.logProtectionStatus();
+            final isActive = _screenProtectionService.isProtectionEnabled;
+            AppLogger.info('🔒 [CHAT_PAGE] Protection verification (500ms later): $isActive');
+            if (!isActive) {
+              AppLogger.warning('🔒 [CHAT_PAGE] ⚠️ WARNING: Protection was enabled but is now inactive!');
+            }
+          }
+        });
+      } else {
+        AppLogger.warning('🔒 [CHAT_PAGE] ⚠️ Screen protection enable returned false');
+      }
+    } catch (e, stackTrace) {
+      AppLogger.error('🔒 [CHAT_PAGE] ❌ Failed to enable screen protection', e, stackTrace);
     }
   }
 
   /// Disable screenshot protection
   Future<void> _disableScreenProtection() async {
+    AppLogger.info('🔓 [CHAT_PAGE] Attempting to disable screen protection...');
+    AppLogger.info('🔓 [CHAT_PAGE] Conversation ID: ${widget.conversationId}');
+    
     try {
+      // Log protection service status before disabling
+      _screenProtectionService.logProtectionStatus();
+      
       await _screenProtectionService.disableProtection();
-      AppLogger.info('🔓 Screen protection disabled');
-    } catch (e) {
-      AppLogger.error('Failed to disable screen protection', e);
+      AppLogger.info('🔓 [CHAT_PAGE] ✅ Screen protection disabled for chat screen');
+      
+      // Verify protection is disabled
+      Future.delayed(const Duration(milliseconds: 100), () {
+        _screenProtectionService.logProtectionStatus();
+        final isActive = _screenProtectionService.isProtectionEnabled;
+        AppLogger.info('🔓 [CHAT_PAGE] Protection verification (100ms later): $isActive');
+        if (isActive) {
+          AppLogger.warning('🔓 [CHAT_PAGE] ⚠️ WARNING: Protection was disabled but is still active!');
+        }
+      });
+    } catch (e, stackTrace) {
+      AppLogger.error('🔓 [CHAT_PAGE] ❌ Failed to disable screen protection', e, stackTrace);
     }
   }
-
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    AppLogger.info('🔒 [CHAT_PAGE] App lifecycle changed: $state');
+    
+    switch (state) {
+      case AppLifecycleState.resumed:
+        AppLogger.info('🔒 [CHAT_PAGE] App resumed - verifying protection is active...');
+        // Re-enable protection when app resumes (iOS may need this)
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _screenProtectionService.logProtectionStatus();
+            final isActive = _screenProtectionService.isProtectionEnabled;
+            if (!isActive) {
+              AppLogger.warning('🔒 [CHAT_PAGE] ⚠️ Protection inactive after resume - re-enabling...');
+              _enableScreenProtection();
+            } else {
+              AppLogger.info('🔒 [CHAT_PAGE] ✅ Protection still active after resume');
+            }
+          }
+        });
+        break;
+      case AppLifecycleState.paused:
+        AppLogger.info('🔒 [CHAT_PAGE] App paused');
+        break;
+      case AppLifecycleState.inactive:
+        AppLogger.info('🔒 [CHAT_PAGE] App inactive');
+        break;
+      case AppLifecycleState.detached:
+        AppLogger.info('🔒 [CHAT_PAGE] App detached');
+        break;
+      case AppLifecycleState.hidden:
+        AppLogger.info('🔒 [CHAT_PAGE] App hidden');
+        break;
+    }
+  }
+  
   @override
   void dispose() {
+    // Remove lifecycle observer
+    WidgetsBinding.instance.removeObserver(this);
         // NEW: Leave conversation room (WhatsApp/Telegram style)
         if (_socketService != null) {
           // Room management removed - using direct socket listeners with filtering
@@ -2739,12 +2830,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 child: RepaintBoundary(
                   child: BlocListener<ConversationBloc, ConversationState>(
               listener: (context, state) {
-                // Clear cache when conversation starts loading (new conversation)
+                // Only clear cache when loading a NEW conversation (not during error recovery)
                 if (state is ConversationLoading) {
-                  _cachedMessages = [];
+                  final isNewConversation = _cachedConversationId != widget.conversationId;
+                  if (isNewConversation) {
+                    _cachedMessages = [];
+                    _cachedConversationId = widget.conversationId;
+                  }
                 }
                 
                 if (state is ConversationLoaded) {
+                  // Always update cached conversation ID when we have a loaded state
+                  _cachedConversationId = widget.conversationId;
                   // Reset loading flag when state updates
                   if (_isLoadingMore) {
                     setState(() {
@@ -2918,12 +3015,21 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               return state.messages;
                             }
                             // Return cached messages during state transitions to prevent blank screen
-                            // This handles cases where state temporarily changes (e.g., during rapid game events)
-                            return _cachedMessages;
+                            // This handles cases where state temporarily changes (e.g., during rapid game events, errors)
+                            // Only use cache if it's not empty and matches current conversation
+                            if (_cachedMessages.isNotEmpty && _cachedConversationId == widget.conversationId) {
+                              return _cachedMessages;
+                            }
+                            // Fallback: return empty list if cache is invalid
+                            return <Message>[];
                           },
                           builder: (context, messages) {
-                            // Ensure we always have a valid list (defensive programming)
-                            final displayMessages = messages.isNotEmpty ? messages : _cachedMessages;
+                            // Defensive: prefer messages if not empty, otherwise use cache only if valid
+                            final displayMessages = messages.isNotEmpty 
+                                ? messages 
+                                : (_cachedMessages.isNotEmpty && _cachedConversationId == widget.conversationId)
+                                    ? _cachedMessages
+                                    : <Message>[];
                             
                             return NotificationListener<ScrollNotification>(
                               onNotification: (notification) {
@@ -3315,7 +3421,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         fontSize: 16,
                         color: Colors.white,
                       ),
-                      maxLines: null, // Allow unlimited lines
+                      maxLines: 3, // Limit to 3 lines - will scroll internally after that
                       minLines: 1, // Start with single line
                       textCapitalization: TextCapitalization.sentences,
                       onChanged: (text) {
