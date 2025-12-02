@@ -119,8 +119,14 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
             );
           }
           
-          return const Center(
-            child: Text('Something went wrong. Please try again.'),
+          return Center(
+            child: Text(
+              'Something went wrong. Please try again.',
+              style: TextStyle(
+                color: AppColors.onSurface,
+                fontFamily: 'Nunito',
+              ),
+            ),
           );
         },
       );

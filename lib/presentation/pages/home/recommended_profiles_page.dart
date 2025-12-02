@@ -7,6 +7,7 @@ import 'package:nookly/presentation/widgets/matching_tutorial_dialog.dart';
 import 'package:nookly/presentation/pages/profile/profile_view_page.dart';
 import 'package:nookly/core/services/filter_preferences_service.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class RecommendedProfilesPage extends StatefulWidget {
   const RecommendedProfilesPage({super.key});
@@ -145,53 +146,6 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     }
   }
 
-  // TODO: TEMPORARY - Remove these mocked profiles later
-  List<Map<String, dynamic>> _getMockedProfiles() {
-    return [
-      {
-        'id': 'mock_profile_1',
-        'name': 'Alex',
-        'age': 28,
-        'sex': 'Male',
-        'distance': 2.5,
-        'bio': 'Love traveling and exploring new places. Coffee enthusiast and bookworm.',
-        'interests': ['Travel', 'Reading', 'Coffee', 'Photography'],
-        'profilePicture': null,
-        'hometown': 'San Francisco, CA',
-        'objectives': ['Friendship', 'Dating'],
-        'commonInterests': ['Travel', 'Reading'],
-        'commonObjectives': ['Friendship'],
-      },
-      {
-        'id': 'mock_profile_2',
-        'name': 'Sam',
-        'age': 25,
-        'sex': 'Female',
-        'distance': 5.0,
-        'bio': 'Fitness enthusiast and foodie. Always up for trying new restaurants and outdoor adventures.',
-        'interests': ['Fitness', 'Food', 'Hiking', 'Yoga'],
-        'profilePicture': null,
-        'hometown': 'Los Angeles, CA',
-        'objectives': ['Dating', 'Friendship'],
-        'commonInterests': ['Fitness', 'Food'],
-        'commonObjectives': ['Dating'],
-      },
-      {
-        'id': 'mock_profile_3',
-        'name': 'Jordan',
-        'age': 30,
-        'sex': 'Non-binary',
-        'distance': 3.2,
-        'bio': 'Artist and music lover. Passionate about creativity and meaningful conversations.',
-        'interests': ['Art', 'Music', 'Photography', 'Writing'],
-        'profilePicture': null,
-        'hometown': 'New York, NY',
-        'objectives': ['Friendship', 'Networking'],
-        'commonInterests': ['Photography', 'Music'],
-        'commonObjectives': ['Friendship'],
-      },
-    ];
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -244,12 +198,8 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           if (state is RecommendedProfilesLoaded) {
             AppLogger.info('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isPrefetching: $_isPrefetching');
             
-            // TODO: TEMPORARY - Remove mocked profiles later
-            final mockedProfiles = _getMockedProfiles();
-            final totalItemCount = mockedProfiles.length + state.profiles.length;
-            
-            // Show empty state only if there are no mocked profiles AND no real profiles
-            if (state.profiles.isEmpty && mockedProfiles.isEmpty) {
+            // Show empty state if there are no profiles
+            if (state.profiles.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -265,7 +215,8 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                       style: TextStyle(
                         fontSize: (size.width * 0.05).clamp(16.0, 20.0),
                         fontWeight: FontWeight.w500,
-                        color: Colors.white
+                        color: AppColors.white85,
+                        fontFamily: 'Nunito',
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -273,7 +224,8 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                       'Check back later for new recommendations',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: AppColors.onSurfaceVariant,
+                        fontFamily: 'Nunito',
                       ),
                     ),
                   ],
@@ -306,40 +258,16 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()), // Fix iOS pull-to-refresh for short lists
                 padding: listPadding,
-                itemCount: totalItemCount,
+                itemCount: state.profiles.length,
                 itemBuilder: (context, index) {
-                  // TODO: TEMPORARY - Handle mocked profiles (first 3 items)
-                  if (index < mockedProfiles.length) {
-                    final mockProfile = mockedProfiles[index];
-                    AppLogger.info('🔵 DEBUG: Rendering MOCKED profile ${index + 1}: ID=${mockProfile['id']}, Name=${mockProfile['name']}');
-                    return ProfileCard(
-                      key: ValueKey('mock_${mockProfile['id']}'),
-                      profile: mockProfile,
-                      onSwipeRight: () {
-                        AppLogger.info('🔵 MOCK: Swiped right on ${mockProfile['name']}');
-                        // No action for mocked profiles
-                      },
-                      onSwipeLeft: () {
-                        AppLogger.info('🔵 MOCK: Swiped left on ${mockProfile['name']}');
-                        // No action for mocked profiles
-                      },
-                      onTap: () {
-                        AppLogger.info('🔵 MOCK: Tapped on ${mockProfile['name']}');
-                        // No navigation for mocked profiles
-                      },
-                    );
-                  }
-                  
-                  // Real profiles (offset by mocked profiles count)
-                  final realIndex = index - mockedProfiles.length;
-                  if (realIndex < 0 || realIndex >= state.profiles.length) {
+                  if (index < 0 || index >= state.profiles.length) {
                     // This shouldn't happen, but return empty widget as fallback
-                    AppLogger.warning('🔵 WARNING: Invalid realIndex $realIndex for profiles list length ${state.profiles.length}');
+                    AppLogger.warning('🔵 WARNING: Invalid index $index for profiles list length ${state.profiles.length}');
                     return const SizedBox.shrink();
                   }
-                  final profile = state.profiles[realIndex];
-                  _maybePrefetch(state, realIndex);
-                  AppLogger.info('🔵 DEBUG: Rendering profile ${realIndex + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
+                  final profile = state.profiles[index];
+                  _maybePrefetch(state, index);
+                  AppLogger.info('🔵 DEBUG: Rendering profile ${index + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
                   return ProfileCard(
                     key: ValueKey(profile.id), // Add unique key based on profile ID
                     profile: {
@@ -380,8 +308,14 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
             );
           }
           
-          return const Center(
-            child: Text('Something went wrong. Please try again.', style: TextStyle(color: Colors.white)),
+          return Center(
+            child: Text(
+              'Something went wrong. Please try again.',
+              style: TextStyle(
+                color: AppColors.onSurface,
+                fontFamily: 'Nunito',
+              ),
+            ),
           );
         },
       );

@@ -189,7 +189,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   end: Alignment.bottomRight,
                   colors: [
                     Color(0xFF1d335f), // #1d335f - blue
-                    Color(0xFF49436f), // #514a7b - purple
+                    Color(0xFF413b62), // #514a7b - purple
                   ],
                 ),
               ),
@@ -275,7 +275,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           end: Alignment.bottomRight,
           colors: [
             Color(0xFF1d335f), // #1d335f
-            Color(0xFF49436f), // #5A4B7A
+            Color(0xFF413b62), // #5A4B7A
           ],
         ),
         borderRadius: BorderRadius.circular(22),
