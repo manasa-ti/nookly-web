@@ -175,7 +175,7 @@ class _HomePageState extends State<HomePage> {
                         child: IconButton(
                           icon: Icon(
                             Icons.filter_list, 
-                            color: Colors.white,
+                            color: AppColors.white85,
                             size: iconSize,
                           ),
                           onPressed: _onFiltersPressed,

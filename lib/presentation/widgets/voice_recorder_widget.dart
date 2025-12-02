@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/voice_recording_service.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/utils/logger.dart';
 
 class VoiceRecorderWidget extends StatefulWidget {
@@ -216,7 +217,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
               Text(
                 _recordingState == RecordingState.recording ? 'Recording...' : 'Hold to record',
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white85,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -277,11 +278,11 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
                         width: 60,
                         height: 60,
                         decoration: BoxDecoration(
-                          color: _recordingState == RecordingState.recording ? Colors.red : Colors.white,
+                          color: _recordingState == RecordingState.recording ? Colors.red : AppColors.white85,
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: (_recordingState == RecordingState.recording ? Colors.red : Colors.white).withOpacity(0.3),
+                              color: (_recordingState == RecordingState.recording ? Colors.red : AppColors.white85).withOpacity(0.3),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -289,7 +290,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
                         ),
                         child: Icon(
                           _recordingState == RecordingState.recording ? Icons.stop : Icons.mic,
-                          color: _recordingState == RecordingState.recording ? Colors.white : Colors.grey[600],
+                          color: _recordingState == RecordingState.recording ? AppColors.white85 : Colors.grey[600],
                           size: 28,
                         ),
                       ),

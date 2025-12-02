@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 // import 'package:flutter_svg/flutter_svg.dart'; // Temporarily unused
 import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
@@ -146,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                       fontFamily: 'Nunito',
                       fontSize: AppTextStyles.getLargeTitleFontSize(context),
                       fontWeight: FontWeight.w500,
-                      color: Colors.white,
+                      color: AppColors.white85,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -159,7 +160,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                        style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Email',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -195,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                        style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -259,12 +260,12 @@ class _LoginPageState extends State<LoginPage> {
                             width: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                             ),
                           )
                         : Text(
                             'Sign In',
-                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
+                            style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                           ),
                   ),
                   // Temporarily hidden Google Sign-In Button
@@ -359,7 +360,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         child: Text(
                           'Sign Up',
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
+                          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],

@@ -104,7 +104,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: Colors.white,
+                        color: AppColors.white85,
                         width: 3,
                       ),
                       boxShadow: [
@@ -131,7 +131,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
                 Text(
                   widget.callerName,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
                   ),
@@ -212,7 +212,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
             ],
           ),
           child: IconButton(
-            icon: Icon(icon, color: Colors.white),
+            icon: Icon(icon, color: AppColors.white85),
             onPressed: onPressed,
             iconSize: 30,
             padding: const EdgeInsets.all(20),
@@ -222,7 +222,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white,
+            color: AppColors.white85,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),

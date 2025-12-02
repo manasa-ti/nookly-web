@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 
 class GameMenuModal extends StatelessWidget {
@@ -32,14 +33,14 @@ class GameMenuModal extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.games,
-                    color: Colors.white,
+                    color: AppColors.white85,
                     size: 24,
                   ),
                   const SizedBox(width: 8),
                   const Text(
                     'Play 2 Bond',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Nunito',
@@ -51,7 +52,7 @@ class GameMenuModal extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 icon: const Icon(
                   Icons.close,
-                  color: Colors.white,
+                  color: AppColors.white85,
                 ),
               ),
             ],

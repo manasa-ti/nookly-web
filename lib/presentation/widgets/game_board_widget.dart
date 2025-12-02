@@ -1,3 +1,4 @@
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
@@ -112,7 +113,7 @@ class GameBoardWidget extends StatelessWidget {
                   child: Text(
                     gameSession.selectedChoice == 'truth' ? 'Truth' : 'Thrill',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontSize: AppTextStyles.getCaptionFontSize(context),
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Nunito',
@@ -124,7 +125,7 @@ class GameBoardWidget extends StatelessWidget {
                   onPressed: () => onGameAction('next_turn'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green.withOpacity(0.8),
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white85,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
@@ -151,7 +152,7 @@ class GameBoardWidget extends StatelessWidget {
                 onPressed: () => onGameAction('next_turn'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green.withOpacity(0.8),
-                  foregroundColor: Colors.white,
+                  foregroundColor: AppColors.white85,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(6),
@@ -239,7 +240,7 @@ class GameBoardWidget extends StatelessWidget {
                     'Truth',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontSize: AppTextStyles.getBodyFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
@@ -265,7 +266,7 @@ class GameBoardWidget extends StatelessWidget {
                     'Thrill',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontSize: AppTextStyles.getBodyFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
@@ -349,7 +350,7 @@ class GameBoardWidget extends StatelessWidget {
               child: Text(
                 gameSession.selectedChoice == 'truth' ? 'Truth' : 'Thrill',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white85,
                   fontSize: AppTextStyles.getCaptionFontSize(context),
                   fontWeight: FontWeight.w600,
                   fontFamily: 'Nunito',
@@ -524,7 +525,7 @@ class GameBoardWidget extends StatelessWidget {
             fontSize: AppTextStyles.getBodyFontSize(context),
             fontWeight: FontWeight.w600,
             fontFamily: 'Nunito',
-            color: Colors.white,
+            color: AppColors.white85,
           ),
         ),
       ),

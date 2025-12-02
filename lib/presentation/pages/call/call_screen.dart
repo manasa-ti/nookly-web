@@ -240,7 +240,7 @@ class _CallScreenState extends State<CallScreen> {
                 child: Text(
                   widget.participantName,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
@@ -281,7 +281,7 @@ class _CallScreenState extends State<CallScreen> {
                         child: Text(
                           _connectionStatus,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white85,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -302,12 +302,12 @@ class _CallScreenState extends State<CallScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(color: Colors.white),
+                      const CircularProgressIndicator(color: AppColors.white85),
                       const SizedBox(height: 20),
                       Text(
                         _connectionStatus,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white85,
                           fontSize: 18,
                         ),
                         textAlign: TextAlign.center,
@@ -325,12 +325,12 @@ class _CallScreenState extends State<CallScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(color: Colors.white),
+                      const CircularProgressIndicator(color: AppColors.white85),
                       const SizedBox(height: 20),
                       Text(
                         _connectionStatus,
                         style: const TextStyle(
-                          color: Colors.white,
+                          color: AppColors.white85,
                           fontSize: 18,
                         ),
                         textAlign: TextAlign.center,
@@ -359,7 +359,7 @@ class _CallScreenState extends State<CallScreen> {
           Text(
             widget.participantName,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.white85,
               fontSize: 24,
               fontWeight: FontWeight.w500,
             ),
@@ -440,11 +440,11 @@ class _CallScreenState extends State<CallScreen> {
               width: 20,
               height: 20,
               child: CircularProgressIndicator(
-                color: Colors.white,
+                color: AppColors.white85,
                 strokeWidth: 2,
               ),
             )
-          : Icon(icon, color: Colors.white),
+          : Icon(icon, color: AppColors.white85),
         onPressed: onPressed,
         iconSize: 24,
       ),

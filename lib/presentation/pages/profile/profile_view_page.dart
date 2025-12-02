@@ -204,7 +204,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
         title: const Text(
           'Profile',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.white85,
             fontFamily: 'Nunito',
             fontWeight: FontWeight.w600,
           ),
@@ -263,7 +263,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             ElevatedButton(
               onPressed: _loadUserProfile,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.white85,
                 foregroundColor: const Color(0xFF1d335f),
               ),
               child: const Text(
@@ -346,7 +346,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           Text(
             _user!.name ?? 'Unknown',
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.white85,
               fontSize: 24,
               fontWeight: FontWeight.bold,
               fontFamily: 'Nunito',
@@ -405,7 +405,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
       child: Text(
         _user!.bio!,
         style: const TextStyle(
-          color: Colors.white,
+          color: AppColors.white85,
           fontSize: 16,
           height: 1.5,
           fontFamily: 'Nunito',
@@ -537,7 +537,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
                 Text(
                   _user!.hometown!,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontSize: 16,
                     fontFamily: 'Nunito',
                   ),
@@ -558,7 +558,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
                 Text(
                   _getDistanceString(),
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontSize: 16,
                     fontFamily: 'Nunito',
                   ),
@@ -593,7 +593,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             Text(
               title,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white85,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Nunito',

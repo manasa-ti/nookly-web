@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/presentation/bloc/games/games_bloc.dart';
@@ -42,7 +43,6 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
   @override
   void initState() {
     super.initState();
-    _checkGamesTutorial();
     _checkConversationStarterCompletion();
   }
 
@@ -80,8 +80,12 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
     setState(() {
       _conversationStarterCompleted = true;
     });
-    // Check if we should show games tooltip now
-    _checkGamesTutorial();
+    // Check if we should show games tooltip now - wait a bit for smooth transition
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        _checkGamesTutorial();
+      }
+    });
   }
 
   Widget _buildGetCloseButton() {
@@ -399,7 +403,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                   child: Text(
                     'Accept',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontSize: AppTextStyles.getCaptionFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
@@ -418,7 +422,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                   child: Text(
                     'Decline',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontSize: AppTextStyles.getCaptionFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
@@ -474,7 +478,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
               child: const Text(
                 'Cancel',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white85,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -503,7 +507,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
               Text(
                 'Choose a Game',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white85,
                   fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
@@ -594,7 +598,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                 style: TextStyle(
                   color: isComingSoon 
                       ? Colors.white.withOpacity(0.5)
-                      : Colors.white,
+                      : AppColors.white85,
                   fontSize: AppTextStyles.getChipFontSize(context),
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,

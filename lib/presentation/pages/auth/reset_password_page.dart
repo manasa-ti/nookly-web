@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
@@ -66,10 +67,10 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: const Text('Reset Password', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+        title: const Text('Reset Password', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85)),
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.white85),
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -110,7 +111,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     style: TextStyle(
                       fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                       fontFamily: 'Nunito',
-                      color: Colors.white,
+                      color: AppColors.white85,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -122,7 +123,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                        style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'New Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -163,7 +164,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                       child: TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                        style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Confirm New Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -205,7 +206,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                     ),
                     child: Text(
                       'Reset Password',
-                      style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
+                      style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
@@ -232,7 +233,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
           style: TextStyle(
             fontSize: AppTextStyles.getLargeTitleFontSize(context),
             fontFamily: 'Nunito',
-            color: Colors.white,
+            color: AppColors.white85,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -266,7 +267,7 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
             'Back to Login',
             style: TextStyle(
               fontFamily: 'Nunito',
-              color: Colors.white,
+              color: AppColors.white85,
               fontSize: AppTextStyles.getBodyFontSize(context),
               fontWeight: FontWeight.w500,
             ),

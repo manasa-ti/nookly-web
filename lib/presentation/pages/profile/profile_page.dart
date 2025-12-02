@@ -107,9 +107,9 @@ class _ProfilePageState extends State<ProfilePage> {
         child: _isLoading
             ? const Center(child: CircularProgressIndicator())
             : _error != null
-                ? Center(child: Text('Error: $_error', style: TextStyle(color: Colors.white)))
+                ? Center(child: Text('Error: $_error', style: TextStyle(color: AppColors.white85)))
                 : _user == null
-                    ? const Center(child: Text('No profile data available', style: TextStyle(color: Colors.white)))
+                    ? const Center(child: Text('No profile data available', style: TextStyle(color: AppColors.white85)))
                     : ListView(
                         padding: const EdgeInsets.all(12),
                         children: [
@@ -128,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     fontFamily: 'Nunito',
                                     fontSize: (size.width * 0.05).clamp(16.0, 20.0),
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white
+                                    color: AppColors.white85
                                   ),
                                 ),
                                 const SizedBox(height: 6),
@@ -151,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   onPressed: () {
                                     // Navigate to edit profile
                                   },
-                                  child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
+                                  child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
                                 ),
                               ],
                             ),
@@ -166,7 +166,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 18.0), fontWeight: FontWeight.w500, color: Colors.white)),
+                                  Text('Premium Features', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.045).clamp(14.0, 18.0), fontWeight: FontWeight.w500, color: AppColors.white85)),
                                   const SizedBox(height: 8),
                                   _buildFeatureTile('See Who Likes You', 'Find out who has liked your profile before you match', Icons.favorite, true, size),
                                   _buildFeatureTile('Unlimited Likes', 'No daily limit on the number of profiles you can like', Icons.all_inclusive, true, size),
@@ -184,9 +184,9 @@ class _ProfilePageState extends State<ProfilePage> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                              leading: const Icon(Icons.notifications, color: Colors.white, size: 20),
-                              title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
-                              trailing: const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+                              leading: const Icon(Icons.notifications, color: AppColors.white85, size: 20),
+                              title: Text('Notifications', style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: AppColors.white85, fontWeight: FontWeight.w500)),
+                              trailing: const Icon(Icons.chevron_right, color: AppColors.white85, size: 20),
                               onTap: () {
                                 // Navigate to notifications page
                               },
@@ -221,11 +221,11 @@ class _ProfilePageState extends State<ProfilePage> {
           color: isActive ? const Color(0xFF4C5C8A) : Colors.grey.withOpacity(0.2),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: isActive ? Colors.white : Colors.grey, size: 18),
+        child: Icon(icon, color: isActive ? AppColors.white85 : Colors.grey, size: 18),
       ),
-      title: Text(title, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: Colors.white, fontWeight: FontWeight.w500)),
+      title: Text(title, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(13.0, 16.0), color: AppColors.white85, fontWeight: FontWeight.w500)),
       subtitle: Text(description, style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 14.0), color: Color(0xFFD6D9E6))),
-      trailing: isActive ? Chip(label: Text('Active', style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.03).clamp(10.0, 13.0))), backgroundColor: Color(0xFF4C5C8A)) : null,
+      trailing: isActive ? Chip(label: Text('Active', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: (size.width * 0.03).clamp(10.0, 13.0))), backgroundColor: Color(0xFF4C5C8A)) : null,
     );
   }
 
@@ -237,7 +237,7 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white, size: 20),
+            Icon(icon, color: AppColors.white85, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -245,12 +245,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: TextStyle(
                   fontFamily: 'Nunito', 
                   fontSize: (size.width * 0.04).clamp(13.0, 16.0), 
-                  color: Colors.white, 
+                  color: AppColors.white85, 
                   fontWeight: FontWeight.w500
                 )
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white, size: 20),
+            const Icon(Icons.chevron_right, color: AppColors.white85, size: 20),
           ],
         ),
       ),

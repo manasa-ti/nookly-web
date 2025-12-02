@@ -36,7 +36,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
           if (state is ReceivedLikesLoading) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
               ),
             );
           }
@@ -58,7 +58,7 @@ class _ReceivedLikesPageState extends State<ReceivedLikesPage> {
                       style: TextStyle(
                         fontSize: (MediaQuery.of(context).size.width * 0.05).clamp(18.0, 22.0),
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: AppColors.white85,
                         fontFamily: 'Nunito',
                       ),
                     ),

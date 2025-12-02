@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/utils/logger.dart';
 
 class WelcomeTourPage extends StatefulWidget {
@@ -140,7 +141,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
                     height: 8,
                     decoration: BoxDecoration(
                       color: _currentPage == index 
-                          ? Colors.white
+                          ? AppColors.white85
                           : Colors.white.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),
@@ -158,7 +159,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
                   onPressed: _nextPage,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _slides[_currentPage].color,
-                    foregroundColor: Colors.white,
+                    foregroundColor: AppColors.white85,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -210,7 +211,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
             slide.title,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.white85,
               fontSize: 28,
               fontWeight: FontWeight.bold,
               fontFamily: 'Nunito',

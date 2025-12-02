@@ -194,7 +194,7 @@ class PurchasedFeaturesPage extends StatelessWidget {
                 child: const Text(
                   'Active',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -243,7 +243,7 @@ class PurchasedFeaturesPage extends StatelessWidget {
                 child: const Text(
                   'Most Popular',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -272,7 +272,7 @@ class PurchasedFeaturesPage extends StatelessWidget {
                     child: Text(
                       savings,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white85,
                         fontWeight: FontWeight.bold,
                       ),
                     ),

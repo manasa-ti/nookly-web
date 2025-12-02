@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class DistanceRadiusSlider extends StatelessWidget {
   final double value;
@@ -25,9 +26,9 @@ class DistanceRadiusSlider extends StatelessWidget {
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
             trackHeight: 2.0, // Thinner track for more subtle appearance
-            activeTrackColor: Colors.white,
+            activeTrackColor: AppColors.white85,
             inactiveTrackColor: const Color(0xFF4C5C8A),
-            thumbColor: Colors.white,
+            thumbColor: AppColors.white85,
             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), // Smaller thumb to match thinner track
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), // Smaller overlay
             valueIndicatorColor: const Color(0xFF4C5C8A), // Blue color for tooltip
@@ -51,7 +52,7 @@ class DistanceRadiusSlider extends StatelessWidget {
             ),
             Text(
               '${value.round()} km',
-              style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(12.0, 14.0)),
+              style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (MediaQuery.of(context).size.width * 0.035).clamp(12.0, 14.0)),
             ),
             Text(
               '${max.round()} km',

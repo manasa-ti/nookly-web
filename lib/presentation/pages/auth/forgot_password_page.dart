@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/config/app_config.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
@@ -37,10 +38,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: const Text('Forgot Password', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
+        title: const Text('Forgot Password', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85)),
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.white85),
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -74,7 +75,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     style: TextStyle(
                       fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                       fontFamily: 'Nunito',
-                      color: Colors.white,
+                      color: AppColors.white85,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -86,7 +87,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                        style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Email',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -116,7 +117,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                     child: Text(
                       'Send Reset Email',
-                      style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
+                      style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],

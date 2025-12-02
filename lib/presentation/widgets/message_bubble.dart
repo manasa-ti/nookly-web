@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/presentation/widgets/voice_player_widget.dart';
 import 'package:nookly/domain/entities/message.dart';
@@ -264,7 +265,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                                 Icon(
                                                   Icons.timer,
                                                   size: 12,
-                                                  color: widget.isMe ? Colors.white : Colors.white70,
+                                                  color: widget.isMe ? AppColors.white85 : Colors.white70,
                                                 ),
                                                 const SizedBox(width: 4),
                                                 Text(
@@ -272,7 +273,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                                   style: TextStyle(
                                                     fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                                                     fontFamily: 'Nunito',
-                                                    color: widget.isMe ? Colors.white : Colors.white70,
+                                                    color: widget.isMe ? AppColors.white85 : Colors.white70,
                                                   ),
                                                 ),
                                               ],
@@ -285,7 +286,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                             Icon(
                                               Icons.timer,
                                               size: 12,
-                                              color: widget.isMe ? Colors.white : Colors.white70,
+                                              color: widget.isMe ? AppColors.white85 : Colors.white70,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
@@ -293,7 +294,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                               style: TextStyle(
                                                 fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                                                 fontFamily: 'Nunito',
-                                                color: widget.isMe ? Colors.white : Colors.white70,
+                                                color: widget.isMe ? AppColors.white85 : Colors.white70,
                                               ),
                                             ),
                                           ],
@@ -313,7 +314,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                         height: 200,
                                         child: Center(
                                           child: CircularProgressIndicator(
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                                           ),
                                         ),
                                       )
@@ -339,7 +340,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                 Text(
                                   widget.message!.content,
                                   style: TextStyle(
-                                    color: widget.isMe ? Colors.white : Colors.white,
+                                    color: widget.isMe ? AppColors.white85 : AppColors.white85,
                                     fontFamily: 'Nunito',
                                     fontSize: AppTextStyles.getBodyFontSize(context),
                                     fontWeight: FontWeight.w500,
@@ -578,7 +579,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                             loadingProgress.expectedTotalBytes!
                         : null,
                     valueColor: AlwaysStoppedAnimation<Color>(
-                      widget.isMe ? Colors.white : Colors.white70,
+                      widget.isMe ? AppColors.white85 : Colors.white70,
                     ),
                   ),
                 ),
@@ -662,7 +663,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                           loadingProgress.expectedTotalBytes!
                       : null,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    widget.isMe ? Colors.white : Colors.white70,
+                    widget.isMe ? AppColors.white85 : Colors.white70,
                   ),
                 ),
               ),

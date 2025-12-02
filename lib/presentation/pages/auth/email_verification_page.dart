@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/presentation/bloc/auth/auth_bloc.dart';
 import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
@@ -57,7 +58,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
-        title: const Text('Verify Your Email', style: TextStyle(color: Colors.white, fontFamily: 'Nunito')),
+        title: const Text('Verify Your Email', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito')),
         centerTitle: true,
       ),
       body: BlocListener<AuthBloc, AuthState>(
@@ -109,7 +110,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                 Text(
                   'Enter the 6-digit code sent to',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontFamily: 'Nunito',
                     fontSize: AppTextStyles.getSubtitleFontSize(context),
                   ),
@@ -119,7 +120,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                 Text(
                   widget.email,
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.bold,
                     fontSize: AppTextStyles.getTitleFontSize(context),
@@ -155,12 +156,12 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                           width: 18,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                           ),
                         )
                       : const Text(
                           'Verify',
-                          style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontWeight: FontWeight.w500),
+                          style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontWeight: FontWeight.w500),
                         ),
                 ),
               ],

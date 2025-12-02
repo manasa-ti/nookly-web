@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class ContextualTooltip extends StatefulWidget {
   final String message;
@@ -6,6 +8,7 @@ class ContextualTooltip extends StatefulWidget {
   final TooltipPosition position;
   final VoidCallback? onDismiss;
   final bool showArrow;
+  final IconData? icon; // Optional icon for games tutorial
 
   const ContextualTooltip({
     Key? key,
@@ -14,6 +17,7 @@ class ContextualTooltip extends StatefulWidget {
     this.position = TooltipPosition.bottom,
     this.onDismiss,
     this.showArrow = true,
+    this.icon,
   }) : super(key: key);
 
   @override
@@ -28,6 +32,7 @@ class _ContextualTooltipState extends State<ContextualTooltip>
   bool _isVisible = true;
   OverlayEntry? _overlayEntry;
   final GlobalKey _childKey = GlobalKey();
+  double _tooltipWidth = 280; // Default width, will be adjusted
 
   @override
   void initState() {
@@ -128,6 +133,28 @@ class _ContextualTooltipState extends State<ContextualTooltip>
     
     final position = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate flexible width based on screen size and content
+    final maxWidth = (screenWidth * 0.85).clamp(280.0, 320.0);
+    final minWidth = 240.0;
+    
+    // Measure text to determine optimal width
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: widget.message,
+        style: TextStyle(
+          fontSize: AppTextStyles.getBodyFontSize(context),
+          fontFamily: 'Nunito',
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      maxLines: null,
+    );
+    textPainter.layout(maxWidth: maxWidth);
+    
+    final contentWidth = (textPainter.width + 48).clamp(minWidth, maxWidth); // 48 = padding
+    _tooltipWidth = contentWidth;
     
     Offset tooltipPosition;
     Offset arrowPosition;
@@ -136,48 +163,56 @@ class _ContextualTooltipState extends State<ContextualTooltip>
     switch (widget.position) {
       case TooltipPosition.top:
         tooltipPosition = Offset(
-          position.dx + (size.width / 2) - 100, // Center the tooltip (200px width / 2)
-          position.dy - 100, // Position above the button with more space
+          position.dx + (size.width / 2) - (contentWidth / 2),
+          position.dy - 120, // More space for content
         );
         arrowPosition = Offset(
-          position.dx + (size.width / 2) - 8, // Center arrow horizontally
-          position.dy - 20, // Position arrow at bottom of tooltip
+          position.dx + (size.width / 2) - 8,
+          position.dy - 20,
         );
-        arrowRotation = 0; // Point down
+        arrowRotation = 0;
         break;
       case TooltipPosition.bottom:
         tooltipPosition = Offset(
-          position.dx + (size.width / 2) - 100, // Center the tooltip (200px width / 2)
-          position.dy + size.height + 20, // Position below the button with more space
+          position.dx + (size.width / 2) - (contentWidth / 2),
+          position.dy + size.height + 20,
         );
         arrowPosition = Offset(
-          position.dx + (size.width / 2) - 8, // Center arrow horizontally
-          position.dy + size.height + 10, // Position arrow at top of tooltip
+          position.dx + (size.width / 2) - 8,
+          position.dy + size.height + 10,
         );
-        arrowRotation = 3.14159; // Point up (180 degrees)
+        arrowRotation = 3.14159; // 180 degrees
         break;
       case TooltipPosition.left:
         tooltipPosition = Offset(
-          position.dx - 230, // Position to the left (200px width + 30px margin)
-          position.dy + (size.height / 2) - 40, // Center vertically
+          position.dx - contentWidth - 30,
+          position.dy + (size.height / 2) - 50,
         );
         arrowPosition = Offset(
-          position.dx - 10, // Position arrow at right edge of tooltip
-          position.dy + (size.height / 2) - 8, // Center arrow vertically
+          position.dx - 10,
+          position.dy + (size.height / 2) - 8,
         );
-        arrowRotation = -1.5708; // Point right (-90 degrees)
+        arrowRotation = -1.5708; // -90 degrees
         break;
       case TooltipPosition.right:
         tooltipPosition = Offset(
-          position.dx + size.width + 30, // Position to the right with margin
-          position.dy + (size.height / 2) - 40, // Center vertically
+          position.dx + size.width + 30,
+          position.dy + (size.height / 2) - 50,
         );
         arrowPosition = Offset(
-          position.dx + size.width + 10, // Position arrow at left edge of tooltip
-          position.dy + (size.height / 2) - 8, // Center arrow vertically
+          position.dx + size.width + 10,
+          position.dy + (size.height / 2) - 8,
         );
-        arrowRotation = 1.5708; // Point left (90 degrees)
+        arrowRotation = 1.5708; // 90 degrees
         break;
+    }
+    
+    // Ensure tooltip stays within screen bounds
+    final screenPadding = 16.0;
+    if (tooltipPosition.dx < screenPadding) {
+      tooltipPosition = Offset(screenPadding, tooltipPosition.dy);
+    } else if (tooltipPosition.dx + contentWidth > screenWidth - screenPadding) {
+      tooltipPosition = Offset(screenWidth - contentWidth - screenPadding, tooltipPosition.dy);
     }
     
     return Stack(
@@ -213,56 +248,83 @@ class _ContextualTooltipState extends State<ContextualTooltip>
 
   Widget _buildTooltipContent() {
     return Container(
-      width: 200, // Fixed width to ensure visibility
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      width: _tooltipWidth,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        color: AppColors.surface, // Dark blue theme color
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
+          color: AppColors.white85.withOpacity(0.2),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // Optional icon
+          if (widget.icon != null) ...[
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                widget.icon,
+                color: AppColors.onSurface,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+          
+          // Message text with proper wrapping
           Text(
             widget.message,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: AppTextStyles.getBodyFontSize(context),
               fontFamily: 'Nunito',
-              color: Colors.black87,
-              height: 1.3,
+              color: AppColors.onSurface,
+              height: 1.5,
               fontWeight: FontWeight.w500,
+              decoration: TextDecoration.none,
             ),
-            maxLines: 3,
-            overflow: TextOverflow.ellipsis,
+            maxLines: null, // Allow unlimited lines for wrapping
+            softWrap: true,
           ),
-          const SizedBox(height: 8),
-          GestureDetector(
-            onTap: _dismiss,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.circular(6),
+          
+          const SizedBox(height: 16),
+          
+          // Got it button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _dismiss,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.onSurface, // White button
+                foregroundColor: AppColors.surface, // Dark text on white
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 0,
               ),
-              child: const Text(
+              child: Text(
                 'Got it!',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                   fontFamily: 'Nunito',
-                  color: Colors.white,
                   fontWeight: FontWeight.w600,
-                  decoration: TextDecoration.none,
                 ),
               ),
             ),
@@ -276,26 +338,29 @@ class _ContextualTooltipState extends State<ContextualTooltip>
     return Container(
       width: 16,
       height: 16,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(2),
-      ),
       child: CustomPaint(
-        painter: ArrowPainter(),
+        painter: ArrowPainter(
+          color: AppColors.surface,
+          borderColor: AppColors.white85.withOpacity(0.2),
+        ),
       ),
     );
   }
 }
 
 class ArrowPainter extends CustomPainter {
+  final Color color;
+  final Color borderColor;
+
+  ArrowPainter({
+    required this.color,
+    required this.borderColor,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.white
+      ..color = color
       ..style = PaintingStyle.fill;
 
     final path = Path();
@@ -308,7 +373,7 @@ class ArrowPainter extends CustomPainter {
 
     // Draw border
     final borderPaint = Paint()
-      ..color = Colors.grey.withOpacity(0.3)
+      ..color = borderColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class DisappearingTimeSelector extends StatelessWidget {
   final int selectedTime;
@@ -25,7 +26,7 @@ class DisappearingTimeSelector extends StatelessWidget {
               fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 16.0),
               fontWeight: FontWeight.w500,
               fontFamily: 'Nunito',
-              color: Colors.white,
+              color: AppColors.white85,
             ),
           ),
           const SizedBox(height: 16),
@@ -39,7 +40,7 @@ class DisappearingTimeSelector extends StatelessWidget {
                 label: Text(
                   '$time seconds',
                   style: TextStyle(
-                    color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+                    color: isSelected ? AppColors.white85 : const Color(0xFFD6D9E6),
                     fontFamily: 'Nunito',
                     fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
                     fontWeight: FontWeight.w500,
@@ -53,7 +54,7 @@ class DisappearingTimeSelector extends StatelessWidget {
                 },
                 selectedColor: const Color(0xFF4C5C8A),
                 backgroundColor: const Color(0xFF35548b),
-                checkmarkColor: Colors.white,
+                checkmarkColor: AppColors.white85,
                 side: BorderSide(
                   color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),
                   width: 1,

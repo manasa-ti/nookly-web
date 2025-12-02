@@ -1,3 +1,4 @@
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -220,7 +221,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               fontFamily: 'Nunito',
                               fontSize: (MediaQuery.of(context).size.width * 0.09).clamp(24.0, 36.0), // smaller
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: AppColors.white85,
                               letterSpacing: 3,
                               shadows: const [
                                 Shadow(
@@ -241,7 +242,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                 fontFamily: 'Nunito',
                                 fontSize: (MediaQuery.of(context).size.width * 0.032).clamp(11.0, 15.0), // smaller
                                 fontWeight: FontWeight.w500,
-                                color: Colors.white,
+                                color: AppColors.white85
                               ),
                             ),
                           ),
@@ -300,7 +301,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 fontFamily: 'Nunito',
                 fontSize: (logoSize * 0.48).clamp(32.0, 48.0),
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: AppColors.white85,
                 letterSpacing: 2,
                 shadows: const [
                   Shadow(
