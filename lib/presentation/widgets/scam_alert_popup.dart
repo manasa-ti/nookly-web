@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/scam_alert_service.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class ScamAlertPopup extends StatelessWidget {
   final ScamAlertType alertType;
@@ -58,8 +59,8 @@ class ScamAlertPopup extends StatelessWidget {
                 Expanded(
                   child: Text(
                     alertTitle,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                       fontFamily: 'Nunito',
@@ -81,8 +82,8 @@ class ScamAlertPopup extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Text(
               alertMessage,
-              style: const TextStyle(
-                fontSize: 14,
+              style: TextStyle(
+                fontSize: AppTextStyles.getBodyFontSize(context),
                 color: Colors.white,
                 fontFamily: 'Nunito',
                 height: 1.4,
@@ -106,9 +107,10 @@ class ScamAlertPopup extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Report',
                       style: TextStyle(
+                        fontSize: AppTextStyles.getBodyFontSize(context),
                         color: Colors.white,
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.w600,
@@ -127,9 +129,10 @@ class ScamAlertPopup extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text(
+                    child: Text(
                       'Learn More',
                       style: TextStyle(
+                        fontSize: AppTextStyles.getBodyFontSize(context),
                         color: Colors.white,
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.w600,

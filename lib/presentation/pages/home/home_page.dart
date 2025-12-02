@@ -119,7 +119,14 @@ class _HomePageState extends State<HomePage> {
       },
       child: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF1d335f), // #1d335f - solid primary blue
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF1d335f), // #1d335f - blue
+              Color(0xFF413b62), // #413b62 - purple
+            ],
+          ),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,

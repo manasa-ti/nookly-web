@@ -153,10 +153,10 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 32), // Match sign up page spacing
                   Card(
-                    color: const Color(0xFF1d335f),
+                    color: const Color(0xFF283d67), // 5% lighter than background (#1d335f)
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -165,13 +165,14 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: 'Email',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
+                          prefixIconConstraints: BoxConstraints(minWidth: 40, minHeight: 24),
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           errorBorder: InputBorder.none,
                           focusedErrorBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                           floatingLabelBehavior: FloatingLabelBehavior.auto,
                           isDense: true,
                         ),
@@ -189,10 +190,10 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: const Color(0xFF1d335f),
+                    color: const Color(0xFF283d67), // 5% lighter than background (#1d335f)
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
@@ -201,6 +202,7 @@ class _LoginPageState extends State<LoginPage> {
                           labelText: 'Password',
                           labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
+                          prefixIconConstraints: BoxConstraints(minWidth: 40, minHeight: 24),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
@@ -212,6 +214,8 @@ class _LoginPageState extends State<LoginPage> {
                                 _isPasswordVisible = !_isPasswordVisible;
                               });
                             },
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(minWidth: 40, minHeight: 24),
                           ),
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -219,7 +223,7 @@ class _LoginPageState extends State<LoginPage> {
                           errorBorder: InputBorder.none,
                           focusedErrorBorder: InputBorder.none,
                           disabledBorder: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
                           floatingLabelBehavior: FloatingLabelBehavior.auto,
                           isDense: true,
                         ),
