@@ -228,7 +228,7 @@ class _HomePageState extends State<HomePage> {
                         _currentIndex = index;
                       });
                     },
-                    indicatorColor: const Color(0xFF516b99),
+                    indicatorColor: const Color(0xFF3E5076), // 10% lighter shade of #283d67
                     labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                   destinations: [
                     NavigationDestination(

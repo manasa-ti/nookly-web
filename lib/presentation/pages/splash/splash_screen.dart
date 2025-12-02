@@ -187,8 +187,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Color(0xFF2d457f), // #2d457f - blue
-                    Color(0xFF514a7b), // #514a7b - purple
+                    Color(0xFF1d335f), // #1d335f - blue
+                    Color(0xFF49436f), // #514a7b - purple
                   ],
                 ),
               ),
@@ -273,8 +273,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFF2e4781), // #2e4781
-            Color(0xFF5A4B7A), // #5A4B7A
+            Color(0xFF1d335f), // #1d335f
+            Color(0xFF49436f), // #5A4B7A
           ],
         ),
         borderRadius: BorderRadius.circular(22),
@@ -284,7 +284,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2e4781).withOpacity(0.5),
+            color: const Color(0xFF1d335f).withOpacity(0.5),
             blurRadius: 40,
             offset: const Offset(0, 15),
           ),
@@ -417,7 +417,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [
-                    Color(0xFF2e4781), // #2e4781
+                    Color(0xFF1d335f), // #1d335f
                     Color(0xFF5A4B7A), // #5A4B7A
                   ],
                 ),

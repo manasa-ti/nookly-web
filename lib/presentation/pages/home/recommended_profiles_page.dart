@@ -1,5 +1,4 @@
 import 'package:nookly/core/utils/logger.dart';
-import 'package:nookly/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -146,6 +145,54 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
     }
   }
 
+  // TODO: TEMPORARY - Remove these mocked profiles later
+  List<Map<String, dynamic>> _getMockedProfiles() {
+    return [
+      {
+        'id': 'mock_profile_1',
+        'name': 'Alex',
+        'age': 28,
+        'sex': 'Male',
+        'distance': 2.5,
+        'bio': 'Love traveling and exploring new places. Coffee enthusiast and bookworm.',
+        'interests': ['Travel', 'Reading', 'Coffee', 'Photography'],
+        'profilePicture': null,
+        'hometown': 'San Francisco, CA',
+        'objectives': ['Friendship', 'Dating'],
+        'commonInterests': ['Travel', 'Reading'],
+        'commonObjectives': ['Friendship'],
+      },
+      {
+        'id': 'mock_profile_2',
+        'name': 'Sam',
+        'age': 25,
+        'sex': 'Female',
+        'distance': 5.0,
+        'bio': 'Fitness enthusiast and foodie. Always up for trying new restaurants and outdoor adventures.',
+        'interests': ['Fitness', 'Food', 'Hiking', 'Yoga'],
+        'profilePicture': null,
+        'hometown': 'Los Angeles, CA',
+        'objectives': ['Dating', 'Friendship'],
+        'commonInterests': ['Fitness', 'Food'],
+        'commonObjectives': ['Dating'],
+      },
+      {
+        'id': 'mock_profile_3',
+        'name': 'Jordan',
+        'age': 30,
+        'sex': 'Non-binary',
+        'distance': 3.2,
+        'bio': 'Artist and music lover. Passionate about creativity and meaningful conversations.',
+        'interests': ['Art', 'Music', 'Photography', 'Writing'],
+        'profilePicture': null,
+        'hometown': 'New York, NY',
+        'objectives': ['Friendship', 'Networking'],
+        'commonInterests': ['Photography', 'Music'],
+        'commonObjectives': ['Friendship'],
+      },
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -195,7 +242,14 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           }
           
           if (state is RecommendedProfilesLoaded) {
-            if (state.profiles.isEmpty) {
+            AppLogger.info('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isPrefetching: $_isPrefetching');
+            
+            // TODO: TEMPORARY - Remove mocked profiles later
+            final mockedProfiles = _getMockedProfiles();
+            final totalItemCount = mockedProfiles.length + state.profiles.length;
+            
+            // Show empty state only if there are no mocked profiles AND no real profiles
+            if (state.profiles.isEmpty && mockedProfiles.isEmpty) {
               return Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -227,8 +281,6 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
               );
             }
             
-            AppLogger.info('🔵 DEBUG: Building ListView with ${state.profiles.length} profiles, _isPrefetching: $_isPrefetching');
-            
             // Adaptive padding for different screen sizes
             final isTablet = MediaQuery.of(context).size.width > 600;
             final listPadding = isTablet ? const EdgeInsets.all(32.0) : EdgeInsets.all(MediaQuery.of(context).size.width * 0.04);
@@ -254,47 +306,76 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                 controller: _scrollController,
                 physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()), // Fix iOS pull-to-refresh for short lists
                 padding: listPadding,
-                itemCount: state.profiles.length,
+                itemCount: totalItemCount,
                 itemBuilder: (context, index) {
-                final profile = state.profiles[index];
-                _maybePrefetch(state, index);
-                AppLogger.info('🔵 DEBUG: Rendering profile ${index + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
-                return ProfileCard(
-                  key: ValueKey(profile.id), // Add unique key based on profile ID
-                  profile: {
-                    'id': profile.id,
-                    'name': profile.name,
-                    'age': profile.age,
-                    'sex': profile.sex,
-                    'distance': profile.distance,
-                    'bio': profile.bio,
-                    'interests': profile.interests,
-                    'profilePicture': profile.profilePic,
-                    'hometown': profile.hometown,
-                    'objectives': profile.objectives,
-                    'commonInterests': profile.commonInterests,
-                    'commonObjectives': profile.commonObjectives,
-                  },
-                  onSwipeRight: () {
-                    context.read<RecommendedProfilesBloc>().add(
-                      LikeProfile(profile.id),
+                  // TODO: TEMPORARY - Handle mocked profiles (first 3 items)
+                  if (index < mockedProfiles.length) {
+                    final mockProfile = mockedProfiles[index];
+                    AppLogger.info('🔵 DEBUG: Rendering MOCKED profile ${index + 1}: ID=${mockProfile['id']}, Name=${mockProfile['name']}');
+                    return ProfileCard(
+                      key: ValueKey('mock_${mockProfile['id']}'),
+                      profile: mockProfile,
+                      onSwipeRight: () {
+                        AppLogger.info('🔵 MOCK: Swiped right on ${mockProfile['name']}');
+                        // No action for mocked profiles
+                      },
+                      onSwipeLeft: () {
+                        AppLogger.info('🔵 MOCK: Swiped left on ${mockProfile['name']}');
+                        // No action for mocked profiles
+                      },
+                      onTap: () {
+                        AppLogger.info('🔵 MOCK: Tapped on ${mockProfile['name']}');
+                        // No navigation for mocked profiles
+                      },
                     );
-                  },
-                  onSwipeLeft: () {
-                    context.read<RecommendedProfilesBloc>().add(
-                      DislikeProfile(profile.id),
-                    );
-                  },
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ProfileViewPage(userId: profile.id),
-                      ),
-                    );
-                  },
-                );
-              },
+                  }
+                  
+                  // Real profiles (offset by mocked profiles count)
+                  final realIndex = index - mockedProfiles.length;
+                  if (realIndex < 0 || realIndex >= state.profiles.length) {
+                    // This shouldn't happen, but return empty widget as fallback
+                    AppLogger.warning('🔵 WARNING: Invalid realIndex $realIndex for profiles list length ${state.profiles.length}');
+                    return const SizedBox.shrink();
+                  }
+                  final profile = state.profiles[realIndex];
+                  _maybePrefetch(state, realIndex);
+                  AppLogger.info('🔵 DEBUG: Rendering profile ${realIndex + 1}/${state.profiles.length}: ID=${profile.id}, Name=${profile.name}, Distance=${profile.distance}');
+                  return ProfileCard(
+                    key: ValueKey(profile.id), // Add unique key based on profile ID
+                    profile: {
+                      'id': profile.id,
+                      'name': profile.name,
+                      'age': profile.age,
+                      'sex': profile.sex,
+                      'distance': profile.distance,
+                      'bio': profile.bio,
+                      'interests': profile.interests,
+                      'profilePicture': profile.profilePic,
+                      'hometown': profile.hometown,
+                      'objectives': profile.objectives,
+                      'commonInterests': profile.commonInterests,
+                      'commonObjectives': profile.commonObjectives,
+                    },
+                    onSwipeRight: () {
+                      context.read<RecommendedProfilesBloc>().add(
+                        LikeProfile(profile.id),
+                      );
+                    },
+                    onSwipeLeft: () {
+                      context.read<RecommendedProfilesBloc>().add(
+                        DislikeProfile(profile.id),
+                      );
+                    },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProfileViewPage(userId: profile.id),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             );
           }
