@@ -28,6 +28,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'dart:io';
@@ -653,20 +654,20 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _currentScamAlert != null 
               ? ScamAlertService().getAlertTitle(_currentScamAlert!)
               : 'Safety Information',
-          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
         ),
         content: Text(
           _currentScamAlert != null 
               ? ScamAlertService().getAlertMessage(_currentScamAlert!)
               : 'Learn more about staying safe online.',
-          style: const TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text(
               'Got it',
-              style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+              style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
             ),
           ),
         ],
@@ -877,7 +878,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             content: Text(
               userMessage,
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white85,
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w500,
               ),
@@ -1792,7 +1793,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Nunito',
-                      color: Colors.white,
+                      color: AppColors.white85,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -1855,11 +1856,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.photo_library, color: Colors.white, size: 20),
+                              const Icon(Icons.photo_library, color: AppColors.white85, size: 20),
                               const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'Gallery',
-                                style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -1913,11 +1914,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.camera_alt, color: Colors.white, size: 20),
+                              const Icon(Icons.camera_alt, color: AppColors.white85, size: 20),
                               const SizedBox(width: 8),
-                              const Text(
+                              Text(
                                 'Camera',
-                                style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                                style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -2325,6 +2326,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   void _showOptionsMenu() {
     AppLogger.info('🔵 Opening options menu');
+    final size = MediaQuery.of(context).size;
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1d335f),
@@ -2337,8 +2339,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.photo, color: Colors.white),
-                title: const Text('Image', style: TextStyle(color: Colors.white)),
+                leading: const Icon(Icons.photo, color: AppColors.white85),
+                title: Text('Image', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context))),
                 onTap: () {
                   AppLogger.info('🔵 Image option tapped');
                   Navigator.pop(context);
@@ -2346,8 +2348,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.gif_box, color: Colors.white),
-              title: const Text('GIF', style: TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.gif_box, color: AppColors.white85),
+              title: Text('GIF', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context))),
               onTap: () {
                 AppLogger.info('🔵 GIF option tapped');
                 Navigator.pop(context);
@@ -2355,8 +2357,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               },
             ),
             ListTile(
-              leading: const Icon(Icons.emoji_emotions, color: Colors.white),
-              title: const Text('Sticker', style: TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.emoji_emotions, color: AppColors.white85),
+              title: Text('Sticker', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context))),
               onTap: () {
                 AppLogger.info('🔵 Sticker option tapped');
                 Navigator.pop(context);
@@ -2364,8 +2366,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               },
             ),
             ListTile(
-              leading: const Icon(Icons.mic, color: Colors.white),
-              title: const Text('Voice Message', style: TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.mic, color: AppColors.white85),
+              title: Text('Voice Message', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context))),
               onTap: () {
                 AppLogger.info('🔵 Voice Message option tapped');
                 Navigator.pop(context);
@@ -2576,7 +2578,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.refresh, size: 40, color: Colors.white),
+                                  const Icon(Icons.refresh, size: 40, color: AppColors.white85),
                                   const SizedBox(height: 16),
                                   ElevatedButton(
                                     onPressed: () async {
@@ -2606,7 +2608,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           }
                           
                           return const Center(
-                            child: Icon(Icons.error_outline, size: 40, color: Colors.white),
+                            child: Icon(Icons.error_outline, size: 40, color: AppColors.white85),
                           );
                         },
                       ),
@@ -2629,11 +2631,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      const Icon(Icons.timer, color: Colors.white, size: 16),
+                                      const Icon(Icons.timer, color: AppColors.white85, size: 16),
                                       const SizedBox(width: 4),
                                       Text(
                                         '$time s',
-                                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                                        style: TextStyle(color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context)),
                                       ),
                                     ],
                                   ),
@@ -2649,11 +2651,11 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.timer, color: Colors.white, size: 16),
+                                  const Icon(Icons.timer, color: AppColors.white85, size: 16),
                                   const SizedBox(width: 4),
                                   Text(
                                     '${message!.metadata?.disappearingTime ?? 5}s',
-                                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                                    style: TextStyle(color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context)),
                                   ),
                                 ],
                               ),
@@ -2663,7 +2665,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     top: MediaQuery.of(context).padding.top + 16,
                     left: 16,
                     child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white),
+                      icon: const Icon(Icons.close, color: AppColors.white85),
                       onPressed: () {
                         _currentlyOpenImageId = null; // Reset when closing
                                           Navigator.of(context).pop();
@@ -2712,7 +2714,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.white85),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: GestureDetector(
@@ -2735,7 +2737,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     Text(
                       widget.participantName,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white85,
                         fontSize: AppTextStyles.getSubtitleFontSize(context),
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Nunito',
@@ -2757,17 +2759,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.call, color: Colors.white),
+            icon: const Icon(Icons.call, color: AppColors.white85),
             onPressed: () => _startCall(true), // Audio call
             tooltip: 'Audio Call',
           ),
           IconButton(
-            icon: const Icon(Icons.videocam, color: Colors.white),
+            icon: const Icon(Icons.videocam, color: AppColors.white85),
             onPressed: () => _startCall(false), // Video call
             tooltip: 'Video Call',
           ),
           IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.white),
+            icon: const Icon(Icons.more_vert, color: AppColors.white85),
             onPressed: _toggleMenu,
           ),
         ],
@@ -2795,10 +2797,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
+                            color: AppColors.white85.withOpacity(0.1),
                             border: Border(
                               bottom: BorderSide(
-                                color: Colors.white.withOpacity(0.2),
+                                color: AppColors.white85.withOpacity(0.2),
                                 width: 0.5,
                               ),
                             ),
@@ -3049,7 +3051,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                         child: Padding(
                                           padding: EdgeInsets.all(8.0),
                                           child: CircularProgressIndicator(
-                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                                           ),
                                         ),
                                       );
@@ -3188,7 +3190,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               color: const Color(0xFF1d335f).withOpacity(0.8),
                               child: const Center(
                                 child: CircularProgressIndicator(
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                                 ),
                               ),
                             );
@@ -3266,10 +3268,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               margin: const EdgeInsets.only(bottom: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: AppColors.white85.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppColors.white85.withOpacity(0.2),
                   width: 0.5,
                 ),
               ),
@@ -3280,7 +3282,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85.withOpacity(0.8)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -3288,7 +3290,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     child: Text(
                       _uploadStatus,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white85,
                         fontSize: 14,
                         fontFamily: 'Nunito',
                       ),
@@ -3304,10 +3306,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               margin: const EdgeInsets.only(bottom: 4),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: AppColors.white85.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppColors.white85.withOpacity(0.2),
                   width: 0.5,
                 ),
               ),
@@ -3318,7 +3320,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     height: 16,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withOpacity(0.8)),
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85.withOpacity(0.8)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -3326,7 +3328,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     child: Text(
                       _voiceUploadStatus,
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white85,
                         fontSize: 14,
                         fontFamily: 'Nunito',
                       ),
@@ -3377,10 +3379,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: AppColors.white85.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: Colors.white.withOpacity(0.2),
+                  color: AppColors.white85.withOpacity(0.2),
                   width: 0.5,
                 ),
               ),
@@ -3396,7 +3398,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         padding: const EdgeInsets.all(6),
                         child: Icon(
                           Icons.add, 
-                          color: Colors.white.withOpacity(0.8),
+                          color: AppColors.white85.withOpacity(0.8),
                           size: 20,
                         ),
                       ),
@@ -3432,7 +3434,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           fontSize: AppTextStyles.getBodyFontSize(context),
-                          color: Colors.white,
+                          color: AppColors.white85,
                         ),
                         maxLines: 3, // Limit to 3 lines - will scroll internally after that
                         minLines: 1, // Start with single line
@@ -3496,7 +3498,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         padding: const EdgeInsets.all(6),
                         child: Icon(
                           Icons.send, 
-                          color: Colors.white.withOpacity(0.8),
+                          color: AppColors.white85.withOpacity(0.8),
                           size: 20,
                         ),
                       ),
@@ -3569,13 +3571,14 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                         Text(
                           'Chat Options',
                           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Colors.white,
+                            color: AppColors.white85,
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w600,
+                            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                           ),
                         ),
                         IconButton(
-                          icon: const Icon(Icons.close, color: Colors.white),
+                          icon: const Icon(Icons.close, color: AppColors.white85),
                           onPressed: _toggleMenu,
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
@@ -3636,10 +3639,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   // ),
                   const Divider(color: Colors.white24),
                   ListTile(
-                    leading: const Icon(Icons.block, color: Colors.white),
-                    title: const Text(
+                    leading: const Icon(Icons.block, color: AppColors.white85),
+                    title: Text(
                       'Block User',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                      style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                     ),
                     onTap: () {
                       // Track block clicked
@@ -3651,10 +3654,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.report, color: Colors.white),
-                    title: const Text(
+                    leading: const Icon(Icons.report, color: AppColors.white85),
+                    title: Text(
                       'Report',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                      style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                     ),
                     onTap: () {
                       // Track report clicked
@@ -3671,10 +3674,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.exit_to_app, color: Colors.white),
-                    title: const Text(
+                    leading: const Icon(Icons.exit_to_app, color: AppColors.white85),
+                    title: Text(
                       'Leave Conversation',
-                      style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                      style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                     ),
                     onTap: () {
                       context.read<ConversationBloc>().add(
@@ -4276,13 +4279,13 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.15),
+            color: AppColors.white85.withOpacity(0.15),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
             gameSession.gameType.displayName,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: AppColors.white85.withOpacity(0.9),
               fontSize: 8,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w600,
@@ -4295,7 +4298,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           child: Text(
             promptText,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.9),
+              color: AppColors.white85.withOpacity(0.9),
               fontSize: 9.6,
               fontFamily: 'Nunito',
             ),

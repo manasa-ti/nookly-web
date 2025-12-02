@@ -118,7 +118,7 @@ class _ReportPageState extends State<ReportPage> {
                     Text(
                       'Failed to load report reasons',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: AppColors.white85,
                         fontSize: (size.width * 0.045).clamp(14.0, 18.0),
                         fontWeight: FontWeight.w500,
                       ),

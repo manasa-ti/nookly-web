@@ -268,11 +268,11 @@ class _HomePageState extends State<HomePage> {
                     NavigationDestination(
                       icon: Padding(
                         padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
-                        child: SvgIcons.profileIcon(size: iconSize),
+                        child: SvgIcons.profileIcon(size: iconSize, color: AppColors.white85),
                       ),
                       selectedIcon: Padding(
                         padding: EdgeInsets.symmetric(vertical: isTablet ? 4.0 : screenHeight * 0.002),
-                        child: SvgIcons.profileIcon(size: iconSize),
+                        child: SvgIcons.profileIcon(size: iconSize, color: AppColors.white85),
                       ),
                       label: 'Profile',
                     ),

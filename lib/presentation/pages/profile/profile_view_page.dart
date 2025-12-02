@@ -236,14 +236,14 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           children: [
             const Icon(
               Icons.error_outline,
-              color: Colors.white,
+              color: AppColors.white85,
               size: 64,
             ),
             const SizedBox(height: 16),
             Text(
               'Failed to load profile',
               style: const TextStyle(
-                color: Colors.white,
+                color: AppColors.white85,
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Nunito',
@@ -284,7 +284,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
         child: Text(
           'Profile not found',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.white85,
             fontSize: 18,
             fontWeight: FontWeight.w600,
             fontFamily: 'Nunito',

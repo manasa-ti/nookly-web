@@ -11,6 +11,7 @@ import 'package:nookly/core/services/conversation_starter_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/presentation/widgets/contextual_tooltip.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class ConversationStarterWidget extends StatelessWidget {
   final String matchUserId;
@@ -464,7 +465,7 @@ class _ConversationStartersModal extends StatelessWidget {
         Text(
           message,
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.white85,
             fontSize: AppTextStyles.getSectionHeaderFontSize(context),
             fontFamily: 'Nunito',
             fontWeight: FontWeight.w500,

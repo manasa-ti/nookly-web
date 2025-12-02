@@ -24,6 +24,7 @@ import 'package:nookly/data/repositories/games_repository_impl.dart';
 import 'package:nookly/domain/entities/game_invite.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class ChatInboxPage extends StatefulWidget {
   const ChatInboxPage({super.key});
@@ -1126,7 +1127,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     if (_isLoadingCurrentUser) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
         ),
       );
     }
@@ -1154,7 +1155,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             if (state is InboxLoading || state is InboxInitial) {
               return const Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                 ),
               );
             }
@@ -1182,9 +1183,9 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                     children: [
                       Icon(Icons.chat_bubble_outline, size: 80, color: Colors.grey[400]),
                       const SizedBox(height: 16),
-                      Text('No conversations yet', style: TextStyle(fontSize: AppTextStyles.getLargeTitleFontSize(context), fontWeight: FontWeight.w500, color: Colors.white, fontFamily: 'Nunito')),
+                      Text('No conversations yet', style: TextStyle(fontSize: AppTextStyles.getLargeTitleFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85, fontFamily: 'Nunito')),
                       const SizedBox(height: 8),
-                      Text('When you match with someone, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: Colors.white.withOpacity(0.7))),
+                      Text('When you match with someone, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: AppColors.white85.withOpacity(0.7))),
                     ],
                   ),
                 );
@@ -1220,7 +1221,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                         title: Text(
                           conversation.participantName,
                           style: TextStyle(
-                            color: Colors.white,
+                            color: AppColors.white85,
                             fontWeight: hasUnread ? FontWeight.w700 : FontWeight.normal,
                             fontSize: isTablet ? 18.0 : AppTextStyles.getSubtitleFontSize(context),
                           ),
@@ -1240,7 +1241,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: hasUnread ? Colors.white : Colors.grey[400],
+                                      color: hasUnread ? AppColors.white85 : Colors.grey[400],
                                       fontSize: isTablet ? 16.0 : AppTextStyles.getBodyFontSize(context),
                                       fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
                                     ),
@@ -1266,7 +1267,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                             Text(
                               _formatTimestamp(conversation.lastMessageTime),
                               style: TextStyle(
-                                color: hasUnread ? Colors.white : Colors.grey[400],
+                                color: hasUnread ? AppColors.white85 : Colors.grey[400],
                                 fontSize: isTablet ? 14.0 : AppTextStyles.getSmallCaptionFontSize(context),
                                 fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
                                 fontFamily: 'Nunito',
@@ -1280,7 +1281,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                           Divider(
                             height: 1,
                             thickness: 0.5,
-                            color: Colors.white.withOpacity(0.1),
+                            color: AppColors.white85.withOpacity(0.1),
                             indent: 80, // Align with avatar
                           ),
                       ],
