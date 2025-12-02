@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 // Custom compact chip for profile card
 class ProfileInterestChip extends StatelessWidget {
@@ -175,7 +176,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                     fontFamily: 'Nunito',
                                     fontSize: (size.width * 0.045).clamp(13.0, 17.0),
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    color: AppColors.white85,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -224,7 +225,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                           fontFamily: 'Nunito',
                           fontSize: (size.width * 0.035).clamp(12.0, 16.0),
                           height: 1.5,
-                          color: Colors.white,
+                          color: AppColors.white85,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,

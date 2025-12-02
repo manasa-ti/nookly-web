@@ -214,16 +214,16 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.dark(
-              primary: Colors.white, // Selection circle is white
+              primary: AppColors.white85, // Selection circle is white
               onPrimary: Color(0xFF4C5C8A), // Selected day number is accent blue
               surface: Color(0xFF1d335f),
-              onSurface: Colors.white,
+              onSurface: AppColors.white85,
               secondary: Color(0xFF4C5C8A),
-              onSecondary: Colors.white,
+              onSecondary: AppColors.white85,
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: Colors.white, // OK/Cancel button text is white
+                foregroundColor: AppColors.white85, // OK/Cancel button text is white
                 textStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600),
               ),
             ),
@@ -559,10 +559,10 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                 data: Theme.of(context).copyWith(
                   colorScheme: const ColorScheme.dark(
                     primary: Color(0xFF4C5C8A), // Accent color for completed steps
-                    onPrimary: Colors.white,
+                    onPrimary: AppColors.white85,
                     surface: Color(0xFF1d335f),
-                    onSurface: Colors.white,
-                    secondary: Colors.white, // Incomplete steps and lines are white
+                    onSurface: AppColors.white85,
+                    secondary: AppColors.white85, // Incomplete steps and lines are white
                     onSecondary: Color(0xFF4C5C8A),
                   ),
                 ),
@@ -585,7 +585,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                 ),
                                 child: Text(
                                   'Previous',
-                                  style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
+                                  style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
                                 ),
                               ),
                             ),
@@ -603,12 +603,12 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85)
                                       ),
                                     )
                                   : Text(
                                       _currentStep == 6 ? 'Save Profile' : 'Next',
-                                      style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
+                                      style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (MediaQuery.of(context).size.width * 0.045).clamp(16.0, 20.0), fontWeight: FontWeight.w700),
                                     ),
                             ),
                           ),
@@ -618,14 +618,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                   },
                   steps: [
                     Step(
-                      title: Text('Basic Info', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
+                      title: Text('Basic Info', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
                       content: Column(
                         children: [
                           Card(
                             color: const Color(0xFF1d335f),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
-                              title: const Text('Birthdate', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                              title: const Text('Birthdate', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w600)),
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -669,7 +669,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                               child: DropdownButtonFormField<String>(
                                 value: _selectedSex,
-                                style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                                style: const TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
                                 dropdownColor: const Color(0xFF1d335f),
                                 decoration: const InputDecoration(
                                   labelText: 'I am',
@@ -680,7 +680,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                 items: _sexOptions.map((String value) {
                                   return DropdownMenuItem<String>(
                                     value: value,
-                                    child: Text(value, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500)),
+                                    child: Text(value, style: const TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500)),
                                   );
                                 }).toList(),
                                 onChanged: (String? newValue) {
@@ -708,7 +708,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                               child: DropdownButtonFormField<String>(
                                 value: _selectedWishToFind,
-                                style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
+                                style: const TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
                                 dropdownColor: const Color(0xFF1d335f),
                                 decoration: const InputDecoration(
                                   labelText: 'I want to find',
@@ -719,7 +719,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                 items: _wishToFindOptions.map((String value) {
                                   return DropdownMenuItem<String>(
                                     value: value,
-                                    child: Text(value, style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500)),
+                                    child: Text(value, style: const TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500)),
                                   );
                                 }).toList(),
                                 onChanged: (String? newValue) {
@@ -747,13 +747,13 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 0,
                     ),
                     Step(
-                      title: Text('Location & Age', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
+                      title: Text('Location & Age', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
                       content: Column(
                         children: [
                           TextFormField(
                             controller: _hometownController,
-                            style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16),
-                            cursorColor: Colors.white,
+                            style: const TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: 16),
+                            cursorColor: AppColors.white85,
                             decoration: InputDecoration(
                               labelText: 'Hometown',
                               prefixIcon: const Icon(Icons.location_city, color: Color(0xFFD6D9E6)),
@@ -785,13 +785,13 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                             },
                           ),
                           const SizedBox(height: 24),
-                          const Text('Preferred Age Range', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+                          const Text('Preferred Age Range', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w500)),
                           SliderTheme(
                             data: SliderTheme.of(context).copyWith(
                               trackHeight: 3.0, // Reduced from default 4.0
-                              activeTrackColor: Colors.white,
+                              activeTrackColor: AppColors.white85,
                               inactiveTrackColor: const Color(0xFF4C5C8A),
-                              thumbColor: Colors.white,
+                              thumbColor: AppColors.white85,
                               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
                               overlayShape: const RoundSliderOverlayShape(overlayRadius: 16.0), // Reduced from default 24.0
                               rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 8.0), // Reduced from default 10.0
@@ -842,15 +842,15 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 1,
                     ),
                     Step(
-                      title: Text('Profile Details', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
+                      title: Text('Profile Details', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0), fontWeight: FontWeight.w600)),
                       content: Column(
                         children: [
                           TextFormField(
                             controller: _bioController,
                             maxLines: null,
                             minLines: 3,
-                            style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16),
-                            cursorColor: Colors.white,
+                            style: const TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: 16),
+                            cursorColor: AppColors.white85,
                             decoration: InputDecoration(
                               labelText: 'Bio',
                               hintText: 'Tell us about yourself',
@@ -914,14 +914,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                   children: [
                                     const Icon(
                                       Icons.lightbulb_outline,
-                                      color: Colors.white,
+                                      color: AppColors.white85,
                                       size: 16,
                                     ),
                                     const SizedBox(width: 6),
                                     const Text(
                                       'Bio Tips',
                                       style: TextStyle(
-                                        color: Colors.white,
+                                        color: AppColors.white85,
                                         fontFamily: 'Nunito',
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
@@ -962,7 +962,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          const Text('Interests', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500)),
+                          const Text('Interests', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w500)),
                           const SizedBox(height: 8),
                           InterestChips(
                             selectedInterests: _selectedInterests,
@@ -981,14 +981,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 2,
                     ),
                     Step(
-                      title: const Text('Objective', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: const Text('Objective', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w600)),
                       content: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('What are you looking for?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const Text('What are you looking for?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: AppColors.white85)),
                           const SizedBox(height: 8),
                           if (_availableObjectives.isEmpty)
-                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                            const Center(child: CircularProgressIndicator(color: AppColors.white85))
                           else
                             ObjectiveChips(
                               availableObjectives: _availableObjectives,
@@ -1007,14 +1007,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 3,
                     ),
                     Step(
-                      title: const Text('Personality Type', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: const Text('Personality Type', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w600)),
                       content: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('What describes your personality?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const Text('What describes your personality?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: AppColors.white85)),
                           const SizedBox(height: 8),
                           if (_availablePersonalityTypes.isEmpty)
-                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                            const Center(child: CircularProgressIndicator(color: AppColors.white85))
                           else
                             PersonalityTypeChips(
                               availablePersonalityTypes: _availablePersonalityTypes,
@@ -1030,14 +1030,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 4,
                     ),
                     Step(
-                      title: const Text('Physical Activeness', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: const Text('Physical Activeness', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w600)),
                       content: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('How would you describe your physical activity level?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const Text('How would you describe your physical activity level?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: AppColors.white85)),
                           const SizedBox(height: 8),
                           if (_availablePhysicalActiveness.isEmpty)
-                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                            const Center(child: CircularProgressIndicator(color: AppColors.white85))
                           else
                             PhysicalActivenessChips(
                               availablePhysicalActiveness: _availablePhysicalActiveness,
@@ -1053,14 +1053,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 5,
                     ),
                     Step(
-                      title: const Text('Availability', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                      title: const Text('Availability', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: 16, fontWeight: FontWeight.w600)),
                       content: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('When are you typically available?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+                          const Text('When are you typically available?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: AppColors.white85)),
                           const SizedBox(height: 8),
                           if (_availableAvailability.isEmpty)
-                            const Center(child: CircularProgressIndicator(color: Colors.white))
+                            const Center(child: CircularProgressIndicator(color: AppColors.white85))
                           else
                             AvailabilityChips(
                               availableAvailability: _availableAvailability,

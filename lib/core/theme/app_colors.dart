@@ -49,6 +49,9 @@ class AppColors {
   
   /// Muted text color for placeholders and disabled text
   static const Color onSurfaceMuted = Color(0xFF8FA3C8);
+  
+  /// White color with 85% opacity - less bright than Colors.white
+  static const Color white85 = Color(0xD9FFFFFF); // D9 = 217/255 ≈ 0.85 opacity
 
   // ===== INTERACTION COLORS =====
   

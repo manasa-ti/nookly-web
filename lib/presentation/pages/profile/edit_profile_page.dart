@@ -11,6 +11,7 @@ import 'package:nookly/presentation/widgets/physical_activeness_chips.dart';
 import 'package:nookly/presentation/widgets/availability_chips.dart';
 import 'package:nookly/core/services/content_moderation_service.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class EditProfilePage extends StatefulWidget {
   final User user;
@@ -449,12 +450,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getAppBarTitleFontSize(context), fontWeight: FontWeight.w500)),
+        title: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getAppBarTitleFontSize(context), fontWeight: FontWeight.w500)),
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85)))
           : SingleChildScrollView(
               padding: const EdgeInsets.all(12),
               child: Form(
@@ -496,7 +497,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         child: TextFormField(
                           controller: _nameController,
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                           decoration: InputDecoration(
                             labelText: 'Name',
                             labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -521,7 +522,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           controller: _bioController,
                           maxLines: null,
                           minLines: 3,
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
+                          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                           decoration: InputDecoration(
                             labelText: 'Bio',
                             hintText: 'Tell us about yourself',
@@ -576,14 +577,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             children: [
                               const Icon(
                                 Icons.lightbulb_outline,
-                                color: Colors.white,
+                                color: AppColors.white85,
                                 size: 16,
                               ),
                               const SizedBox(width: 6),
                               Text(
                                 'Bio Tips',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppColors.white85,
                                   fontFamily: 'Nunito',
                                   fontSize: AppTextStyles.getCaptionFontSize(context),
                                   fontWeight: FontWeight.w600,
@@ -626,7 +627,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 16),
                     Text(
                       'Interests',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -638,7 +639,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           label: Text(
                             interest,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+                              color: isSelected ? AppColors.white85 : const Color(0xFFD6D9E6),
                               fontFamily: 'Nunito',
                               fontSize: AppTextStyles.getChipFontSize(context),
                               fontWeight: FontWeight.w500,
@@ -647,7 +648,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           selected: isSelected,
                           selectedColor: const Color(0xFF35548b),
                           backgroundColor: const Color(0xFF283d67),
-                          checkmarkColor: Colors.white,
+                          checkmarkColor: AppColors.white85,
                           side: BorderSide(
                             color: isSelected ? const Color(0xFF35548b) : const Color(0xFF8FA3C8),
                             width: 1,
@@ -670,7 +671,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 16),
                     Text(
                       'Objectives',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85),
                     ),
                     const SizedBox(height: 6),
                     Wrap(
@@ -682,7 +683,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           label: Text(
                             objective,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
+                              color: isSelected ? AppColors.white85 : const Color(0xFFD6D9E6),
                               fontFamily: 'Nunito',
                               fontSize: AppTextStyles.getChipFontSize(context),
                               fontWeight: FontWeight.w500,
@@ -691,7 +692,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                           selected: isSelected,
                           selectedColor: const Color(0xFF35548b),
                           backgroundColor: const Color(0xFF283d67),
-                          checkmarkColor: Colors.white,
+                          checkmarkColor: AppColors.white85,
                           side: BorderSide(
                             color: isSelected ? const Color(0xFF35548b) : const Color(0xFF8FA3C8),
                             width: 1,
@@ -748,14 +749,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 16),
                     Text(
                       'Preferred Age Range',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85),
                     ),
                                           SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 2.0, // Thinner track for more subtle appearance
-                          activeTrackColor: Colors.white,
+                          activeTrackColor: AppColors.white85,
                           inactiveTrackColor: const Color(0xFF4C5C8A),
-                          thumbColor: Colors.white,
+                          thumbColor: AppColors.white85,
                           thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), // Smaller thumb to match thinner track
                           overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), // Smaller overlay
                           rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 6.0), // Smaller range thumb
@@ -789,7 +790,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     const SizedBox(height: 16),
                     Text(
                       'Preferred Distance Radius',
-                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: Colors.white),
+                      style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85),
                     ),
                     DistanceRadiusSlider(
                       value: _distanceRadius,
@@ -814,12 +815,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               elevation: 1,
-                              foregroundColor: Colors.white,
-                              disabledForegroundColor: Colors.white.withOpacity(0.7),
+                              foregroundColor: AppColors.white85,
+                              disabledForegroundColor: AppColors.white85.withOpacity(0.7),
                             ),
                             child: Text(
                               'Save Changes',
-                              style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500),
+                              style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500),
                             ),
                           );
                         },

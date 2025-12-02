@@ -12,6 +12,7 @@ import 'package:nookly/presentation/pages/profile/profile_hub_page.dart';
 import 'package:nookly/presentation/pages/profile/profile_page.dart';
 import 'package:nookly/presentation/widgets/svg_icons.dart';
 import 'package:nookly/core/services/filter_preferences_service.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'dart:ui';
 
 class HomePage extends StatefulWidget {
@@ -148,7 +149,7 @@ class _HomePageState extends State<HomePage> {
                               style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                                     fontFamily: 'Nunito',
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                    color: AppColors.white85,
                                     letterSpacing: 1.2,
                                     fontSize: titleFontSize,
                                   ),
@@ -279,7 +280,7 @@ class _HomePageState extends State<HomePage> {
                   labelTextStyle: MaterialStatePropertyAll(
                     TextStyle(
                       fontFamily: 'Nunito',
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontWeight: FontWeight.w600,
                       fontSize: labelFontSize,
                       height: 1.2,

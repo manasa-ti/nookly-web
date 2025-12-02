@@ -10,6 +10,7 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:nookly/core/theme/app_text_styles.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class ProfileFiltersPage extends StatefulWidget {
   const ProfileFiltersPage({super.key});
@@ -239,16 +240,16 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: Text('Profile Filters', style: TextStyle(fontSize: AppTextStyles.getAppBarTitleFontSize(context), fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+        title: Text('Profile Filters', style: TextStyle(fontSize: AppTextStyles.getAppBarTitleFontSize(context), fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: AppColors.white85)),
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: const Icon(Icons.arrow_back, color: AppColors.white85),
           onPressed: () => Navigator.pop(context, false),
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.white85))
           : _errorMessage != null
               ? Center(
                   child: Padding(
@@ -282,7 +283,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           style: TextStyle(
                             fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: AppColors.white85,
                             fontFamily: 'Nunito',
                           ),
                         ),
@@ -290,9 +291,9 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         SliderTheme(
                           data: SliderTheme.of(context).copyWith(
                             trackHeight: 2.0, // Thinner track for more subtle appearance
-                            activeTrackColor: Colors.white,
+                            activeTrackColor: AppColors.white85,
                             inactiveTrackColor: const Color(0xFF4C5C8A),
-                            thumbColor: Colors.white,
+                            thumbColor: AppColors.white85,
                             thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0), // Smaller thumb to match thinner track
                             overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0), // Smaller overlay
                             rangeThumbShape: const RoundRangeSliderThumbShape(enabledThumbRadius: 6.0), // Smaller range thumb
@@ -324,7 +325,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         // Distance Radius
                         Text(
                           'Preferred Distance Radius',
-                          style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: Colors.white),
+                          style: TextStyle(fontFamily: 'Nunito', fontSize: (size.width * 0.04).clamp(14.0, 16.0), fontWeight: FontWeight.w500, color: AppColors.white85),
                         ),
                         const SizedBox(height: 6),
                         DistanceRadiusSlider(
@@ -339,7 +340,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           style: TextStyle(
                             fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: AppColors.white85,
                             fontFamily: 'Nunito',
                           ),
                         ),
@@ -357,7 +358,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                           style: TextStyle(
                             fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: AppColors.white85,
                             fontFamily: 'Nunito',
                           ),
                         ),
@@ -393,7 +394,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               backgroundColor: const Color(0xFFf4656f),
-                              foregroundColor: Colors.white,
+                              foregroundColor: AppColors.white85,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             ),
                             child: _isLoading
@@ -402,7 +403,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                                     width: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                                     ),
                                   )
                                 : Text(

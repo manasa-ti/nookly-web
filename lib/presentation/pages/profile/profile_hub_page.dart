@@ -13,6 +13,7 @@ import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -188,7 +189,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
           title: Text(
             'About Nookly',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.white85,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w600,
               fontSize: AppTextStyles.getDialogTitleFontSize(context),
@@ -219,7 +220,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                 Text(
                   'Nookly is a comprehensive dating application designed to help you find meaningful connections.',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.white85,
                     fontFamily: 'Nunito',
                     fontSize: AppTextStyles.getBodyFontSize(context),
                   ),
@@ -279,7 +280,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
               child: Text(
                 'Close',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: AppColors.white85,
                   fontFamily: 'Nunito',
                   fontSize: AppTextStyles.getBodyFontSize(context),
                 ),
@@ -312,7 +313,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
           content: Text(
             'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.white85,
               fontFamily: 'Nunito',
               fontSize: AppTextStyles.getBodyFontSize(context),
             ),
@@ -385,7 +386,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   Text(
                     'To confirm account deletion, please:',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.white85,
                       fontFamily: 'Nunito',
                       fontSize: AppTextStyles.getBodyFontSize(context),
                     ),
@@ -394,7 +395,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   TextField(
                     controller: passwordController,
                     obscureText: true,
-                    style: TextStyle(color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context)),
+                    style: TextStyle(color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context)),
                     decoration: InputDecoration(
                       labelText: 'Password',
                       labelStyle: TextStyle(color: Colors.white70, fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -410,7 +411,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: confirmationController,
-                    style: TextStyle(color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context)),
+                    style: TextStyle(color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context)),
                     decoration: InputDecoration(
                       labelText: 'Type "DELETE" to confirm',
                       labelStyle: TextStyle(color: Colors.white70, fontSize: AppTextStyles.getLabelFontSize(context)),
@@ -510,17 +511,17 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       color: const Color(0xFF1d335f),
       child: SafeArea(
         child: _isLoading
-            ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+            ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85)))
             : _user == null
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, color: Colors.white, size: 48),
+                        const Icon(Icons.error_outline, color: AppColors.white85, size: 48),
                         const SizedBox(height: 16),
                         const Text(
                           'Profile Setup Required',
-                          style: TextStyle(color: Colors.white, fontSize: 18),
+                          style: TextStyle(color: AppColors.white85, fontSize: 18),
                         ),
                         const SizedBox(height: 8),
                         const Text(
@@ -545,7 +546,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                           ),
                           child: const Text(
                             'Complete Profile',
-                            style: TextStyle(color: Colors.white, fontFamily: 'Nunito'),
+                            style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -577,7 +578,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                             fontFamily: 'Nunito',
                             fontSize: (size.width * 0.05).clamp(16.0, 24.0),
                             fontWeight: FontWeight.w500,
-                            color: Colors.white,
+                            color: AppColors.white85,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -608,7 +609,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                               _loadUser();
                             }
                           },
-                          child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
+                          child: Text('Edit Profile', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500)),
                         ),
                       ],
                     ),
@@ -703,20 +704,20 @@ class _SettingsTile extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
-            Icon(icon, color: Colors.white),
+            Icon(icon, color: AppColors.white85),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 title, 
                 style: TextStyle(
                   fontFamily: 'Nunito', 
-                  color: Colors.white, 
+                  color: AppColors.white85, 
                   fontWeight: FontWeight.w500, 
                   fontSize: (size.width * 0.04).clamp(13.0, 16.0)
                 )
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.white),
+            const Icon(Icons.chevron_right, color: AppColors.white85),
           ],
         ),
       ),
