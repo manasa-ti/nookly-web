@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
@@ -198,7 +199,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
         title: const Text(
           'Profile',
@@ -208,7 +209,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -223,7 +224,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
         ),
       );
     }
@@ -263,7 +264,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
               onPressed: _loadUserProfile,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                foregroundColor: const Color(0xFF2e4781),
+                foregroundColor: const Color(0xFF1d335f),
               ),
               child: const Text(
                 'Retry',
@@ -611,7 +612,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       margin: const EdgeInsets.only(right: 6, bottom: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF384E85),
+        color: const Color(0xFF1d335f),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: const Color(0xFF8FA3C8),

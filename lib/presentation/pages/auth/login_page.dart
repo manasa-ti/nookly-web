@@ -10,6 +10,7 @@ import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/sign_up_page.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
 import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -62,7 +63,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) async {
           if (state is Authenticated) {
@@ -143,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                     'Welcome to nookly',
                     style: TextStyle(
                       fontFamily: 'Nunito',
-                      fontSize: (size.width * 0.05).clamp(16.0, 20.0),
+                      fontSize: AppTextStyles.getLargeTitleFontSize(context),
                       fontWeight: FontWeight.w500,
                       color: Colors.white,
                     ),
@@ -151,17 +152,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 32), // Match sign up page spacing
                   Card(
-                    color: const Color(0xFF384E85),
+                    color: const Color(0xFF1d335f),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -187,17 +188,17 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: const Color(0xFF384E85),
+                    color: const Color(0xFF1d335f),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -263,7 +264,7 @@ class _LoginPageState extends State<LoginPage> {
                           )
                         : Text(
                             'Sign In',
-                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
+                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                           ),
                   ),
                   // Temporarily hidden Google Sign-In Button
@@ -358,7 +359,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                         child: Text(
                           'Sign Up',
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
+                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],

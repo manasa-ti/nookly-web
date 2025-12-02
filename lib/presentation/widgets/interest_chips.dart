@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class InterestChips extends StatefulWidget {
   final List<String> selectedInterests;
@@ -59,7 +60,7 @@ class _InterestChipsState extends State<InterestChips> {
             style: TextStyle(
               color: isSelected ? Colors.white : const Color(0xFFD6D9E6),
               fontFamily: 'Nunito',
-              fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
+              fontSize: AppTextStyles.getChipFontSize(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -74,11 +75,11 @@ class _InterestChipsState extends State<InterestChips> {
             }
             widget.onInterestsChanged(updatedInterests);
           },
-          selectedColor: const Color(0xFF4C5C8A),
-          backgroundColor: const Color(0xFF35548b),
+          selectedColor: const Color(0xFF35548b),
+          backgroundColor: const Color(0xFF283d67),
           checkmarkColor: Colors.white,
           side: BorderSide(
-            color: isSelected ? const Color(0xFF4C5C8A) : const Color(0xFF8FA3C8),
+            color: isSelected ? const Color(0xFF35548b) : const Color(0xFF8FA3C8),
             width: 1,
           ),
           shape: RoundedRectangleBorder(

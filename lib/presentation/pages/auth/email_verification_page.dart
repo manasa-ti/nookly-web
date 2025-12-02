@@ -6,6 +6,7 @@ import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/presentation/widgets/otp_input_widget.dart';
 import 'package:nookly/presentation/widgets/resend_timer_widget.dart';
 import 'package:nookly/presentation/pages/home/home_page.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 
 class EmailVerificationPage extends StatefulWidget {
@@ -52,9 +53,9 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         title: const Text('Verify Your Email', style: TextStyle(color: Colors.white, fontFamily: 'Nunito')),
         centerTitle: true,
@@ -110,7 +111,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                   style: TextStyle(
                     color: Colors.white,
                     fontFamily: 'Nunito',
-                    fontSize: (size.width * 0.04).clamp(14.0, 18.0),
+                    fontSize: AppTextStyles.getSubtitleFontSize(context),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -121,7 +122,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                     color: Colors.white,
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.bold,
-                    fontSize: (size.width * 0.045).clamp(15.0, 20.0),
+                    fontSize: AppTextStyles.getTitleFontSize(context),
                   ),
                   textAlign: TextAlign.center,
                 ),

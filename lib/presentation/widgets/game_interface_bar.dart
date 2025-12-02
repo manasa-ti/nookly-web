@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/presentation/bloc/games/games_bloc.dart';
 import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/presentation/bloc/games/games_state.dart';
@@ -112,7 +113,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                 'Get Close',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.95),
-                  fontSize: 13,
+                  fontSize: AppTextStyles.getChipFontSize(context),
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
                 ),
@@ -281,7 +282,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                           'Heat Up',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.7),
-                            fontSize: 13,
+                            fontSize: AppTextStyles.getChipFontSize(context),
                             height: 1.1,
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w600,
@@ -293,13 +294,13 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                       ],
                     ),
                     const SizedBox(height: 2),
-                    const Padding(
-                      padding: EdgeInsets.only(left: 12),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
                       child: Text(
                         'Coming soon',
                         style: TextStyle(
                           color: Colors.orange,
-                          fontSize: 9,
+                          fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                           height: 1.0,
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w500,
@@ -343,7 +344,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
             'User is offline - Only messaging available',
             style: TextStyle(
               color: Colors.grey.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: AppTextStyles.getBodyFontSize(context),
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w500,
             ),
@@ -377,7 +378,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
               'Game invite from this chat',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
-                fontSize: 14,
+                fontSize: AppTextStyles.getBodyFontSize(context),
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w500,
               ),
@@ -395,11 +396,11 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                     color: Colors.green,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Accept',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: AppTextStyles.getCaptionFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -414,11 +415,11 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                     color: Colors.red,
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Decline',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 12,
+                      fontSize: AppTextStyles.getCaptionFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -455,7 +456,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
               'Invite sent for ${state.gameType.replaceAll('_', ' ')}...',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),
-                fontSize: 14,
+                fontSize: AppTextStyles.getBodyFontSize(context),
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w500,
               ),
@@ -503,7 +504,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                 'Choose a Game',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
+                  fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
                 ),
@@ -594,7 +595,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                   color: isComingSoon 
                       ? Colors.white.withOpacity(0.5)
                       : Colors.white,
-                  fontSize: 13,
+                  fontSize: AppTextStyles.getChipFontSize(context),
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
                 ),
@@ -611,7 +612,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                   color: isComingSoon 
                       ? Colors.white.withOpacity(0.4)
                       : Colors.white.withOpacity(0.7),
-                  fontSize: 10,
+                  fontSize: AppTextStyles.getLabelFontSize(context),
                   fontFamily: 'Nunito',
                 ),
                 maxLines: 2,
@@ -635,7 +636,7 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
                   'Coming Soon',
                   style: TextStyle(
                     color: Colors.orange.withOpacity(0.8),
-                    fontSize: 9,
+                    fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w500,
                   ),

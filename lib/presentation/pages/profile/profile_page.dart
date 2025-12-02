@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:get_it/get_it.dart';
@@ -127,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     fontFamily: 'Nunito',
                                     fontSize: (size.width * 0.05).clamp(16.0, 20.0),
                                     fontWeight: FontWeight.w500,
-                                    color: Colors.white,
+                                    color: Colors.white
                                   ),
                                 ),
                                 const SizedBox(height: 6),

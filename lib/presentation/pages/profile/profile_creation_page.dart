@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/profile/profile_bloc.dart';
 import 'package:nookly/presentation/bloc/profile/profile_event.dart';
@@ -215,7 +216,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
             colorScheme: const ColorScheme.dark(
               primary: Colors.white, // Selection circle is white
               onPrimary: Color(0xFF4C5C8A), // Selected day number is accent blue
-              surface: Color(0xFF384E85),
+              surface: Color(0xFF1d335f),
               onSurface: Colors.white,
               secondary: Color(0xFF4C5C8A),
               onSecondary: Colors.white,
@@ -466,7 +467,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
       });
     }
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
         title: Text(
           'Create Profile',
@@ -474,10 +475,10 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
             fontFamily: 'Nunito',
             fontSize: (MediaQuery.of(context).size.width * 0.055).clamp(18.0, 24.0),
             fontWeight: FontWeight.w700,
-            color: Colors.white,
+            color: Colors.white
           ),
         ),
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
       ),
       body: Column(
@@ -559,7 +560,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                   colorScheme: const ColorScheme.dark(
                     primary: Color(0xFF4C5C8A), // Accent color for completed steps
                     onPrimary: Colors.white,
-                    surface: Color(0xFF384E85),
+                    surface: Color(0xFF1d335f),
                     onSurface: Colors.white,
                     secondary: Colors.white, // Incomplete steps and lines are white
                     onSecondary: Color(0xFF4C5C8A),
@@ -579,7 +580,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               child: ElevatedButton(
                                 onPressed: isLoading ? null : details.onStepCancel,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF384E85),
+                                  backgroundColor: const Color(0xFF1d335f),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                 ),
                                 child: Text(
@@ -602,7 +603,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                                       width: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
                                       ),
                                     )
                                   : Text(
@@ -621,7 +622,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       content: Column(
                         children: [
                           Card(
-                            color: const Color(0xFF384E85),
+                            color: const Color(0xFF1d335f),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: ListTile(
                               title: const Text('Birthdate', style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
@@ -662,14 +663,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                           ),
                           const SizedBox(height: 16),
                           Card(
-                            color: const Color(0xFF384E85),
+                            color: const Color(0xFF1d335f),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                               child: DropdownButtonFormField<String>(
                                 value: _selectedSex,
                                 style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
-                                dropdownColor: const Color(0xFF384E85),
+                                dropdownColor: const Color(0xFF1d335f),
                                 decoration: const InputDecoration(
                                   labelText: 'I am',
                                   labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
@@ -701,14 +702,14 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                           ),
                           const SizedBox(height: 4), // Reduce space after gender
                           Card(
-                            color: const Color(0xFF384E85),
+                            color: const Color(0xFF1d335f),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4), // Reduce vertical padding
                               child: DropdownButtonFormField<String>(
                                 value: _selectedWishToFind,
                                 style: const TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),
-                                dropdownColor: const Color(0xFF384E85),
+                                dropdownColor: const Color(0xFF1d335f),
                                 decoration: const InputDecoration(
                                   labelText: 'I want to find',
                                   labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: 16, fontWeight: FontWeight.w500),

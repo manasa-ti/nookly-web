@@ -1,5 +1,6 @@
 import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 
 class GameBoardWidget extends StatelessWidget {
@@ -46,13 +47,13 @@ class GameBoardWidget extends StatelessWidget {
                 gameSession.gameType.displayName,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
+                  fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
                 ),
               ),
               // Turn indicator badge (small chip style)
-              _buildTurnIndicatorBadge(),
+              _buildTurnIndicatorBadge(context),
               // Close button
               GestureDetector(
                 onTap: () => onGameAction('end_game'),
@@ -71,26 +72,79 @@ class GameBoardWidget extends StatelessWidget {
           if (gameSession.gameType == GameType.truthOrThrill) ...[
             if (_isGamePending()) ...[
               // Show game description when pending
-              _buildGameDescription(),
+              _buildGameDescription(context),
             ] else ...[
               // Show Truth/Thrill buttons only after game starts and only for current turn user
-              _buildTruthOrThrillContent(),
+              _buildTruthOrThrillContent(context),
             ],
           ] else ...[
             if (_isGamePending()) ...[
               // Show game description when pending
-              _buildGameDescription(),
+              _buildGameDescription(context),
             ] else ...[
               // Show prompt content after game starts
-              _buildDirectPromptContent(),
+              _buildDirectPromptContent(context),
             ],
           ],
           
-          // Done button (only shown when it's user's turn and they've selected a choice)
-          // Placed below the prompt
-          if (!_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice()) ...[
+          // Truth/Thrill button and Done button on same line (only shown when it's user's turn and they've selected a choice)
+          if (!_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice() && gameSession.gameType == GameType.truthOrThrill && gameSession.selectedChoice != null) ...[
             const SizedBox(height: 4),
-            // Compact Done button - not full width
+            // Row with Truth/Thrill button on left and Done button on right
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Truth/Thrill button
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: gameSession.selectedChoice == 'truth' 
+                        ? Colors.blue.withOpacity(0.3)
+                        : Colors.purple.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: gameSession.selectedChoice == 'truth' 
+                          ? Colors.blue.withOpacity(0.6)
+                          : Colors.purple.withOpacity(0.6),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    gameSession.selectedChoice == 'truth' ? 'Truth' : 'Thrill',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: AppTextStyles.getCaptionFontSize(context),
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ),
+                // Done button
+                ElevatedButton(
+                  onPressed: () => onGameAction('next_turn'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.withOpacity(0.8),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    minimumSize: const Size(0, 0), // Allow button to be as small as content
+                  ),
+                  child: Text(
+                    'Done',
+                    style: TextStyle(
+                      fontSize: AppTextStyles.getCaptionFontSize(context),
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ] else if (!_isGamePending() && _isCurrentUserTurn() && _hasSelectedChoice()) ...[
+            // Done button only (for non-truth-or-thrill games)
+            const SizedBox(height: 4),
             Align(
               alignment: Alignment.centerRight,
               child: ElevatedButton(
@@ -104,10 +158,10 @@ class GameBoardWidget extends StatelessWidget {
                   ),
                   minimumSize: const Size(0, 0), // Allow button to be as small as content
                 ),
-                child: const Text(
+                child: Text(
                   'Done',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppTextStyles.getCaptionFontSize(context),
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Nunito',
                   ),
@@ -119,14 +173,14 @@ class GameBoardWidget extends StatelessWidget {
           // Show Send Invite button if game is pending (not started yet)
           if (_isGamePending()) ...[
             const SizedBox(height: 6),
-            _buildSendInviteButton(),
+            _buildSendInviteButton(context),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildTruthOrThrillContent() {
+  Widget _buildTruthOrThrillContent(BuildContext context) {
     // If turn is completed, show waiting message for the user who completed their turn
     // (This user is no longer the current turn user)
     if (isTurnCompleted && !_isCurrentUserTurn()) {
@@ -148,7 +202,7 @@ class GameBoardWidget extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.green.withOpacity(0.9),
-            fontSize: 14,
+            fontSize: AppTextStyles.getBodyFontSize(context),
             fontWeight: FontWeight.w500,
             fontFamily: 'Nunito',
           ),
@@ -181,12 +235,12 @@ class GameBoardWidget extends StatelessWidget {
                       width: 1,
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Truth',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: AppTextStyles.getBodyFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -207,12 +261,12 @@ class GameBoardWidget extends StatelessWidget {
                       width: 1,
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Thrill',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: AppTextStyles.getBodyFontSize(context),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -243,7 +297,7 @@ class GameBoardWidget extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.orange.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: AppTextStyles.getBodyFontSize(context),
               fontWeight: FontWeight.w500,
               fontFamily: 'Nunito',
             ),
@@ -253,36 +307,9 @@ class GameBoardWidget extends StatelessWidget {
     }
     
     // If a choice has been made (by any player), show the selected choice and prompt
+    // Note: If it's the user's turn, the Truth/Thrill button will be shown with Done button in main build method
     return Column(
       children: [
-        // Selected choice button (centered)
-        Container(
-          width: 120,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          decoration: BoxDecoration(
-            color: gameSession.selectedChoice == 'truth' 
-                ? Colors.blue.withOpacity(0.3)
-                : Colors.purple.withOpacity(0.3),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: gameSession.selectedChoice == 'truth' 
-                  ? Colors.blue.withOpacity(0.6)
-                  : Colors.purple.withOpacity(0.6),
-              width: 1,
-            ),
-          ),
-          child: Text(
-            gameSession.selectedChoice == 'truth' ? 'Truth' : 'Thrill',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        
         // Display the selected prompt
         Container(
           width: double.infinity,
@@ -295,16 +322,47 @@ class GameBoardWidget extends StatelessWidget {
             gameSession.currentPrompt.getDisplayText(gameSession.selectedChoice) ?? '',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: AppTextStyles.getBodyFontSize(context),
               fontFamily: 'Nunito',
             ),
           ),
         ),
+        // Only show Truth/Thrill button here if it's NOT the user's turn (partner's turn or waiting)
+        if (!_isCurrentUserTurn()) ...[
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: gameSession.selectedChoice == 'truth' 
+                    ? Colors.blue.withOpacity(0.3)
+                    : Colors.purple.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: gameSession.selectedChoice == 'truth' 
+                      ? Colors.blue.withOpacity(0.6)
+                      : Colors.purple.withOpacity(0.6),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                gameSession.selectedChoice == 'truth' ? 'Truth' : 'Thrill',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: AppTextStyles.getCaptionFontSize(context),
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildDirectPromptContent() {
+  Widget _buildDirectPromptContent(BuildContext context) {
     // For non-truth-or-thrill games, always show the prompt to both players
     // The prompt is shared and both players can see it
     return Container(
@@ -326,7 +384,7 @@ class GameBoardWidget extends StatelessWidget {
   }
 
   // Build turn indicator as a small badge/chip
-  Widget _buildTurnIndicatorBadge() {
+  Widget _buildTurnIndicatorBadge(BuildContext context) {
     String turnText;
     Color badgeColor;
     Color textColor;
@@ -372,7 +430,7 @@ class GameBoardWidget extends StatelessWidget {
             turnText,
             style: TextStyle(
               color: textColor,
-              fontSize: 10,
+              fontSize: AppTextStyles.getLabelFontSize(context),
               fontWeight: FontWeight.w500,
               fontFamily: 'Nunito',
             ),
@@ -409,7 +467,7 @@ class GameBoardWidget extends StatelessWidget {
     return true;
   }
 
-  Widget _buildGameDescription() {
+  Widget _buildGameDescription(BuildContext context) {
     String description;
     switch (gameSession.gameType) {
       case GameType.truthOrThrill:
@@ -440,7 +498,7 @@ class GameBoardWidget extends StatelessWidget {
         description,
         style: TextStyle(
           color: Colors.white.withOpacity(0.8),
-          fontSize: 14,
+          fontSize: AppTextStyles.getBodyFontSize(context),
           fontFamily: 'Nunito',
         ),
         textAlign: TextAlign.center,
@@ -448,7 +506,7 @@ class GameBoardWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildSendInviteButton() {
+  Widget _buildSendInviteButton(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
@@ -460,10 +518,10 @@ class GameBoardWidget extends StatelessWidget {
           ),
           padding: const EdgeInsets.symmetric(vertical: 12),
         ),
-        child: const Text(
+        child: Text(
           'Send Invite',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppTextStyles.getBodyFontSize(context),
             fontWeight: FontWeight.w600,
             fontFamily: 'Nunito',
             color: Colors.white,

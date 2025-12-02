@@ -27,6 +27,7 @@ import 'package:nookly/data/services/giphy_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'dart:io';
@@ -647,7 +648,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF384E85),
+        backgroundColor: const Color(0xFF1d335f),
         title: Text(
           _currentScamAlert != null 
               ? ScamAlertService().getAlertTitle(_currentScamAlert!)
@@ -1772,7 +1773,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   void _showImagePicker() {
     showModalBottomSheet(
         context: context,
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
@@ -1848,7 +1849,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF384E85),
+                            backgroundColor: const Color(0xFF1d335f),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           ),
                           child: Row(
@@ -2326,7 +2327,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     AppLogger.info('🔵 Opening options menu');
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -2362,15 +2363,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 _showStickerPicker();
               },
             ),
-              // Temporarily hidden Voice Message option
-              // ListTile(
-              //   leading: const Icon(Icons.mic),
-              //   title: const Text('Voice Message'),
-              //   onTap: () {
-              //     Navigator.pop(context);
-              //     _recordVoiceMessage();
-              //   },
-              // ),
+            ListTile(
+              leading: const Icon(Icons.mic, color: Colors.white),
+              title: const Text('Voice Message', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                AppLogger.info('🔵 Voice Message option tapped');
+                Navigator.pop(context);
+                _toggleVoiceRecording();
+              },
+            ),
             ],
           ),
         );
@@ -2705,10 +2706,10 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Widget _buildScaffold() {
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       resizeToAvoidBottomInset: true, // Enable keyboard avoidance - input moves up with keyboard
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -2735,7 +2736,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                       widget.participantName,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(14.0, 18.0),
+                        fontSize: AppTextStyles.getSubtitleFontSize(context),
                         fontWeight: FontWeight.w600,
                         fontFamily: 'Nunito',
                       ),
@@ -3184,7 +3185,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                             if (!isLoading) return const SizedBox.shrink();
                             
                             return Container(
-                              color: const Color(0xFF2d457f).withOpacity(0.8),
+                              color: const Color(0xFF1d335f).withOpacity(0.8),
                               child: const Center(
                                 child: CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
@@ -3252,7 +3253,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildMessageInput() {
     final size = MediaQuery.of(context).size;
     final buttonSize = (size.width * 0.08).clamp(32.0, 36.0); // Smaller, more compact buttons
-    final inputPadding = (size.width * 0.015).clamp(6.0, 12.0); // Reduced padding
+    final inputPadding = (size.width * 0.015).clamp(6.0, 12.0); // Restored original padding
     
     return SafeArea(
       child: Column(
@@ -3365,7 +3366,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           Container(
             padding: EdgeInsets.all(inputPadding),
             decoration: BoxDecoration(
-              color: const Color(0xFF2d457f),
+              color: const Color(0xFF1d335f),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -3385,119 +3386,120 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
               ),
               child: Row(
                 children: [
-                  // Plus button - smaller and more subtle
-                  IconButton(
-                    icon: Icon(
-                      Icons.add, 
-                      color: Colors.white.withOpacity(0.8),
-                      size: 20,
-                    ),
-                    onPressed: _showOptionsMenu,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                  // Plus button - compact
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _showOptionsMenu,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.add, 
+                          color: Colors.white.withOpacity(0.8),
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ),
                   // Text input - takes most space
                   Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: const InputDecoration(
-                        hintText: 'Message',
-                        hintStyle: TextStyle(
-                          color: Colors.white60,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: InputDecoration(
+                          hintText: 'Message',
+                          hintStyle: TextStyle(
+                            color: Colors.white60,
+                            fontFamily: 'Nunito',
+                            fontSize: AppTextStyles.getBodyFontSize(context),
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          filled: false,
+                          fillColor: Colors.transparent,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 12,
+                          ),
+                        ),
+                        style: TextStyle(
                           fontFamily: 'Nunito',
-                          fontSize: 16,
+                          fontSize: AppTextStyles.getBodyFontSize(context),
+                          color: Colors.white,
                         ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 12,
-                        ),
-                      ),
-                      style: const TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                      maxLines: 3, // Limit to 3 lines - will scroll internally after that
-                      minLines: 1, // Start with single line
-                      textCapitalization: TextCapitalization.sentences,
-                      onChanged: (text) {
-                        AppLogger.info('⌨️ TEXT FIELD CHANGED: length=${text.length}, _isTyping=$_isTyping, _socketService=${_socketService != null ? "initialized" : "NULL"}');
-                        
-                        if (!_isTyping && text.isNotEmpty) {
-                          setState(() => _isTyping = true);
-                          final otherUserId = _getOtherUserId();
-                          final conversationId = _getActualConversationId();
-                          AppLogger.info('🟢 EMITTING TYPING START: to=$otherUserId, conversationId=$conversationId, isTyping=true');
+                        maxLines: 3, // Limit to 3 lines - will scroll internally after that
+                        minLines: 1, // Start with single line
+                        textCapitalization: TextCapitalization.sentences,
+                        onChanged: (text) {
+                          AppLogger.info('⌨️ TEXT FIELD CHANGED: length=${text.length}, _isTyping=$_isTyping, _socketService=${_socketService != null ? "initialized" : "NULL"}');
                           
-                          if (_socketService != null) {
-                            _socketService!.emit('typing', {
-                              'to': otherUserId,
-                              'conversationId': conversationId,
-                              'isTyping': true,
-                            });
-                          } else {
-                            AppLogger.error('❌ CANNOT EMIT: _socketService is NULL');
+                          if (!_isTyping && text.isNotEmpty) {
+                            setState(() => _isTyping = true);
+                            final otherUserId = _getOtherUserId();
+                            final conversationId = _getActualConversationId();
+                            AppLogger.info('🟢 EMITTING TYPING START: to=$otherUserId, conversationId=$conversationId, isTyping=true');
+                            
+                            if (_socketService != null) {
+                              _socketService!.emit('typing', {
+                                'to': otherUserId,
+                                'conversationId': conversationId,
+                                'isTyping': true,
+                              });
+                            } else {
+                              AppLogger.error('❌ CANNOT EMIT: _socketService is NULL');
+                            }
+                          } else if (_isTyping && text.isEmpty) {
+                            setState(() => _isTyping = false);
+                            final otherUserId = _getOtherUserId();
+                            final conversationId = _getActualConversationId();
+                            AppLogger.info('🔴 EMITTING TYPING STOP (text empty): to=$otherUserId, conversationId=$conversationId, isTyping=false');
+                            
+                            if (_socketService != null) {
+                              _socketService!.emit('typing', {
+                                'to': otherUserId,
+                                'conversationId': conversationId,
+                                'isTyping': false,
+                              });
+                            } else {
+                              AppLogger.error('❌ CANNOT EMIT: _socketService is NULL');
+                            }
                           }
-                        } else if (_isTyping && text.isEmpty) {
+                        },
+                        onEditingComplete: () {
                           setState(() => _isTyping = false);
                           final otherUserId = _getOtherUserId();
                           final conversationId = _getActualConversationId();
-                          AppLogger.info('🔴 EMITTING TYPING STOP (text empty): to=$otherUserId, conversationId=$conversationId, isTyping=false');
-                          
-                          if (_socketService != null) {
-                            _socketService!.emit('typing', {
-                              'to': otherUserId,
-                              'conversationId': conversationId,
-                              'isTyping': false,
-                            });
-                          } else {
-                            AppLogger.error('❌ CANNOT EMIT: _socketService is NULL');
-                          }
-                        }
-                      },
-                      onEditingComplete: () {
-                        setState(() => _isTyping = false);
-                        final otherUserId = _getOtherUserId();
-                        final conversationId = _getActualConversationId();
-                        AppLogger.info('🔴 EMITTING TYPING STOP (editing complete): to=$otherUserId, conversationId=$conversationId, isTyping=false');
-                        _socketService?.emit('typing', {
-                          'to': otherUserId,
-                          'conversationId': conversationId,
-                          'isTyping': false,
-                        });
-                      },
+                          AppLogger.info('🔴 EMITTING TYPING STOP (editing complete): to=$otherUserId, conversationId=$conversationId, isTyping=false');
+                          _socketService?.emit('typing', {
+                            'to': otherUserId,
+                            'conversationId': conversationId,
+                            'isTyping': false,
+                          });
+                        },
+                      ),
                     ),
                   ),
-                  // Voice recording button (moved near send)
-                  IconButton(
-                    icon: Icon(
-                      Icons.mic, 
-                      color: Colors.white.withOpacity(0.8),
-                      size: 20,
-                    ),
-                    onPressed: _toggleVoiceRecording,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
-                    ),
-                  ),
-                  // Send button - smaller and more subtle
-                  IconButton(
-                    icon: Icon(
-                      Icons.send, 
-                      color: Colors.white.withOpacity(0.8),
-                      size: 20,
-                    ),
-                    onPressed: _sendTextMessage,
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(
-                      minWidth: 32,
-                      minHeight: 32,
+                  // Send button - compact
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: _sendTextMessage,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.send, 
+                          color: Colors.white.withOpacity(0.8),
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -3553,7 +3555,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           child: Material(
             elevation: 8,
             child: Container(
-              color: const Color(0xFF2d457f),
+              color: const Color(0xFF1d335f),
               padding: const EdgeInsets.symmetric(vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -4161,7 +4163,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Existing logic for showing conversation starters modal
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -4281,7 +4283,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             gameSession.gameType.displayName,
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 10,
+              fontSize: 8,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w600,
             ),
@@ -4294,7 +4296,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             promptText,
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 12,
+              fontSize: 9.6,
               fontFamily: 'Nunito',
             ),
             maxLines: 1,

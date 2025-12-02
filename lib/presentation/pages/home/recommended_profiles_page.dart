@@ -1,4 +1,5 @@
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/recommended_profiles/recommended_profiles_bloc.dart';
@@ -188,7 +189,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
           if (state is RecommendedProfilesLoading || _isInitialLoad) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
               ),
             );
           }
@@ -210,7 +211,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                       style: TextStyle(
                         fontSize: (size.width * 0.05).clamp(16.0, 20.0),
                         fontWeight: FontWeight.w500,
-                        color: Colors.white,
+                        color: Colors.white
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -218,7 +219,7 @@ class _RecommendedProfilesPageState extends State<RecommendedProfilesPage> {
                       'Check back later for new recommendations',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.7),
+                        color: Colors.white.withOpacity(0.7),
                       ),
                     ),
                   ],

@@ -7,6 +7,7 @@ import 'package:nookly/presentation/bloc/auth/auth_event.dart';
 import 'package:nookly/presentation/bloc/auth/auth_state.dart';
 import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/auth/email_verification_page.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/presentation/widgets/safety_tips_banner.dart';
 
 class SignUpPage extends StatefulWidget {
@@ -62,10 +63,10 @@ class _SignUpPageState extends State<SignUpPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
         title: const Text('Sign Up', style: TextStyle(fontFamily: 'Nunito', color: Colors.white)),
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
       ),
       body: BlocListener<AuthBloc, AuthState>(
@@ -122,7 +123,7 @@ class _SignUpPageState extends State<SignUpPage> {
                     'Create Account',
                     style: TextStyle(
                       fontFamily: 'Nunito',
-                      fontSize: (size.width * 0.05).clamp(16.0, 20.0),
+                      fontSize: AppTextStyles.getLargeTitleFontSize(context),
                       fontWeight: FontWeight.w500,
                       color: Colors.white,
                     ),
@@ -130,17 +131,17 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 32), // Match login page spacing
                   Card(
-                    color: const Color(0xFF384E85),
+                    color: const Color(0xFF1d335f),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: Icon(Icons.email, color: Color(0xFFD6D9E6), size: 20),
                           border: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -166,17 +167,17 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: const Color(0xFF384E85),
+                    color: const Color(0xFF1d335f),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Password',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -214,17 +215,17 @@ class _SignUpPageState extends State<SignUpPage> {
                   ),
                   const SizedBox(height: 12),
                   Card(
-                    color: const Color(0xFF384E85),
+                    color: const Color(0xFF1d335f),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       child: TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
-                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0)),
+                        style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context)),
                         decoration: InputDecoration(
                           labelText: 'Confirm Password',
-                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: (size.width * 0.032).clamp(11.0, 13.0)),
+                          labelStyle: TextStyle(color: Color(0xFFD6D9E6), fontFamily: 'Nunito', fontSize: AppTextStyles.getLabelFontSize(context)),
                           prefixIcon: const Icon(Icons.lock, color: Color(0xFFD6D9E6), size: 20),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -294,7 +295,7 @@ class _SignUpPageState extends State<SignUpPage> {
                           )
                         : Text(
                             'Sign Up',
-                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
+                            style: TextStyle(fontFamily: 'Nunito', color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                           ),
                   ),
                   const SizedBox(height: 14),
@@ -381,7 +382,7 @@ class _SignUpPageState extends State<SignUpPage> {
                         onPressed: () => Navigator.pop(context),
                         child: Text(
                           'Sign In',
-                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: (size.width * 0.035).clamp(12.0, 15.0), fontWeight: FontWeight.w500),
+                          style: TextStyle(color: Colors.white, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w500),
                         ),
                       ),
                     ],

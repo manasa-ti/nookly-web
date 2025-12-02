@@ -12,6 +12,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -180,16 +181,17 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2d457f),
+          backgroundColor: const Color(0xFF1d335f),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: Text(
             'About Nookly',
             style: TextStyle(
               color: Colors.white,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w600,
+              fontSize: AppTextStyles.getDialogTitleFontSize(context),
             ),
           ),
           content: SingleChildScrollView(
@@ -205,30 +207,30 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                         : 'Version';
                     return Text(
                       text,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: Colors.white70,
                         fontFamily: 'Nunito',
-                        fontSize: 16,
+                        fontSize: AppTextStyles.getSubtitleFontSize(context),
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Nookly is a comprehensive dating application designed to help you find meaningful connections.',
                   style: TextStyle(
                     color: Colors.white,
                     fontFamily: 'Nunito',
-                    fontSize: 14,
+                    fontSize: AppTextStyles.getBodyFontSize(context),
                   ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   '© 2024 Nookly. All rights reserved.',
                   style: TextStyle(
                     color: Colors.white70,
                     fontFamily: 'Nunito',
-                    fontSize: 12,
+                    fontSize: AppTextStyles.getCaptionFontSize(context),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -240,11 +242,12 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                           Navigator.of(context).pop();
                           _openPrivacyPolicy();
                         },
-                        child: const Text(
+                        child: Text(
                           'Privacy Policy',
                           style: TextStyle(
                             color: Colors.blue,
                             fontFamily: 'Nunito',
+                            fontSize: AppTextStyles.getBodyFontSize(context),
                           ),
                         ),
                       ),
@@ -255,11 +258,12 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                           Navigator.of(context).pop();
                           _openTermsOfUse();
                         },
-                        child: const Text(
+                        child: Text(
                           'Terms of Use',
                           style: TextStyle(
                             color: Colors.blue,
                             fontFamily: 'Nunito',
+                            fontSize: AppTextStyles.getBodyFontSize(context),
                           ),
                         ),
                       ),
@@ -272,11 +276,12 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 'Close',
                 style: TextStyle(
                   color: Colors.white,
                   fontFamily: 'Nunito',
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                 ),
               ),
             ),
@@ -291,34 +296,36 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF2d457f),
+          backgroundColor: const Color(0xFF1d335f),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text(
+          title: Text(
             'Delete Account',
             style: TextStyle(
               color: Colors.red,
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w600,
+              fontSize: AppTextStyles.getDialogTitleFontSize(context),
             ),
           ),
-          content: const Text(
+          content: Text(
             'Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data.',
             style: TextStyle(
               color: Colors.white,
               fontFamily: 'Nunito',
-              fontSize: 14,
+              fontSize: AppTextStyles.getBodyFontSize(context),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text(
+              child: Text(
                 'Cancel',
                 style: TextStyle(
                   color: Colors.grey,
                   fontFamily: 'Nunito',
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                 ),
               ),
             ),
@@ -327,12 +334,13 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                 Navigator.of(context).pop();
                 _showDeleteAccountPasswordDialog();
               },
-              child: const Text(
+              child: Text(
                 'Yes, Delete',
                 style: TextStyle(
                   color: Colors.red,
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                 ),
               ),
             ),
@@ -358,37 +366,38 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
             bool canSubmit = isPasswordValid && isConfirmationValid && !isLoading;
 
             return AlertDialog(
-              backgroundColor: const Color(0xFF2d457f),
+              backgroundColor: const Color(0xFF1d335f),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              title: const Text(
+              title: Text(
                 'Confirm Account Deletion',
                 style: TextStyle(
                   color: Colors.red,
                   fontFamily: 'Nunito',
                   fontWeight: FontWeight.w600,
+                  fontSize: AppTextStyles.getDialogTitleFontSize(context),
                 ),
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text(
+                  Text(
                     'To confirm account deletion, please:',
                     style: TextStyle(
                       color: Colors.white,
                       fontFamily: 'Nunito',
-                      fontSize: 14,
+                      fontSize: AppTextStyles.getBodyFontSize(context),
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: passwordController,
                     obscureText: true,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context)),
+                    decoration: InputDecoration(
                       labelText: 'Password',
-                      labelStyle: TextStyle(color: Colors.white70),
+                      labelStyle: TextStyle(color: Colors.white70, fontSize: AppTextStyles.getLabelFontSize(context)),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.white30),
                       ),
@@ -401,10 +410,10 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   const SizedBox(height: 16),
                   TextField(
                     controller: confirmationController,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: Colors.white, fontSize: AppTextStyles.getBodyFontSize(context)),
+                    decoration: InputDecoration(
                       labelText: 'Type "DELETE" to confirm',
-                      labelStyle: TextStyle(color: Colors.white70),
+                      labelStyle: TextStyle(color: Colors.white70, fontSize: AppTextStyles.getLabelFontSize(context)),
                       enabledBorder: OutlineInputBorder(
                         borderSide: BorderSide(color: Colors.white30),
                       ),
@@ -419,11 +428,12 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
               actions: [
                 TextButton(
                   onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-                  child: const Text(
+                  child: Text(
                     'Cancel',
                     style: TextStyle(
                       color: Colors.grey,
                       fontFamily: 'Nunito',
+                      fontSize: AppTextStyles.getBodyFontSize(context),
                     ),
                   ),
                 ),
@@ -475,12 +485,13 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Delete Account',
                           style: TextStyle(
                             color: Colors.red,
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w600,
+                            fontSize: AppTextStyles.getBodyFontSize(context),
                           ),
                         ),
                 ),
@@ -496,7 +507,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Container(
-      color: const Color(0xFF2d457f),
+      color: const Color(0xFF1d335f),
       child: SafeArea(
         child: _isLoading
             ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
@@ -606,7 +617,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   // const SizedBox(height: 32),
                   // // Purchased Features Section (Placeholder)
                   // Card(
-                  //   color: const Color(0xFF384E85),
+                  //   color: const Color(0xFF1d335f),
                   //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   //   child: Padding(
                   //     padding: const EdgeInsets.all(16),
@@ -624,7 +635,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   // const SizedBox(height: 32),
                   // // Notifications Section
                   // Card(
-                  //   color: const Color(0xFF384E85),
+                  //   color: const Color(0xFF1d335f),
                   //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   //   child: ListTile(
                   //     leading: const Icon(Icons.notifications, color: Colors.white),
@@ -638,7 +649,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                   const SizedBox(height: 16),
                   // Settings Section
                   Card(
-                    color: const Color(0xFF384E85),
+                    color: const Color(0xFF283d67),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Column(
                       children: [

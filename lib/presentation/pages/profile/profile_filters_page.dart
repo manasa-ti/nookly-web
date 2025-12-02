@@ -9,6 +9,7 @@ import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class ProfileFiltersPage extends StatefulWidget {
   const ProfileFiltersPage({super.key});
@@ -236,10 +237,10 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: Text('Profile Filters', style: TextStyle(fontSize: (size.width * 0.045).clamp(16.0, 18.0), fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
-        backgroundColor: const Color(0xFF2d457f),
+        title: Text('Profile Filters', style: TextStyle(fontSize: AppTextStyles.getAppBarTitleFontSize(context), fontWeight: FontWeight.w500, fontFamily: 'Nunito', color: Colors.white)),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -269,7 +270,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Adjust your preferences to find better matches',
                           style: TextStyle(
-                            fontSize: (size.width * 0.035).clamp(12.0, 14.0),
+                            fontSize: AppTextStyles.getBodyFontSize(context),
                             color: Colors.white70,
                           ),
                         ),
@@ -279,7 +280,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Age Range',
                           style: TextStyle(
-                            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,
                             color: Colors.white,
                             fontFamily: 'Nunito',
@@ -336,7 +337,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Interests',
                           style: TextStyle(
-                            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,
                             color: Colors.white,
                             fontFamily: 'Nunito',
@@ -354,7 +355,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                         Text(
                           'Objectives',
                           style: TextStyle(
-                            fontSize: (size.width * 0.04).clamp(14.0, 16.0),
+                            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,
                             color: Colors.white,
                             fontFamily: 'Nunito',
@@ -407,7 +408,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                                 : Text(
                                     'Update Filters',
                                     style: TextStyle(
-                                      fontSize: (size.width * 0.04).clamp(13.0, 15.0),
+                                      fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                                       fontWeight: FontWeight.w500,
                                       fontFamily: 'Nunito',
                                     ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_event.dart';
@@ -54,9 +55,9 @@ class _ReportPageState extends State<ReportPage> {
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
     return Scaffold(
-      backgroundColor: const Color(0xFF2d457f),
+      backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2d457f),
+        backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
@@ -148,7 +149,7 @@ class _ReportPageState extends State<ReportPage> {
                           fontFamily: 'Nunito',
                           fontSize: (size.width * 0.035).clamp(12.0, 15.0),
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: Colors.white
                         ),
                       ),
                     ),
@@ -192,7 +193,7 @@ class _ReportPageState extends State<ReportPage> {
               style: TextStyle(
                 fontSize: (size.width * 0.05).clamp(16.0, 20.0),
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: Colors.white
               ),
             ),
             const SizedBox(height: 8),
@@ -211,7 +212,7 @@ class _ReportPageState extends State<ReportPage> {
               style: TextStyle(
                 fontSize: (size.width * 0.04).clamp(14.0, 16.0),
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: Colors.white
               ),
             ),
             const SizedBox(height: 12),
@@ -229,7 +230,7 @@ class _ReportPageState extends State<ReportPage> {
               style: TextStyle(
                 fontSize: (size.width * 0.04).clamp(14.0, 16.0),
                 fontWeight: FontWeight.w500,
-                color: Colors.white,
+                color: Colors.white
               ),
             ),
             const SizedBox(height: 12),
@@ -285,7 +286,7 @@ class _ReportPageState extends State<ReportPage> {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white)
                         ),
                       )
                     : Text(
@@ -293,7 +294,7 @@ class _ReportPageState extends State<ReportPage> {
                         style: TextStyle(
                           fontSize: (size.width * 0.04).clamp(14.0, 16.0),
                           fontWeight: FontWeight.w500,
-                          color: Colors.white,
+                          color: Colors.white
                         ),
                       ),
               ),

@@ -140,7 +140,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
                     height: 8,
                     decoration: BoxDecoration(
                       color: _currentPage == index 
-                          ? Colors.white 
+                          ? Colors.white
                           : Colors.white.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(4),
                     ),

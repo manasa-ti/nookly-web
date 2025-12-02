@@ -4,6 +4,7 @@ import 'package:hmssdk_flutter/hmssdk_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:nookly/core/services/call_api_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/utils/logger.dart';
 
 /// Simplified HMS Call Service based on official documentation
 /// 
@@ -89,7 +90,13 @@ class HMSCallService implements HMSUpdateListener {
   
   Future<bool> joinRoom(String roomId, String authToken, {bool isAudioCall = false}) async {
     if (!_isInitialized || _isDisposed) {
-      print('HMS SDK not initialized');
+      AppLogger.error('HMS SDK not initialized or disposed');
+      return false;
+    }
+
+    if (_hmsSDK == null) {
+      AppLogger.error('HMS SDK instance is null');
+      onError?.call('HMS SDK not initialized');
       return false;
     }
 

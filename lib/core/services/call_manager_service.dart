@@ -248,11 +248,38 @@ class CallManagerService {
         Navigator.of(_context!).pop();
       }
 
+      // Validate response structure with null safety
       final callSession = response['callSession'];
+      if (callSession == null) {
+        AppLogger.error('❌ [CALL] Backend response missing callSession');
+        throw Exception('Invalid call response: missing callSession');
+      }
+
       final roomId = callSession['hmsRoomId'] ?? callSession['roomId'];
+      if (roomId == null || roomId.toString().isEmpty) {
+        AppLogger.error('❌ [CALL] Backend response missing roomId');
+        throw Exception('Invalid call response: missing roomId');
+      }
       
       final tokens = response['tokens'];
-      final token = tokens['caller']['token'];
+      if (tokens == null) {
+        AppLogger.error('❌ [CALL] Backend response missing tokens');
+        throw Exception('Invalid call response: missing tokens');
+      }
+
+      final callerToken = tokens['caller'];
+      if (callerToken == null) {
+        AppLogger.error('❌ [CALL] Backend response missing caller token');
+        throw Exception('Invalid call response: missing caller token');
+      }
+
+      // Handle both string and nested token structures
+      final token = callerToken['token'] ?? callerToken;
+      if (token == null || token.toString().isEmpty) {
+        AppLogger.error('❌ [CALL] Backend response missing or empty token');
+        throw Exception('Invalid call response: missing or empty token');
+      }
+
       final receiver = response['receiver'];
       
       AppLogger.info('🔍 Initiate call response structure:');
@@ -309,15 +336,30 @@ class CallManagerService {
 
       final response = await _callApiService!.acceptCall(roomId: roomId);
 
+      // Validate response structure with null safety
       final callSession = response['callSession'];
+      if (callSession == null) {
+        AppLogger.error('❌ [CALL] Accept call response missing callSession');
+        throw Exception('Invalid accept call response: missing callSession');
+      }
       
       // Handle both nested and direct token structures
-      String token;
-      if (response['token'] is Map) {
-        token = response['token']['token'];
-      } else {
-        token = response['token'];
+      String? token;
+      if (response['token'] != null) {
+        if (response['token'] is Map) {
+          token = response['token']['token'] as String?;
+        } else {
+          token = response['token'] as String?;
+        }
       }
+
+      if (token == null || token.isEmpty) {
+        AppLogger.error('❌ [CALL] Accept call response missing or empty token');
+        throw Exception('Invalid accept call response: missing or empty token');
+      }
+      
+      // After null check, token is guaranteed to be non-null (Dart flow analysis)
+      final authToken = token;
       
       final caller = response['caller'];
       
@@ -340,7 +382,7 @@ class CallManagerService {
           MaterialPageRoute(
             builder: (context) => CallScreen(
               roomId: roomId,
-              authToken: token,
+              authToken: authToken,
               isAudioCall: callSession['callType'] == 'audio',
               participantName: caller?['name'] ?? 'Call Participant',
               participantAvatar: caller?['profilePicture'],

@@ -4,6 +4,7 @@ import 'package:nookly/presentation/widgets/voice_player_widget.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/core/services/image_url_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class MessageBubble extends StatefulWidget {
   final Message? message;
@@ -269,7 +270,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                                 Text(
                                                   '${time}s',
                                                   style: TextStyle(
-                                                    fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
+                                                    fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                                                     fontFamily: 'Nunito',
                                                     color: widget.isMe ? Colors.white : Colors.white70,
                                                   ),
@@ -290,7 +291,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                             Text(
                                               '${widget.disappearingTime ?? widget.message!.metadata?.disappearingTime ?? 5}s',
                                               style: TextStyle(
-                                                fontSize: (MediaQuery.of(context).size.width * 0.025).clamp(10.0, 12.0),
+                                                fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                                                 fontFamily: 'Nunito',
                                                 color: widget.isMe ? Colors.white : Colors.white70,
                                               ),
@@ -340,7 +341,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                   style: TextStyle(
                                     color: widget.isMe ? Colors.white : Colors.white,
                                     fontFamily: 'Nunito',
-                                    fontSize: (MediaQuery.of(context).size.width * 0.04).clamp(13.0, 16.0),
+                                    fontSize: AppTextStyles.getBodyFontSize(context),
                                     fontWeight: FontWeight.w500,
                                   ),
                                   softWrap: true,
@@ -385,7 +386,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                 child: Text(
                   widget.timestamp!,
                   style: TextStyle(
-                    fontSize: (MediaQuery.of(context).size.width * 0.03).clamp(10.0, 12.0),
+                    fontSize: AppTextStyles.getCaptionFontSize(context),
                     fontFamily: 'Nunito',
                     color: Colors.white60,
                   ),
@@ -434,7 +435,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             height: 200,
             child: Center(
               child: CircularProgressIndicator(
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2e4781)),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1d335f)),
                 value: loadingProgress.expectedTotalBytes != null
                     ? loadingProgress.cumulativeBytesLoaded /
                         loadingProgress.expectedTotalBytes!
@@ -468,7 +469,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             width: 200,
             height: 200,
             child: Center(
-              child: Icon(Icons.error_outline, size: 40, color: Color(0xFF2e4781)),
+              child: Icon(Icons.error_outline, size: 40, color: Color(0xFF1d335f)),
             ),
           );
         },
@@ -491,9 +492,9 @@ class _MessageBubbleState extends State<MessageBubble> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                const Color(0xFF2e4781).withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF1d335f).withOpacity(0.3 + (0.2 * value)),
                 const Color(0xFF4CAF50).withOpacity(0.3 + (0.2 * value)),
-                const Color(0xFF2e4781).withOpacity(0.3 + (0.2 * value)),
+                const Color(0xFF1d335f).withOpacity(0.3 + (0.2 * value)),
               ],
             ),
             border: Border.all(
@@ -502,7 +503,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF2e4781).withOpacity(0.3 * value),
+                color: const Color(0xFF1d335f).withOpacity(0.3 * value),
                 blurRadius: 10 + (10 * value),
                 spreadRadius: 2 * value,
               ),

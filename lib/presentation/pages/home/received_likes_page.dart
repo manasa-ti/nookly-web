@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/received_likes/received_likes_bloc.dart';
 import 'package:nookly/presentation/widgets/profile_card.dart';

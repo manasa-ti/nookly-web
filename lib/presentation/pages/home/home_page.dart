@@ -118,7 +118,7 @@ class _HomePageState extends State<HomePage> {
       },
       child: Container(
         decoration: const BoxDecoration(
-          color: Color(0xFF2d457f), // #2d457f - solid primary blue
+          color: Color(0xFF1d335f), // #1d335f - solid primary blue
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -129,8 +129,8 @@ class _HomePageState extends State<HomePage> {
             top: true, // Exclude status bar from colored background
             bottom: false,
             child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFF384E85), // #384E85 - 5% lighter shade of #2d457f
+              decoration: BoxDecoration(
+                color: const Color(0xFF283d67), // 5% lighter shade of #1d335f
               ),
               child: SizedBox(
                 height: appBarHeight,
@@ -174,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                         child: IconButton(
                           icon: Icon(
                             Icons.filter_list, 
-                            color: Colors.white, 
+                            color: Colors.white,
                             size: iconSize,
                           ),
                           onPressed: _onFiltersPressed,
@@ -200,8 +200,8 @@ class _HomePageState extends State<HomePage> {
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF384E85), // #384E85 - 5% lighter shade of #2d457f
+                decoration: BoxDecoration(
+                  color: const Color(0xFF283d67), // 5% lighter shade of #1d335f
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(24),
                     topRight: Radius.circular(24),

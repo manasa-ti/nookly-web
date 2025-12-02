@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/config/app_config.dart';
 
 class PurchasedFeaturesPage extends StatelessWidget {

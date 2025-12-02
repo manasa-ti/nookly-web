@@ -1,6 +1,7 @@
 import 'package:nookly/core/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/domain/entities/conversation_starter.dart';
 import 'package:nookly/presentation/bloc/conversation_starter/conversation_starter_bloc.dart';
 import 'package:nookly/presentation/bloc/conversation_starter/conversation_starter_event.dart';
@@ -88,7 +89,7 @@ class _ConversationStarterContentState extends State<_ConversationStarterContent
             'Open Up',
             style: TextStyle(
               color: Colors.white.withOpacity(0.9),
-              fontSize: 14,
+              fontSize: AppTextStyles.getChipFontSize(context),
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w500,
             ),
@@ -194,11 +195,11 @@ class _ConversationStartersModal extends StatelessWidget {
                         size: 24,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'Open Up',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                           fontWeight: FontWeight.w600,
                           fontFamily: 'Nunito',
                         ),
@@ -221,7 +222,7 @@ class _ConversationStartersModal extends StatelessWidget {
                 'Choose a conversation starter by AI as an ice breaker',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.7),
-                  fontSize: 14,
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                   fontFamily: 'Nunito',
                 ),
               ),
@@ -234,12 +235,12 @@ class _ConversationStartersModal extends StatelessWidget {
                 if (state.suggestions.isNotEmpty) ...[
                   _buildSuggestionsList(context, state.suggestions, state.isFallback),
                   const SizedBox(height: 16),
-                  _buildUsageInfo(state.usage),
+                  _buildUsageInfo(context, state.usage),
                 ] else ...[
                   _buildEmptyState(context),
                 ],
               ] else if (state is ConversationStarterRateLimited) ...[
-                _buildRateLimitState(state.usage),
+                _buildRateLimitState(context, state.usage),
               ] else if (state is ConversationStarterError) ...[
                 _buildErrorState(context, state.message),
               ] else ...[
@@ -319,11 +320,11 @@ class _ConversationStartersModal extends StatelessWidget {
                   size: 16,
                 ),
                 const SizedBox(width: 6),
-                const Text(
+                Text(
                   'Using fallback suggestions',
                   style: TextStyle(
                     color: Colors.orange,
-                    fontSize: 12,
+                    fontSize: AppTextStyles.getCaptionFontSize(context),
                     fontFamily: 'Nunito',
                   ),
                 ),
@@ -365,9 +366,9 @@ class _ConversationStartersModal extends StatelessWidget {
                 Expanded(
                   child: Text(
                     suggestion.text,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: 14,
+                      fontSize: AppTextStyles.getBodyFontSize(context),
                       fontFamily: 'Nunito',
                       height: 1.4,
                     ),
@@ -387,7 +388,7 @@ class _ConversationStartersModal extends StatelessWidget {
     );
   }
 
-  Widget _buildUsageInfo(ConversationStarterUsage usage) {
+  Widget _buildUsageInfo(BuildContext context, ConversationStarterUsage usage) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -407,7 +408,7 @@ class _ConversationStartersModal extends StatelessWidget {
             'Requests remaining: ${usage.remaining}/3 today',
             style: TextStyle(
               color: Colors.white.withOpacity(0.6),
-              fontSize: 12,
+              fontSize: AppTextStyles.getCaptionFontSize(context),
               fontFamily: 'Nunito',
             ),
           ),
@@ -416,7 +417,7 @@ class _ConversationStartersModal extends StatelessWidget {
     );
   }
 
-  Widget _buildRateLimitState(ConversationStarterUsage usage) {
+  Widget _buildRateLimitState(BuildContext context, ConversationStarterUsage usage) {
     return Column(
       children: [
         Icon(
@@ -425,11 +426,11 @@ class _ConversationStartersModal extends StatelessWidget {
           size: 48,
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'You have reached your daily limit of 3 conversation starters.',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
             fontFamily: 'Nunito',
             fontWeight: FontWeight.w500,
           ),
@@ -440,13 +441,13 @@ class _ConversationStartersModal extends StatelessWidget {
           'Try again tomorrow.',
           style: TextStyle(
             color: Colors.white.withOpacity(0.7),
-            fontSize: 14,
+            fontSize: AppTextStyles.getBodyFontSize(context),
             fontFamily: 'Nunito',
           ),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 16),
-        _buildUsageInfo(usage),
+        _buildUsageInfo(context, usage),
       ],
     );
   }
@@ -462,9 +463,9 @@ class _ConversationStartersModal extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           message,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
             fontFamily: 'Nunito',
             fontWeight: FontWeight.w500,
           ),
@@ -507,11 +508,11 @@ class _ConversationStartersModal extends StatelessWidget {
           size: 48,
         ),
         const SizedBox(height: 16),
-        const Text(
+        Text(
           'No conversation starters available',
           style: TextStyle(
             color: Colors.white,
-            fontSize: 16,
+            fontSize: AppTextStyles.getSectionHeaderFontSize(context),
             fontFamily: 'Nunito',
             fontWeight: FontWeight.w500,
           ),
