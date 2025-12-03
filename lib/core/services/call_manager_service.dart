@@ -5,6 +5,8 @@ import 'package:nookly/core/network/socket_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/presentation/pages/call/call_screen.dart';
 import 'package:nookly/presentation/pages/call/incoming_call_screen.dart';
+import 'package:nookly/core/services/auth_handler.dart';
+import 'package:nookly/core/services/firebase_messaging_service.dart';
 
 /// Call Manager Service - Orchestrates audio/video calls
 /// 
@@ -36,6 +38,8 @@ class CallManagerService {
   /// 
   /// NOTE: Socket listeners are registered here ONLY for call-specific events
   /// They are completely isolated from other socket events (games, chat, etc.)
+  /// 
+  /// Can be called multiple times to update user ID or context
   void initialize({
     required CallApiService callApiService,
     required SocketService socketService,
@@ -43,8 +47,19 @@ class CallManagerService {
     required HMSCallService callService,
     String? currentUserId,
   }) {
+    // If already initialized, check if we need to update user ID or re-register listeners
     if (_isInitialized) {
-      AppLogger.warning('⚠️ Call manager already initialized, skipping');
+      // Update user ID if it changed
+      if (currentUserId != null && currentUserId != _currentUserId) {
+        AppLogger.info('🔄 [CALL] Updating user ID: $_currentUserId -> $currentUserId');
+        _currentUserId = currentUserId;
+        // Re-register socket listeners with new user ID
+        _removeSocketListeners();
+        _setupSocketListeners();
+      }
+      // Update context for loading dialogs
+      _context = context;
+      AppLogger.info('✅ [CALL] Call manager already initialized, updated context');
       return;
     }
 
@@ -122,13 +137,79 @@ class CallManagerService {
     }
   }
 
+  /// Get navigator context with fallback and retry mechanism
+  /// Tries FirebaseMessagingService.navigatorKey first, then AuthHandler.navigatorKey
+  BuildContext? _getNavigatorContext() {
+    // Try FirebaseMessagingService first (primary navigator key)
+    if (FirebaseMessagingService.navigatorKey?.currentContext != null) {
+      return FirebaseMessagingService.navigatorKey!.currentContext;
+    }
+    
+    // Fallback to AuthHandler navigator key
+    if (AuthHandler.navigatorKey.currentContext != null) {
+      return AuthHandler.navigatorKey.currentContext;
+    }
+    
+    return null;
+  }
+
+  /// Navigate with retry mechanism if context is not immediately available
+  Future<void> _navigateWithRetry(Function(BuildContext) navigateAction, {String errorMessage = 'navigation'}) async {
+    // Try immediate navigation
+    final context = _getNavigatorContext();
+    if (context != null) {
+      try {
+        navigateAction(context);
+        return;
+      } catch (e) {
+        AppLogger.error('❌ [CALL] Error during $errorMessage: $e');
+        rethrow;
+      }
+    }
+
+    // If context not available, try with delays (like DeepLinkService)
+    AppLogger.warning('⚠️ [CALL] Navigator context not available immediately, retrying...');
+    
+    // Try after a short delay
+    await Future.delayed(const Duration(milliseconds: 100));
+    final contextAfterDelay = _getNavigatorContext();
+    if (contextAfterDelay != null) {
+      try {
+        navigateAction(contextAfterDelay);
+        AppLogger.info('✅ [CALL] Navigation succeeded after 100ms delay');
+        return;
+      } catch (e) {
+        AppLogger.error('❌ [CALL] Error during $errorMessage after delay: $e');
+        rethrow;
+      }
+    }
+
+    // Try after a longer delay
+    await Future.delayed(const Duration(milliseconds: 900));
+    final contextAfterLongDelay = _getNavigatorContext();
+    if (contextAfterLongDelay != null) {
+      try {
+        navigateAction(contextAfterLongDelay);
+        AppLogger.info('✅ [CALL] Navigation succeeded after 1s delay');
+        return;
+      } catch (e) {
+        AppLogger.error('❌ [CALL] Error during $errorMessage after long delay: $e');
+        rethrow;
+      }
+    }
+
+    // All retries failed
+    AppLogger.error('❌ [CALL] Navigator context not available after multiple retries');
+    throw Exception('Navigator context not available');
+  }
+
   /// Handle incoming call socket event
   void _handleIncomingCall(Map<String, dynamic> data) {
     AppLogger.info('📞 [CALL] Processing incoming call...');
     AppLogger.info('📞 [CALL] Data: $data');
     
-    if (_context == null || _currentUserId == null) {
-      AppLogger.error('❌ [CALL] Cannot handle - context or user ID null');
+    if (_currentUserId == null) {
+      AppLogger.error('❌ [CALL] Cannot handle - user ID null');
       return;
     }
 
@@ -145,32 +226,39 @@ class CallManagerService {
     final callerName = data['callerName'] as String?;
     final callerAvatar = data['callerAvatar'] as String?;
 
+    AppLogger.info('🔍 [CALL] Call data - roomId: $roomId, callType: $callType, from: $from');
+    AppLogger.info('🔍 [CALL] Receiver ID: $receiverId, Current User ID: $_currentUserId');
+
     // Only handle calls for current user
     if (receiverId != _currentUserId) {
-      AppLogger.info('⚠️ [CALL] Ignoring - not for current user');
+      AppLogger.info('⚠️ [CALL] Ignoring - not for current user (receiverId: $receiverId, currentUserId: $_currentUserId)');
       return;
     }
 
     if (roomId == null || callType == null || from == null) {
-      AppLogger.error('❌ [CALL] Invalid data: $data');
+      AppLogger.error('❌ [CALL] Invalid data: roomId=$roomId, callType=$callType, from=$from');
       return;
     }
 
     AppLogger.info('📞 [CALL] Showing incoming call screen');
 
-    // Show incoming call screen
-    Navigator.of(_context!).push(
-      MaterialPageRoute(
-        builder: (context) => IncomingCallScreen(
-          roomId: roomId,
-          callerName: callerName ?? 'Incoming Call',
-          callerAvatar: callerAvatar,
-          callType: callType,
-          onCallAccepted: (roomId) => acceptCall(roomId),
-          onCallRejected: (roomId) => rejectCall(roomId),
+    // Show incoming call screen with retry mechanism
+    _navigateWithRetry((context) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => IncomingCallScreen(
+            roomId: roomId,
+            callerName: callerName ?? 'Incoming Call',
+            callerAvatar: callerAvatar,
+            callType: callType,
+            onCallAccepted: (roomId) => acceptCall(roomId),
+            onCallRejected: (roomId) => rejectCall(roomId),
+          ),
         ),
-      ),
-    );
+      );
+    }, errorMessage: 'incoming call screen navigation').catchError((e) {
+      AppLogger.error('❌ [CALL] Failed to show incoming call screen after retries: $e');
+    });
   }
 
   /// Handle call accepted socket event
@@ -212,7 +300,7 @@ class CallManagerService {
       return;
     }
 
-    if (!_isInitialized) {
+    if (!_isInitialized || _callApiService == null) {
       AppLogger.error('❌ [CALL] Service not initialized');
       throw Exception('Call manager not initialized');
     }
@@ -221,20 +309,24 @@ class CallManagerService {
       AppLogger.info('🚀 [CALL] Initiating $callType call with $receiverName');
 
       // Show loading indicator
-      if (_context != null) {
-        showDialog(
-          context: _context!,
-          barrierDismissible: false,
-          builder: (context) => const AlertDialog(
-            content: Row(
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(width: 20),
-                Text('Initiating call...'),
-              ],
+      if (_context != null && _context!.mounted) {
+        try {
+          showDialog(
+            context: _context!,
+            barrierDismissible: false,
+            builder: (context) => const AlertDialog(
+              content: Row(
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(width: 20),
+                  Text('Initiating call...'),
+                ],
+              ),
             ),
-          ),
-        );
+          );
+        } catch (e) {
+          AppLogger.warning('⚠️ [CALL] Could not show loading dialog: $e');
+        }
       }
 
       // Initiate call via API service
@@ -244,8 +336,12 @@ class CallManagerService {
       );
 
       // Close loading dialog
-      if (_context != null && Navigator.canPop(_context!)) {
-        Navigator.of(_context!).pop();
+      if (_context != null && _context!.mounted && Navigator.canPop(_context!)) {
+        try {
+          Navigator.of(_context!).pop();
+        } catch (e) {
+          AppLogger.warning('⚠️ [CALL] Could not close loading dialog: $e');
+        }
       }
 
       // Validate response structure with null safety
@@ -295,9 +391,9 @@ class CallManagerService {
 
       AppLogger.info('✅ [CALL] Call initiated successfully');
 
-      // Navigate to call screen
-      if (_context != null) {
-        Navigator.of(_context!).push(
+      // Navigate to call screen with retry mechanism
+      await _navigateWithRetry((context) {
+        Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => CallScreen(
               roomId: roomId,
@@ -311,12 +407,16 @@ class CallManagerService {
             ),
           ),
         );
-      }
+      }, errorMessage: 'call screen navigation');
       
     } catch (e) {
       // Close loading dialog on error
-      if (_context != null && Navigator.canPop(_context!)) {
-        Navigator.of(_context!).pop();
+      if (_context != null && _context!.mounted && Navigator.canPop(_context!)) {
+        try {
+          Navigator.of(_context!).pop();
+        } catch (e) {
+          AppLogger.warning('⚠️ [CALL] Could not close loading dialog on error: $e');
+        }
       }
       
       AppLogger.error('❌ [CALL] Failed to initiate: $e');
@@ -329,6 +429,11 @@ class CallManagerService {
     if (_isInCall) {
       AppLogger.warning('⚠️ [CALL] Already in a call');
       return;
+    }
+
+    if (!_isInitialized || _callApiService == null) {
+      AppLogger.error('❌ [CALL] Service not initialized');
+      throw Exception('Call manager not initialized');
     }
 
     try {
@@ -376,9 +481,9 @@ class CallManagerService {
 
       AppLogger.info('✅ [CALL] Call accepted successfully');
 
-      // Navigate to call screen
-      if (_context != null) {
-        Navigator.of(_context!).push(
+      // Navigate to call screen with retry mechanism
+      await _navigateWithRetry((context) {
+        Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => CallScreen(
               roomId: roomId,
@@ -392,7 +497,7 @@ class CallManagerService {
             ),
           ),
         );
-      }
+      }, errorMessage: 'call screen navigation');
       
     } catch (e) {
       AppLogger.error('❌ [CALL] Failed to accept: $e');
@@ -402,6 +507,11 @@ class CallManagerService {
 
   /// Reject an incoming call
   Future<void> rejectCall(String roomId) async {
+    if (!_isInitialized || _callApiService == null) {
+      AppLogger.error('❌ [CALL] Service not initialized');
+      throw Exception('Call manager not initialized');
+    }
+
     try {
       AppLogger.info('❌ [CALL] Rejecting call for room: $roomId');
       await _callApiService!.rejectCall(roomId: roomId);

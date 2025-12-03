@@ -25,6 +25,9 @@ import 'package:nookly/domain/entities/game_invite.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/core/services/call_manager_service.dart';
+import 'package:nookly/core/services/call_api_service.dart';
+import 'package:nookly/core/services/hms_call_service.dart';
 
 class ChatInboxPage extends StatefulWidget {
   const ChatInboxPage({super.key});
@@ -350,6 +353,20 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
     
     _registerSocketListeners();
     _joinAllChatRooms();
+    
+    // Initialize CallManagerService for incoming calls
+    if (mounted) {
+      AppLogger.info('🔵 [CALL] Initializing CallManagerService in ChatInboxPage...');
+      final callManagerService = sl<CallManagerService>();
+      callManagerService.initialize(
+        callApiService: sl<CallApiService>(),
+        socketService: _socketService!,
+        context: context,
+        callService: sl<HMSCallService>(),
+        currentUserId: user.id,
+      );
+      AppLogger.info('✅ [CALL] CallManagerService initialized in ChatInboxPage for incoming calls');
+    }
     
     socketStopwatch.stop();
     AppLogger.info('🔵 ChatInboxPage: Socket initialization completed in ${socketStopwatch.elapsedMilliseconds}ms');

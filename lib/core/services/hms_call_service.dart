@@ -101,29 +101,64 @@ class HMSCallService implements HMSUpdateListener {
     }
 
     try {
-      // Request permissions
-      if (!await _requestPermissions()) {
-        onError?.call('Permissions denied');
-        return false;
-      }
+      print('🚀 [CALL] joinRoom called');
+      print('🚀 [CALL] Room ID: $roomId');
+      print('🚀 [CALL] Is audio call: $isAudioCall');
 
       _currentRoomId = roomId;
       _currentAuthToken = authToken;
       _isAudioCall = isAudioCall;
 
-      // Create room config
+      // Create room config FIRST - needed for preview
+      print('🚀 [CALL] Creating HMSConfig...');
       final roomConfig = HMSConfig(
         authToken: authToken,
         userName: "User",
       );
+      print('✅ [CALL] HMSConfig created');
+
+      // Call preview FIRST to trigger iOS permission dialogs
+      // Preview requests camera and microphone permissions and provides local tracks
+      // This MUST be called before any permission checks or join
+      print('📹 [CALL] ========================================');
+      print('📹 [CALL] CALLING PREVIEW (FIRST STEP)');
+      print('📹 [CALL] This will trigger iOS permission dialogs');
+      print('📹 [CALL] ========================================');
+      try {
+        await _hmsSDK!.preview(config: roomConfig);
+        print('✅ [CALL] Preview completed successfully');
+        print('✅ [CALL] onPreview callback will be called with local tracks');
+        print('✅ [CALL] iOS permissions should be triggered');
+      } catch (e) {
+        print('⚠️ [CALL] Preview failed: $e');
+        print('⚠️ [CALL] Stack trace: ${StackTrace.current}');
+        print('⚠️ [CALL] HMS SDK will request permissions on join');
+        // Continue - HMS SDK will handle permissions on join
+      }
+
+      // Check permissions after preview (non-blocking)
+      // Preview should have triggered the permission dialogs
+      print('🚀 [CALL] Checking permission status (after preview)...');
+      final micStatus = await Permission.microphone.status;
+      final cameraStatus = await Permission.camera.status;
+      print('🔐 [CALL] Microphone status: $micStatus');
+      print('🔐 [CALL] Camera status: $cameraStatus');
+      
+      // Only warn if permissions are permanently denied, but don't block
+      if (micStatus.isPermanentlyDenied || cameraStatus.isPermanentlyDenied) {
+        print('⚠️ [CALL] WARNING: Some permissions are permanently denied');
+        print('⚠️ [CALL] User may need to enable permissions in Settings');
+      }
 
       // Join room
+      print('🚀 [CALL] Calling _hmsSDK.join()...');
       await _hmsSDK!.join(config: roomConfig);
+      print('✅ [CALL] _hmsSDK.join() completed - waiting for onJoin callback');
       
-      print('Joining room: $roomId');
       return true;
     } catch (e) {
-      print('Failed to join room: $e');
+      print('❌ [CALL] Failed to join room: $e');
+      print('❌ [CALL] Stack trace: ${StackTrace.current}');
       onError?.call('Failed to join room: $e');
       return false;
     }
@@ -370,26 +405,49 @@ class HMSCallService implements HMSUpdateListener {
   
   @override
   void onJoin({required HMSRoom room}) {
-    print('Joined room successfully');
+    print('✅ [CALL] onJoin CALLED');
+    print('✅ [CALL] Room ID: ${room.id}');
+    print('✅ [CALL] Total peers in room: ${room.peers?.length ?? 0}');
+    print('✅ [CALL] Is audio call: $_isAudioCall');
     
     // Reset mute states for new call - ensure audio and video are unmuted
     _isMuted = false;
     _isCameraOff = false;
     
     // Find local peer
-    _localPeer = room.peers?.firstWhere((peer) => peer.isLocal);
-    _localVideoTrack = _localPeer?.videoTrack;
-    print('Local peer: ${_localPeer?.name}, Local video track: ${_localVideoTrack?.trackId}');
+    print('✅ [CALL] Searching for local peer...');
+    try {
+      _localPeer = room.peers?.firstWhere((peer) => peer.isLocal);
+      print('✅ [CALL] Local peer found: ${_localPeer?.name}');
+      print('✅ [CALL] Local peer customerUserId: ${_localPeer?.customerUserId}');
+      print('✅ [CALL] Local peer video track: ${_localPeer?.videoTrack?.trackId ?? "NULL"}');
+      print('✅ [CALL] Local peer audio track: ${_localPeer?.audioTrack?.trackId ?? "NULL"}');
+      _localVideoTrack = _localPeer?.videoTrack;
+      if (_localVideoTrack == null) {
+        print('⚠️ [CALL] WARNING: Local video track is NULL in onJoin');
+      }
+    } catch (e) {
+      print('❌ [CALL] ERROR finding local peer: $e');
+    }
     
     // Find remote peer
     String? user1Id;
     String? user2Id;
+    print('✅ [CALL] Searching for remote peer...');
     if (room.peers != null) {
+      print('✅ [CALL] Iterating through ${room.peers!.length} peers...');
       for (final peer in room.peers!) {
+        print('   Peer: ${peer.name}, isLocal: ${peer.isLocal}');
         if (!peer.isLocal) {
           _remotePeer = peer;
+          print('✅ [CALL] Remote peer found: ${peer.name}');
+          print('✅ [CALL] Remote peer customerUserId: ${peer.customerUserId}');
+          print('✅ [CALL] Remote peer video track: ${peer.videoTrack?.trackId ?? "NULL"}');
+          print('✅ [CALL] Remote peer audio track: ${peer.audioTrack?.trackId ?? "NULL"}');
           _remoteVideoTrack = peer.videoTrack;
-          print('Remote peer: ${peer.name}, Remote video track: ${peer.videoTrack?.trackId}');
+          if (_remoteVideoTrack == null) {
+            print('⚠️ [CALL] WARNING: Remote video track is NULL in onJoin');
+          }
           
           // Extract user IDs from peer names (assuming format contains user ID)
           // Try to get from peer.name or peer.customerUserId
@@ -398,6 +456,8 @@ class HMSCallService implements HMSUpdateListener {
           break;
         }
       }
+    } else {
+      print('❌ [CALL] ERROR: room.peers is NULL');
     }
     
     // Track call joined analytics
@@ -414,70 +474,107 @@ class HMSCallService implements HMSUpdateListener {
       }
     }
     
+    print('✅ [CALL] onJoin summary:');
+    print('   Local peer: ${_localPeer?.name}, Local video track: ${_localVideoTrack?.trackId ?? "NULL"}');
+    print('   Remote peer: ${_remotePeer?.name}, Remote video track: ${_remoteVideoTrack?.trackId ?? "NULL"}');
+    
     onTracksChanged?.call();
-    print('Local peer: ${_localPeer?.name}, Remote peer: ${_remotePeer?.name}');
   }
 
   @override
   void onPeerUpdate({required HMSPeer peer, required HMSPeerUpdate update}) {
-    print('Peer update: ${peer.name} - $update');
+    print('👤 [CALL] onPeerUpdate CALLED');
+    print('👤 [CALL] Peer name: ${peer.name}');
+    print('👤 [CALL] Peer isLocal: ${peer.isLocal}');
+    print('👤 [CALL] Peer customerUserId: ${peer.customerUserId}');
+    print('👤 [CALL] Update type: $update');
+    print('👤 [CALL] Peer video track: ${peer.videoTrack?.trackId ?? "NULL"}');
+    print('👤 [CALL] Peer audio track: ${peer.audioTrack?.trackId ?? "NULL"}');
     
     // Skip network quality updates - they happen too frequently and don't affect tracks
     if (update == HMSPeerUpdate.networkQualityUpdated) {
+      print('👤 [CALL] Skipping network quality update');
       return;
     }
     
     // Track previous video track IDs to detect actual changes
     final previousLocalTrackId = _localVideoTrack?.trackId;
     final previousRemoteTrackId = _remoteVideoTrack?.trackId;
+    print('👤 [CALL] Previous local track: ${previousLocalTrackId ?? "null"}');
+    print('👤 [CALL] Previous remote track: ${previousRemoteTrackId ?? "null"}');
     
     // Follow official documentation - update peer and tracks directly
     if (peer.isLocal) {
+      print('👤 [CALL] Updating LOCAL peer');
       _localPeer = peer;
       _localVideoTrack = peer.videoTrack;
-      print('Local peer updated. Video track: ${_localVideoTrack?.trackId}');
+      print('👤 [CALL] Local peer updated. Video track: ${_localVideoTrack?.trackId ?? "NULL"}');
     } else {
+      print('👤 [CALL] Updating REMOTE peer');
       _remotePeer = peer;
       _remoteVideoTrack = peer.videoTrack;
-      print('Remote peer updated. Video track: ${_remoteVideoTrack?.trackId}');
+      print('👤 [CALL] Remote peer updated. Video track: ${_remoteVideoTrack?.trackId ?? "NULL"}');
     }
     
     // Only call onTracksChanged if tracks actually changed
     final currentLocalTrackId = _localVideoTrack?.trackId;
     final currentRemoteTrackId = _remoteVideoTrack?.trackId;
     
+    print('👤 [CALL] Current local track: ${currentLocalTrackId ?? "null"}');
+    print('👤 [CALL] Current remote track: ${currentRemoteTrackId ?? "null"}');
+    
     if (previousLocalTrackId != currentLocalTrackId || 
         previousRemoteTrackId != currentRemoteTrackId) {
-      print('Tracks changed - calling onTracksChanged...');
+      print('👤 [CALL] Tracks changed - calling onTracksChanged...');
       onTracksChanged?.call();
-      print('onTracksChanged completed');
+      print('👤 [CALL] onTracksChanged completed');
+    } else {
+      print('👤 [CALL] Tracks did not change - skipping onTracksChanged');
     }
   }
 
   @override
   void onTrackUpdate({required HMSPeer peer, required HMSTrack track, required HMSTrackUpdate trackUpdate}) {
-    print('Track update: ${track.trackId} - $trackUpdate from ${peer.name}');
+    print('📹 [CALL] onTrackUpdate CALLED');
+    print('📹 [CALL] Track ID: ${track.trackId}');
+    print('📹 [CALL] Track kind: ${track.kind}');
+    print('📹 [CALL] Track source: ${track.source}');
+    print('📹 [CALL] Track update type: $trackUpdate');
+    print('📹 [CALL] Peer name: ${peer.name}');
+    print('📹 [CALL] Peer isLocal: ${peer.isLocal}');
+    print('📹 [CALL] Peer customerUserId: ${peer.customerUserId}');
     
     // Follow official documentation pattern - handle all track update types
     if (track.kind == HMSTrackKind.kHMSTrackKindVideo) {
       final videoTrack = track as HMSVideoTrack;
+      print('📹 [CALL] Video track details:');
+      print('   Track ID: ${videoTrack.trackId}');
+      print('   Is mute: ${videoTrack.isMute}');
+      print('   Source: ${videoTrack.source}');
       
       if (peer.isLocal) {
+        print('📹 [CALL] Processing LOCAL video track');
+        print('   Previous local track: ${_localVideoTrack?.trackId ?? "null"}');
         _localVideoTrack = videoTrack;
-        print('Local video track set: ${videoTrack.trackId}');
+        print('   New local track: ${_localVideoTrack?.trackId}');
+        print('✅ [CALL] Local video track set: ${videoTrack.trackId}');
       } else {
+        print('📹 [CALL] Processing REMOTE video track');
+        print('   Previous remote track: ${_remoteVideoTrack?.trackId ?? "null"}');
+        print('   Previous remote peer: ${_remotePeer?.name ?? "null"}');
         _remoteVideoTrack = videoTrack;
-        print('Remote video track set: ${videoTrack.trackId}');
-        print('Remote peer updated: ${_remotePeer?.name}');
-        
-        // Also update remote peer reference to ensure it's current
         _remotePeer = peer;
+        print('   New remote track: ${_remoteVideoTrack?.trackId}');
+        print('   New remote peer: ${_remotePeer?.name}');
+        print('✅ [CALL] Remote video track set: ${videoTrack.trackId}');
       }
       
       // Force UI update
-      print('Calling onTracksChanged callback...');
+      print('📹 [CALL] Calling onTracksChanged callback...');
       onTracksChanged?.call();
-      print('onTracksChanged callback completed');
+      print('📹 [CALL] onTracksChanged callback completed');
+    } else {
+      print('📹 [CALL] Track is not video (kind: ${track.kind})');
     }
   }
 
@@ -622,20 +719,138 @@ class HMSCallService implements HMSUpdateListener {
   // ============================================================================
   
   Future<bool> _requestPermissions() async {
-    final permissions = [
-      Permission.microphone,
-      Permission.camera,
-    ];
-
-    final statuses = await permissions.request();
+    print('🔐 [CALL] _requestPermissions called');
     
-    for (final status in statuses.values) {
-      if (!status.isGranted) {
-        print('Permission denied: ${status}');
-        return false;
+    print('🔐 [CALL] Checking permission status first...');
+    
+    // Check status before requesting - request individually for better iOS compatibility
+    final micStatus = await Permission.microphone.status;
+    final cameraStatus = await Permission.camera.status;
+    
+    print('🔐 [CALL] Current permission status BEFORE request:');
+    print('   Microphone: $micStatus');
+    print('   Microphone isGranted: ${micStatus.isGranted}');
+    print('   Microphone isDenied: ${micStatus.isDenied}');
+    print('   Microphone isPermanentlyDenied: ${micStatus.isPermanentlyDenied}');
+    print('   Microphone isLimited: ${micStatus.isLimited}');
+    print('   Microphone isRestricted: ${micStatus.isRestricted}');
+    print('   Camera: $cameraStatus');
+    print('   Camera isGranted: ${cameraStatus.isGranted}');
+    print('   Camera isDenied: ${cameraStatus.isDenied}');
+    print('   Camera isPermanentlyDenied: ${cameraStatus.isPermanentlyDenied}');
+    print('   Camera isLimited: ${cameraStatus.isLimited}');
+    print('   Camera isRestricted: ${cameraStatus.isRestricted}');
+    
+    // If permanently denied, open app settings
+    if (micStatus.isPermanentlyDenied || cameraStatus.isPermanentlyDenied) {
+      print('⚠️ [CALL] Permissions permanently denied - opening app settings...');
+      print('⚠️ [CALL] User needs to enable permissions in Settings app');
+      try {
+        await openAppSettings();
+        print('✅ [CALL] Opened app settings');
+      } catch (e) {
+        print('❌ [CALL] Failed to open app settings: $e');
       }
+      return false;
     }
     
+    // If already granted, return true
+    if (micStatus.isGranted && cameraStatus.isGranted) {
+      print('✅ [CALL] Permissions already granted');
+      return true;
+    }
+
+    // Request permissions INDIVIDUALLY for better iOS compatibility
+    // iOS sometimes doesn't show dialog when requesting multiple permissions at once
+    // IMPORTANT: On iOS, if Info.plist entries are missing or not read, request() 
+    // will immediately return permanentlyDenied without showing dialog
+    
+    print('🔐 [CALL] Requesting microphone permission...');
+    
+    // On iOS, if status is denied (not notDetermined), it might mean Info.plist isn't being read
+    // Try requesting anyway - if it immediately becomes permanentlyDenied, Info.plist issue
+    if (micStatus == PermissionStatus.denied) {
+      print('⚠️ [CALL] WARNING: Microphone status is "denied" instead of "notDetermined"');
+      print('⚠️ [CALL] This might indicate Info.plist is not being read properly');
+      print('⚠️ [CALL] Attempting request anyway...');
+    }
+    
+    final micResult = await Permission.microphone.request();
+    print('🔐 [CALL] Microphone permission result: $micResult');
+    print('   isGranted: ${micResult.isGranted}');
+    print('   isDenied: ${micResult.isDenied}');
+    print('   isPermanentlyDenied: ${micResult.isPermanentlyDenied}');
+    
+    // If it immediately becomes permanentlyDenied without showing dialog
+    // This happens when iOS remembers previous denial OR Info.plist isn't being read
+    if (micResult.isPermanentlyDenied && micStatus == PermissionStatus.denied) {
+      print('❌ [CALL] CRITICAL: Microphone immediately became permanentlyDenied');
+      print('❌ [CALL] This usually means:');
+      print('   1. iOS remembers previous permission denial (even after reinstall)');
+      print('   2. Device restrictions are blocking permissions');
+      print('   3. Info.plist keys not being read (less likely if keys exist in bundle)');
+      print('❌ [CALL] Solutions:');
+      print('   - Settings → General → Reset → Reset Location & Privacy (resets ALL apps)');
+      print('   - Settings → Screen Time → Content & Privacy → Allow Camera/Microphone');
+      print('   - Uninstall app, reset privacy, reinstall');
+    }
+    
+    if (!micResult.isGranted) {
+      print('❌ [CALL] Microphone permission denied: $micResult');
+      if (micResult.isPermanentlyDenied) {
+        print('⚠️ [CALL] Microphone permanently denied - opening app settings...');
+        try {
+          await openAppSettings();
+        } catch (e) {
+          print('❌ [CALL] Failed to open app settings: $e');
+        }
+      }
+      return false;
+    }
+    
+    print('🔐 [CALL] Requesting camera permission...');
+    
+    // Same check for camera
+    if (cameraStatus == PermissionStatus.denied) {
+      print('⚠️ [CALL] WARNING: Camera status is "denied" instead of "notDetermined"');
+      print('⚠️ [CALL] This means permissions were previously denied and iOS remembers the state');
+      print('⚠️ [CALL] To reset: Settings → General → Reset → Reset Location & Privacy');
+      print('⚠️ [CALL] Attempting request anyway...');
+    }
+    
+    final cameraResult = await Permission.camera.request();
+    print('🔐 [CALL] Camera permission result: $cameraResult');
+    print('   isGranted: ${cameraResult.isGranted}');
+    print('   isDenied: ${cameraResult.isDenied}');
+    print('   isPermanentlyDenied: ${cameraResult.isPermanentlyDenied}');
+    
+    // If it immediately becomes permanentlyDenied without showing dialog
+    if (cameraResult.isPermanentlyDenied && cameraStatus == PermissionStatus.denied) {
+      print('❌ [CALL] CRITICAL: Camera immediately became permanentlyDenied');
+      print('❌ [CALL] This usually means:');
+      print('   1. iOS remembers previous permission denial (even after reinstall)');
+      print('   2. Device restrictions are blocking permissions');
+      print('   3. Info.plist keys not being read (less likely if keys exist in bundle)');
+      print('❌ [CALL] Solutions:');
+      print('   - Settings → General → Reset → Reset Location & Privacy (resets ALL apps)');
+      print('   - Settings → Screen Time → Content & Privacy → Allow Camera/Microphone');
+      print('   - Uninstall app, reset privacy, reinstall');
+    }
+    
+    if (!cameraResult.isGranted) {
+      print('❌ [CALL] Camera permission denied: $cameraResult');
+      if (cameraResult.isPermanentlyDenied) {
+        print('⚠️ [CALL] Camera permanently denied - opening app settings...');
+        try {
+          await openAppSettings();
+        } catch (e) {
+          print('❌ [CALL] Failed to open app settings: $e');
+        }
+      }
+      return false;
+    }
+    
+    print('✅ [CALL] All permissions granted');
     return true;
   }
 
