@@ -46,6 +46,7 @@ class UserModel {
   final List<String>? interests;
   final List<String>? objectives;
   final String? profilePic;
+  final Map<String, dynamic>? subscription;
 
   const UserModel({
     required this.id,
@@ -60,6 +61,7 @@ class UserModel {
     this.interests,
     this.objectives,
     this.profilePic,
+    this.subscription,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -151,6 +153,17 @@ class UserModel {
       final profilePic = json['profile_pic'] as String?;
       AppLogger.info('UserModel.fromJson - Parsed profilePic: $profilePic');
       
+      // Handle subscription details
+      Map<String, dynamic>? subscription;
+      if (json['subscription'] != null) {
+        if (json['subscription'] is Map<String, dynamic>) {
+          subscription = json['subscription'] as Map<String, dynamic>;
+          AppLogger.info('UserModel.fromJson - Parsed subscription: $subscription');
+        } else {
+          AppLogger.warning('UserModel.fromJson - Subscription is not a Map, type: ${json['subscription'].runtimeType}');
+        }
+      }
+      
       AppLogger.info('UserModel.fromJson - All fields parsed successfully, creating UserModel');
       
       return UserModel(
@@ -166,6 +179,7 @@ class UserModel {
         interests: interests,
         objectives: objectives,
         profilePic: profilePic,
+        subscription: subscription,
       );
       
     } catch (e, stackTrace) {
@@ -188,6 +202,7 @@ class UserModel {
       'interests': interests,
       'objectives': objectives,
       'profile_pic': profilePic,
+      'subscription': subscription,
     };
   }
 } 

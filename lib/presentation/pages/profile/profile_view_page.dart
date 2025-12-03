@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/domain/entities/user.dart';
 import 'package:nookly/domain/repositories/auth_repository.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
@@ -201,11 +202,12 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Profile',
           style: TextStyle(
             color: AppColors.white85,
             fontFamily: 'Nunito',
+            fontSize: AppTextStyles.getAppBarTitleFontSize(context),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -242,9 +244,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             const SizedBox(height: 16),
             Text(
               'Failed to load profile',
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.white85,
-                fontSize: 18,
+                fontSize: AppTextStyles.getTitleFontSize(context),
                 fontWeight: FontWeight.w600,
                 fontFamily: 'Nunito',
               ),
@@ -252,9 +254,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             const SizedBox(height: 8),
             Text(
               _error!,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white70,
-                fontSize: 14,
+                fontSize: AppTextStyles.getLabelFontSize(context),
                 fontFamily: 'Nunito',
               ),
               textAlign: TextAlign.center,
@@ -266,10 +268,11 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
                 backgroundColor: AppColors.white85,
                 foregroundColor: const Color(0xFF1d335f),
               ),
-              child: const Text(
+              child: Text(
                 'Retry',
                 style: TextStyle(
                   fontFamily: 'Nunito',
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -280,12 +283,12 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
     }
 
     if (_user == null) {
-      return const Center(
+      return Center(
         child: Text(
           'Profile not found',
           style: TextStyle(
             color: AppColors.white85,
-            fontSize: 18,
+            fontSize: AppTextStyles.getTitleFontSize(context),
             fontWeight: FontWeight.w600,
             fontFamily: 'Nunito',
           ),
@@ -336,7 +339,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           // Profile Picture
           CustomAvatar(
             name: _user!.name,
-            size: 100,
+            size: 80,
             isOnline: _user!.isOnline ?? false,
             imageUrl: _user!.profilePic,
           ),
@@ -345,9 +348,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           // Name and Age
           Text(
             _user!.name ?? 'Unknown',
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.white85,
-              fontSize: 24,
+              fontSize: AppTextStyles.getTitleFontSize(context),
               fontWeight: FontWeight.bold,
               fontFamily: 'Nunito',
             ),
@@ -356,9 +359,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
             const SizedBox(height: 4),
             Text(
               '${_user!.age} years old',
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white70,
-                fontSize: 16,
+                fontSize: AppTextStyles.getBodyFontSize(context),
                 fontFamily: 'Nunito',
               ),
             ),
@@ -383,7 +386,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
                 (_user!.isOnline ?? false) ? 'Online' : 'Offline',
                 style: TextStyle(
                   color: (_user!.isOnline ?? false) ? Colors.green : Colors.grey,
-                  fontSize: 14,
+                  fontSize: AppTextStyles.getLabelFontSize(context),
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Nunito',
                 ),
@@ -404,9 +407,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
       title: 'About',
       child: Text(
         _user!.bio!,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.white85,
-          fontSize: 16,
+          fontSize: AppTextStyles.getBodyFontSize(context),
           height: 1.5,
           fontFamily: 'Nunito',
         ),
@@ -473,11 +476,11 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (hasPhysicalActiveness) ...[
-            const Text(
+            Text(
               'Physical Activity:',
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: 14,
+                fontSize: AppTextStyles.getLabelFontSize(context),
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Nunito',
               ),
@@ -491,11 +494,11 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           ],
           if (hasPhysicalActiveness && hasAvailability) const SizedBox(height: 16),
           if (hasAvailability) ...[
-            const Text(
+            Text(
               'Availability:',
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: 14,
+                fontSize: AppTextStyles.getLabelFontSize(context),
                 fontWeight: FontWeight.w500,
                 fontFamily: 'Nunito',
               ),
@@ -536,9 +539,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
                 const SizedBox(width: 8),
                 Text(
                   _user!.hometown!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.white85,
-                    fontSize: 16,
+                    fontSize: AppTextStyles.getBodyFontSize(context),
                     fontFamily: 'Nunito',
                   ),
                 ),
@@ -557,9 +560,9 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
                 const SizedBox(width: 8),
                 Text(
                   _getDistanceString(),
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: AppColors.white85,
-                    fontSize: 16,
+                    fontSize: AppTextStyles.getBodyFontSize(context),
                     fontFamily: 'Nunito',
                   ),
                 ),
@@ -592,14 +595,14 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.white85,
-                fontSize: 18,
+                fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                 fontWeight: FontWeight.bold,
                 fontFamily: 'Nunito',
               ),
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: title == 'About' ? 6 : 12),
             child,
           ],
         ),
@@ -609,23 +612,20 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
 
   Widget _buildChip(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      margin: const EdgeInsets.only(right: 6, bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.only(right: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF1d335f),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: const Color(0xFF8FA3C8),
-          width: 1,
-        ),
+        color: const Color(0xFF35548b),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF8FA3C8), width: 1),
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Color(0xFFD6D9E6),
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+        style: TextStyle(
+          color: const Color(0xFFD6D9E6),
           fontFamily: 'Nunito',
+          fontSize: AppTextStyles.getChipFontSize(context),
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

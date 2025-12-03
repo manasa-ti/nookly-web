@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class SafetyTipsBanner extends StatefulWidget {
   final VoidCallback? onNext;
@@ -134,7 +135,7 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
                         Text(
                           "Safety First",
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                             color: Colors.white.withOpacity(0.8),
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w500,
@@ -143,8 +144,8 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
                         const SizedBox(height: 4),
                         Text(
                           currentTip.title,
-                          style: const TextStyle(
-                            fontSize: 18,
+                          style: TextStyle(
+                            fontSize: AppTextStyles.getSubtitleFontSize(context),
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                             fontFamily: 'Nunito',
@@ -156,9 +157,10 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
                   // Skip button
                   TextButton(
                     onPressed: _skipTips,
-                    child: const Text(
+                    child: Text(
                       'Skip',
                       style: TextStyle(
+                        fontSize: AppTextStyles.getBodyFontSize(context),
                         color: Colors.white,
                         fontFamily: 'Nunito',
                         fontWeight: FontWeight.w600,
@@ -198,8 +200,8 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 currentTip.message,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: AppTextStyles.getBodyFontSize(context),
                   color: Colors.white,
                   fontFamily: 'Nunito',
                   height: 1.5,
@@ -225,7 +227,7 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
                   Text(
                     'Swipe to navigate',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppTextStyles.getSmallCaptionFontSize(context),
                       color: Colors.white.withOpacity(0.7),
                       fontFamily: 'Nunito',
                     ),
@@ -252,9 +254,10 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
                           ),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Previous',
                           style: TextStyle(
+                            fontSize: AppTextStyles.getBodyFontSize(context),
                             color: Colors.white,
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w600,
@@ -277,10 +280,10 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
                       ),
                       child: Text(
                         isLastTip ? 'Got it!' : 'Next',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: AppTextStyles.getBodyFontSize(context),
                         ),
                       ),
                     ),

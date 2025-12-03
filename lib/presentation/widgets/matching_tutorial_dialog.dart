@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class MatchingTutorialDialog extends StatelessWidget {
   final VoidCallback? onComplete;
@@ -24,10 +25,10 @@ class MatchingTutorialDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             // Title
-            const Text(
+            Text(
               'Find Your Match',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: AppTextStyles.getTitleFontSize(context),
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
                 fontFamily: 'Nunito',
@@ -37,18 +38,21 @@ class MatchingTutorialDialog extends StatelessWidget {
             
             // Instructions
             _buildInstruction(
+              context: context,
               icon: Icons.favorite_border,
               text: 'Click on heart to like a profile',
             ),
             const SizedBox(height: 16),
             
             _buildInstruction(
+              context: context,
               icon: Icons.favorite,
               text: 'Likes received from others appear in Likes',
             ),
             const SizedBox(height: 16),
             
             _buildInstruction(
+              context: context,
               icon: Icons.chat_bubble_outline,
               text: 'Matched profiles appear in Chat',
             ),
@@ -71,10 +75,10 @@ class MatchingTutorialDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: const Text(
+                child: Text(
                   'Got it!',
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppTextStyles.getBodyFontSize(context),
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Nunito',
                     decoration: TextDecoration.none, // Remove underline
@@ -89,6 +93,7 @@ class MatchingTutorialDialog extends StatelessWidget {
   }
 
   Widget _buildInstruction({
+    required BuildContext context,
     required IconData icon,
     required String text,
   }) {
@@ -103,8 +108,8 @@ class MatchingTutorialDialog extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: AppTextStyles.getBodyFontSize(context),
               color: Colors.white,
               fontFamily: 'Nunito',
             ),

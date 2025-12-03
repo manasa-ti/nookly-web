@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class MatchingTutorialOverlay extends StatefulWidget {
   final VoidCallback onComplete;
@@ -141,11 +142,11 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                           const SizedBox(height: 24),
                           
                           // Title
-                          const Text(
+                          Text(
                             'Find Your Match',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppTextStyles.getTitleFontSize(context),
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Nunito',
                               color: Colors.white,
@@ -164,12 +165,12 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Click on heart to like a profile',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppTextStyles.getBodyFontSize(context),
                                     fontFamily: 'Nunito',
                                     color: Colors.white70,
                                     height: 1.5,
@@ -190,12 +191,12 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Likes received from others appear in Likes',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppTextStyles.getBodyFontSize(context),
                                     fontFamily: 'Nunito',
                                     color: Colors.white70,
                                     height: 1.5,
@@ -216,12 +217,12 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                                 size: 20,
                               ),
                               const SizedBox(width: 8),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
                                   'Matched profiles appear in Chat',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppTextStyles.getBodyFontSize(context),
                                     fontFamily: 'Nunito',
                                     color: Colors.white70,
                                     height: 1.5,
@@ -246,10 +247,10 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Got it!',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: AppTextStyles.getBodyFontSize(context),
                                   fontWeight: FontWeight.w600,
                                   fontFamily: 'Nunito',
                                 ),

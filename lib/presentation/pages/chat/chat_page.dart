@@ -654,20 +654,32 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _currentScamAlert != null 
               ? ScamAlertService().getAlertTitle(_currentScamAlert!)
               : 'Safety Information',
-          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
+          style: TextStyle(
+            color: AppColors.white85,
+            fontFamily: 'Nunito',
+            fontSize: AppTextStyles.getDialogTitleFontSize(context),
+          ),
         ),
         content: Text(
           _currentScamAlert != null 
               ? ScamAlertService().getAlertMessage(_currentScamAlert!)
               : 'Learn more about staying safe online.',
-          style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
+          style: TextStyle(
+            color: AppColors.white85,
+            fontFamily: 'Nunito',
+            fontSize: AppTextStyles.getBodyFontSize(context),
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
+            child: Text(
               'Got it',
-              style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito'),
+              style: TextStyle(
+                color: AppColors.white85,
+                fontFamily: 'Nunito',
+                fontSize: AppTextStyles.getBodyFontSize(context),
+              ),
             ),
           ),
         ],

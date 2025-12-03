@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class GamesTutorialOverlay extends StatefulWidget {
   final VoidCallback onComplete;
@@ -141,11 +142,11 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           const SizedBox(height: 24),
                           
                           // Title
-                          const Text(
+                          Text(
                             'Play 2 Bond',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppTextStyles.getTitleFontSize(context),
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Nunito',
                               color: Colors.black87,
@@ -155,11 +156,11 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           const SizedBox(height: 16),
                           
                           // Description
-                          const Text(
+                          Text(
                             'Choose a game to play together',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.black54,
                               height: 1.5,
@@ -168,11 +169,11 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           
                           const SizedBox(height: 8),
                           
-                          const Text(
+                          Text(
                             'Send invite to your match',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.black54,
                               height: 1.5,
@@ -181,11 +182,11 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           
                           const SizedBox(height: 8),
                           
-                          const Text(
+                          Text(
                             'Take turns answering questions',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.black54,
                               height: 1.5,
@@ -194,11 +195,11 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           
                           const SizedBox(height: 8),
                           
-                          const Text(
+                          Text(
                             'Have fun getting to know each other!',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.black54,
                               height: 1.5,
@@ -213,10 +214,10 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                               Expanded(
                                 child: TextButton(
                                   onPressed: _skipTutorial,
-                                  child: const Text(
+                                  child: Text(
                                     'Skip',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppTextStyles.getBodyFontSize(context),
                                       fontFamily: 'Nunito',
                                       color: Colors.grey,
                                     ),
@@ -235,10 +236,10 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: Text(
                                     'Got it!',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppTextStyles.getBodyFontSize(context),
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Nunito',
                                     ),

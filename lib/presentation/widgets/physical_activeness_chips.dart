@@ -19,7 +19,7 @@ class PhysicalActivenessChips extends StatelessWidget {
       availableOptions: availablePhysicalActiveness,
       selectedOptions: selectedPhysicalActiveness,
       onSelectionChanged: onPhysicalActivenessChanged,
-      title: 'Physical Activeness',
+      // No title - already shown in section header
     );
   }
 }

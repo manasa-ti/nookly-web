@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 class MessagingTutorialOverlay extends StatefulWidget {
   final VoidCallback onComplete;
@@ -141,11 +142,11 @@ class _MessagingTutorialOverlayState extends State<MessagingTutorialOverlay>
                           const SizedBox(height: 24),
                           
                           // Title
-                          const Text(
+                          Text(
                             'Start Conversations',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppTextStyles.getTitleFontSize(context),
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Nunito',
                               color: Colors.white,
@@ -155,11 +156,11 @@ class _MessagingTutorialOverlayState extends State<MessagingTutorialOverlay>
                           const SizedBox(height: 16),
                           
                           // Description
-                          const Text(
+                          Text(
                             'Your matches appear here',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.white70,
                               height: 1.5,
@@ -168,11 +169,11 @@ class _MessagingTutorialOverlayState extends State<MessagingTutorialOverlay>
                           
                           const SizedBox(height: 8),
                           
-                          const Text(
+                          Text(
                             'Tap to start chatting',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.white70,
                               height: 1.5,
@@ -181,11 +182,11 @@ class _MessagingTutorialOverlayState extends State<MessagingTutorialOverlay>
                           
                           const SizedBox(height: 8),
                           
-                          const Text(
+                          Text(
                             'Use conversation starters to break the ice',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppTextStyles.getBodyFontSize(context),
                               fontFamily: 'Nunito',
                               color: Colors.white70,
                               height: 1.5,
@@ -207,10 +208,10 @@ class _MessagingTutorialOverlayState extends State<MessagingTutorialOverlay>
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Got it!',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: AppTextStyles.getBodyFontSize(context),
                                   fontWeight: FontWeight.w600,
                                   fontFamily: 'Nunito',
                                 ),

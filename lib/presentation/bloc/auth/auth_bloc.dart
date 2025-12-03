@@ -8,6 +8,7 @@ import 'package:nookly/data/repositories/notification_repository.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
+import 'package:nookly/core/utils/logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -57,6 +58,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       
       // Check if email verification is required
       if (authResponse.emailVerificationRequired == true) {
+        // Automatically send OTP when email verification is required
+        try {
+          AppLogger.info('Email verification required, sending OTP to: ${event.email}');
+          await _authRepository.sendOtp(event.email);
+          AppLogger.info('OTP sent successfully to: ${event.email}');
+        } catch (otpError) {
+          AppLogger.error('Failed to send OTP automatically: $otpError');
+          // Continue to emit EmailVerificationRequired even if OTP send fails
+          // User can manually resend OTP from the verification page
+        }
+        
         emit(EmailVerificationRequired(
           email: event.email,
           message: 'Please verify your email to continue.',
@@ -350,6 +362,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       hometown: userModel.hometown ?? '',
       seekingGender: userModel.seekingGender ?? '',
       objectives: userModel.objectives ?? [],
+      subscription: userModel.subscription,
     );
   }
 } 

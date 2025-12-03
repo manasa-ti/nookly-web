@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/presentation/widgets/custom_avatar.dart';
 import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 
 // Custom compact chip for profile card
 class ProfileInterestChip extends StatelessWidget {
@@ -19,10 +20,10 @@ class ProfileInterestChip extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
+        style: TextStyle(
           color: Color(0xFFD6D9E6),
           fontFamily: 'Nunito',
-          fontSize: 12,
+          fontSize: AppTextStyles.getChipFontSize(context),
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -116,8 +117,6 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return GestureDetector(
       // TEMPORARILY DISABLED: Swipe gesture handlers commented out for future use
       // onHorizontalDragStart: _onDragStart,
@@ -174,7 +173,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                   '${widget.profile['name']}, ${widget.profile['age']}',
                                   style: TextStyle(
                                     fontFamily: 'Nunito',
-                                    fontSize: (size.width * 0.045).clamp(13.0, 17.0),
+                                    fontSize: AppTextStyles.getBodyFontSize(context),
                                     fontWeight: FontWeight.w500,
                                     color: AppColors.white85,
                                   ),
@@ -194,7 +193,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                                         style: TextStyle(
                                           fontFamily: 'Nunito',
                                           color: Color(0xFFD6D9E6),
-                                          fontSize: (size.width * 0.032).clamp(11.0, 15.0),
+                                          fontSize: AppTextStyles.getLabelFontSize(context),
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -223,7 +222,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                         widget.profile['bio'],
                         style: TextStyle(
                           fontFamily: 'Nunito',
-                          fontSize: (size.width * 0.035).clamp(12.0, 16.0),
+                          fontSize: AppTextStyles.getBodyFontSize(context),
                           height: 1.5,
                           color: AppColors.white85,
                         ),

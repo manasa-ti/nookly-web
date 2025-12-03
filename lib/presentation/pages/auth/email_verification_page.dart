@@ -58,7 +58,14 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
-        title: const Text('Verify Your Email', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito')),
+        title: Text(
+          'Verify Your Email',
+          style: TextStyle(
+            color: AppColors.white85,
+            fontFamily: 'Nunito',
+            fontSize: AppTextStyles.getAppBarTitleFontSize(context),
+          ),
+        ),
         centerTitle: true,
       ),
       body: BlocListener<AuthBloc, AuthState>(
@@ -101,7 +108,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
           }
         },
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -159,9 +166,14 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
                             valueColor: AlwaysStoppedAnimation<Color>(AppColors.white85),
                           ),
                         )
-                      : const Text(
+                      : Text(
                           'Verify',
-                          style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            color: AppColors.white85,
+                            fontWeight: FontWeight.w500,
+                            fontSize: AppTextStyles.getBodyFontSize(context),
+                          ),
                         ),
                 ),
               ],

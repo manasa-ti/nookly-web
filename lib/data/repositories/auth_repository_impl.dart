@@ -41,6 +41,18 @@ class AuthRepositoryImpl implements AuthRepository {
       AppLogger.info('Login successful for user: ${request.email}');
       return authResponse;
     } on DioException catch (e) {
+      // Handle 403 Forbidden with emailVerificationRequired
+      if (e.response?.statusCode == 403 && e.response?.data != null) {
+        final responseData = e.response!.data;
+        if (responseData is Map<String, dynamic> && 
+            responseData['emailVerificationRequired'] == true) {
+          AppLogger.info('Email verification required for user: ${request.email}');
+          // Parse the error response as AuthResponseModel
+          final authResponse = AuthResponseModel.fromJson(responseData);
+          return authResponse;
+        }
+      }
+      
       AppLogger.error(
         'Login failed',
         e,
@@ -500,6 +512,7 @@ class AuthRepositoryImpl implements AuthRepository {
       hometown: model.hometown,
       seekingGender: model.seekingGender,
       objectives: model.objectives,
+      subscription: model.subscription,
     );
   }
 
