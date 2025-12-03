@@ -348,6 +348,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'lastSeen': userData['lastSeen'],
         'connectionStatus': userData['connectionStatus'],
         'last_active': userData['last_active'],
+        'minAppVersion': userData['minAppVersion'] ?? userData['min_app_version'],
       };
 
       AppLogger.info('Processed user data: $safeUserData');
@@ -652,6 +653,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'lastSeen': userData['lastSeen'],
         'connectionStatus': userData['connectionStatus'],
         'last_active': userData['last_active'],
+        'minAppVersion': userData['minAppVersion'] ?? userData['min_app_version'],
       };
 
       AppLogger.info('Processed user data for $userId: $safeUserData');

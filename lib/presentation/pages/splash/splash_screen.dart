@@ -11,6 +11,8 @@ import 'package:nookly/presentation/pages/profile/profile_creation_page.dart';
 import 'package:nookly/presentation/pages/onboarding/welcome_tour_page.dart';
 import 'package:nookly/core/services/deep_link_service.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
+import 'package:nookly/core/services/force_update_service.dart';
+import 'package:nookly/core/di/injection_container.dart' as di;
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -91,6 +93,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) async {
         if (state is Authenticated) {
+          // Check force update first before any navigation
+          final forceUpdateService = di.sl<ForceUpdateService>();
+          final forceUpdateRequired = await forceUpdateService.checkAndShowForceUpdateIfNeeded(
+            context,
+            state.user,
+          );
+          
+          if (forceUpdateRequired) {
+            AppLogger.info('🔵 SPLASH: Force update required, blocking navigation');
+            return; // Don't proceed with navigation if force update is required
+          }
+          
           // Check if welcome tour should be shown
           final shouldShowWelcomeTour = await OnboardingService.shouldShowWelcomeTour();
           AppLogger.info('🔵 SPLASH: shouldShowWelcomeTour = $shouldShowWelcomeTour');

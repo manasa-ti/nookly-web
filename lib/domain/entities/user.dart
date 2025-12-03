@@ -23,6 +23,7 @@ class User extends Equatable {
   final String? connectionStatus;
   final String? lastActive;
   final Map<String, dynamic>? subscription;
+  final String? minAppVersion;
 
   const User({
     required this.id,
@@ -47,6 +48,7 @@ class User extends Equatable {
     this.connectionStatus,
     this.lastActive,
     this.subscription,
+    this.minAppVersion,
   });
 
   bool get isProfileComplete {
@@ -144,6 +146,7 @@ class User extends Equatable {
       subscription: json['subscription'] != null 
           ? json['subscription'] as Map<String, dynamic>
           : null,
+      minAppVersion: json['minAppVersion'] as String?,
     );
   }
 
@@ -171,6 +174,7 @@ class User extends Equatable {
       'connectionStatus': connectionStatus,
       'last_active': lastActive,
       'subscription': subscription,
+      'minAppVersion': minAppVersion,
     };
   }
 
@@ -198,5 +202,6 @@ class User extends Equatable {
         connectionStatus,
         lastActive,
         subscription,
+        minAppVersion,
       ];
 } 

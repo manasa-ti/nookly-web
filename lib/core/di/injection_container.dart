@@ -47,6 +47,7 @@ import 'package:nookly/core/services/analytics_super_properties.dart';
 import 'package:nookly/core/services/crash_reporting_service.dart';
 import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/services/force_update_service.dart';
 import 'package:nookly/core/network/network_service.dart';
 
 final GetIt sl = GetIt.instance;
@@ -152,6 +153,10 @@ Future<void> init() async {
   
   sl.registerLazySingleton<ScreenProtectionService>(
     () => ScreenProtectionService(),
+  );
+  
+  sl.registerLazySingleton<ForceUpdateService>(
+    () => ForceUpdateService(sl<RemoteConfigService>()),
   );
   
   // Blocs

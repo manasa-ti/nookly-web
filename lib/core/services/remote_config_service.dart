@@ -12,6 +12,8 @@ class RemoteConfigService {
   static const String _protectVideoCallsKey = 'protect_video_calls';
   static const String _protectChatScreenKey = 'protect_chat_screen';
   static const String _protectProfilePagesKey = 'protect_profile_pages';
+  static const String _androidAppLinkKey = 'android_app_link';
+  static const String _iosAppLinkKey = 'ios_app_link';
 
   /// Initialize Remote Config with default values
   Future<void> initialize() async {
@@ -37,6 +39,8 @@ class RemoteConfigService {
         _protectVideoCallsKey: true,
         _protectChatScreenKey: true,
         _protectProfilePagesKey: true,
+        _androidAppLinkKey: '',
+        _iosAppLinkKey: '',
       });
 
       // Fetch and activate
@@ -77,6 +81,8 @@ class RemoteConfigService {
         _protectVideoCallsKey: true,
         _protectChatScreenKey: true,
         _protectProfilePagesKey: true,
+        _androidAppLinkKey: '',
+        _iosAppLinkKey: '',
       });
 
       // Don't fetch yet - just mark as initialized with defaults
@@ -221,5 +227,39 @@ class RemoteConfigService {
 
   /// Check if Remote Config is initialized
   bool get isInitialized => _isInitialized;
+
+  /// Get Android app store link from Remote Config
+  String getAndroidAppLink() {
+    if (_remoteConfig == null || !_isInitialized) {
+      AppLogger.warning('Remote Config not initialized, returning empty string for Android app link');
+      return '';
+    }
+
+    try {
+      final link = _remoteConfig!.getString(_androidAppLinkKey);
+      AppLogger.info('Android app link from Remote Config: $link');
+      return link;
+    } catch (e) {
+      AppLogger.error('Error reading Android app link from Remote Config', e);
+      return '';
+    }
+  }
+
+  /// Get iOS app store link from Remote Config
+  String getIosAppLink() {
+    if (_remoteConfig == null || !_isInitialized) {
+      AppLogger.warning('Remote Config not initialized, returning empty string for iOS app link');
+      return '';
+    }
+
+    try {
+      final link = _remoteConfig!.getString(_iosAppLinkKey);
+      AppLogger.info('iOS app link from Remote Config: $link');
+      return link;
+    } catch (e) {
+      AppLogger.error('Error reading iOS app link from Remote Config', e);
+      return '';
+    }
+  }
 }
 
