@@ -136,7 +136,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
                   margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF34436e),
+                    color: const Color(0xFF4c4a7b).withOpacity(0.45),
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(

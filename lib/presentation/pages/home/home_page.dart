@@ -119,14 +119,15 @@ class _HomePageState extends State<HomePage> {
       },
       child: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1d335f), // #1d335f - blue
-              Color(0xFF413b62), // #413b62 - purple
-            ],
-          ),
+          color: Color(0xFF1d335f),
+          // gradient: LinearGradient(
+          //   begin: Alignment.topLeft,
+          //   end: Alignment.bottomRight,
+          //   colors: [
+          //     Color(0xFF1d335f), // #1d335f - blue
+          //     Color(0xFF413b62), // #413b62 - purple
+          //   ],
+          // ),
         ),
         child: Scaffold(
           backgroundColor: Colors.transparent,
@@ -140,10 +141,10 @@ class _HomePageState extends State<HomePage> {
               decoration: BoxDecoration(
                 gradient: RadialGradient(
                   center: Alignment.center,
-                  radius: 1.0,
+                  radius: 1.5,
                   colors: [
-                    Color(0xFF413b62), // Purple from center
-                    Color(0xFF283d67), // Original blue at edges
+                    const Color(0xFF4c4a7b).withOpacity(0.5), // Purple from center
+                    const Color(0xFF1d335f), // Primary blue at edges
                   ],
                 ),
               ),

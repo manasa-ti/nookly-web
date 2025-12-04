@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_bloc.dart';
 import 'package:nookly/presentation/bloc/report/report_event.dart';
@@ -67,7 +68,7 @@ class _ReportPageState extends State<ReportPage> {
           'Report User',
           style: TextStyle(
             color: Colors.white,
-            fontSize: (size.width * 0.045).clamp(14.0, 18.0),
+            fontSize: AppTextStyles.getAppBarTitleFontSize(context),
             fontWeight: FontWeight.w500,
           ),
         ),

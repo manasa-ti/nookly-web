@@ -52,6 +52,7 @@ import 'package:nookly/core/services/call_api_service.dart';
 import 'package:nookly/core/services/hms_call_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
+import 'package:nookly/core/services/remote_config_service.dart';
 
 class DisappearingTimerNotifier extends ValueNotifier<int?> {
   DisappearingTimerNotifier(int initialValue) : super(initialValue);
@@ -2720,7 +2721,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
 
   Widget _buildScaffold() {
     return Scaffold(
-      backgroundColor: const Color(0xFF1d335f),
+      backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: true, // Enable keyboard avoidance - input moves up with keyboard
       appBar: AppBar(
         backgroundColor: const Color(0xFF1d335f),
@@ -2770,15 +2771,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.call, color: AppColors.white85),
-            onPressed: () => _startCall(true), // Audio call
-            tooltip: 'Audio Call',
-          ),
-          IconButton(
-            icon: const Icon(Icons.videocam, color: AppColors.white85),
-            onPressed: () => _startCall(false), // Video call
-            tooltip: 'Video Call',
+          Builder(
+            builder: (context) {
+              final callsEnabled = sl<RemoteConfigService>().isCallsEnabled();
+              AppLogger.info('🔵 [CHAT_PAGE] Calls enabled check: $callsEnabled');
+              if (callsEnabled) {
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.call, color: AppColors.white85),
+                      onPressed: () => _startCall(true), // Audio call
+                      tooltip: 'Audio Call',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.videocam, color: AppColors.white85),
+                      onPressed: () => _startCall(false), // Video call
+                      tooltip: 'Video Call',
+                    ),
+                  ],
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: AppColors.white85),
@@ -2786,8 +2801,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           ),
         ],
       ),
-      body: Stack(
-        children: [
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: RadialGradient(
+            center: Alignment.bottomRight,
+            radius: 1.5,
+            colors: [
+              const Color(0xFF4c4a7b), // Purple at bottom right
+              const Color(0xFF1d335f), // Primary blue at top left
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
           // Main content in Column to respect keyboard insets
           Column(
             key: const ValueKey('chat_column'), // Preserve Column identity during rebuilds
@@ -3260,6 +3286,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             isOnline: widget.isOnline,
           )),
         ],
+        ),
       ),
     );
   }
@@ -3267,7 +3294,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   Widget _buildMessageInput() {
     final size = MediaQuery.of(context).size;
     final buttonSize = (size.width * 0.08).clamp(32.0, 36.0); // Smaller, more compact buttons
-    final inputPadding = (size.width * 0.015).clamp(6.0, 12.0); // Restored original padding
+    final inputPadding = (size.width * 0.005).clamp(4.0, 10.0); // Restored original padding
     
     return SafeArea(
       child: Column(
@@ -3378,9 +3405,15 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             ),
           // Main input container
           Container(
+            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             padding: EdgeInsets.all(inputPadding),
             decoration: BoxDecoration(
-              color: const Color(0xFF1d335f),
+              color: AppColors.white85.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: AppColors.white85.withOpacity(0.2),
+                width: 0.5,
+              ),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
@@ -3389,16 +3422,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 ),
               ],
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.white85.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(
-                  color: AppColors.white85.withOpacity(0.2),
-                  width: 0.5,
-                ),
-              ),
-              child: Row(
+            child: Row(
                 children: [
                   // Plus button - compact
                   Material(
@@ -3519,7 +3543,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 ],
               ),
             ),
-          ),
           // Scam Alert Popup
           if (_showScamAlert && _currentScamAlert != null)
             Positioned(

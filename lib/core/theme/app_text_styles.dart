@@ -10,7 +10,7 @@ class AppTextStyles {
 
   /// Threshold width in logical pixels for small screens (< 6 inches)
   /// Typical 6" phone has width ~360-400dp, using 400 as threshold
-  static const double _smallScreenThreshold = 360.0;
+  static const double _smallScreenThreshold = 800.0;
 
   /// Check if the current screen is considered small (< 6 inches)
   /// 
@@ -18,7 +18,7 @@ class AppTextStyles {
   /// - Screens with width < 400dp are considered small
   /// - This corresponds to phones with diagonal < 6 inches
   static bool isSmallScreen(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
+    final width = MediaQuery.of(context).size.height;
     return width < _smallScreenThreshold;
   }
 
@@ -140,7 +140,7 @@ class AppTextStyles {
     final isSmall = width < _smallScreenThreshold;
     
     if (isSmall) {
-      return (width * 0.04).clamp(13.0, 16.0);
+      return (width * 0.045).clamp(14.0, 18.0);
     } else {
       return (width * 0.045).clamp(14.0, 18.0);
     }

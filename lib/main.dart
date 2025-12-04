@@ -95,8 +95,14 @@ void main() async {
       logger.i('✅ Remote Config initialized with defaults');
       
       // Fetch remote values in background (non-blocking)
-      remoteConfigService.fetchAndActivate().catchError((e) {
-        logger.w('⚠️ Remote Config fetch failed (using defaults): $e');
+      remoteConfigService.fetchAndActivate().then((_) {
+        logger.i('✅ Remote Config fetch completed');
+      }).catchError((e) {
+        logger.e('❌ Remote Config fetch failed (using defaults): $e');
+        logger.e('❌ Error type: ${e.runtimeType}');
+        if (e is Error) {
+          logger.e('❌ Stack trace: ${e.stackTrace}');
+        }
       });
     } catch (e) {
       logger.w('⚠️ Remote Config initialization failed (using defaults): $e');

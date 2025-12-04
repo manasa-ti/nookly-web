@@ -1163,8 +1163,19 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
       return const Center(child: Text('Bloc not initialized.'));
     }
 
-    return Stack(
-      children: [
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.bottomRight,
+          radius: 1.0,
+          colors: [
+            const Color(0xFF4c4a7b).withOpacity(0.75), // Purple at bottom right
+            const Color(0xFF1d335f), // Primary blue at top left
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
         BlocProvider.value(
           value: _inboxBloc!,
           child: BlocBuilder<InboxBloc, InboxState>(
@@ -1232,7 +1243,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
 
                     return Column(
                       children: [
-                        ListTile(
+                        ListTile(                      
                         onTap: () => _onConversationTap(conversation),
                         leading: _buildAvatar(conversation),
                         title: Text(
@@ -1326,6 +1337,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
             },
           ),
       ],
+      ),
     );
   }
 } 

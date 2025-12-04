@@ -66,7 +66,14 @@ class _SignUpPageState extends State<SignUpPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        title: const Text('Sign Up', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85)),
+        title: Text(
+          'Sign Up',
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: AppColors.white85,
+            fontSize: AppTextStyles.getAppBarTitleFontSize(context),
+          ),
+        ),
         backgroundColor: const Color(0xFF1d335f),
         elevation: 0,
       ),
