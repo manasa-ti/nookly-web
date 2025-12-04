@@ -10,7 +10,7 @@ class AppTextStyles {
 
   /// Threshold width in logical pixels for small screens (< 6 inches)
   /// Typical 6" phone has width ~360-400dp, using 400 as threshold
-  static const double _smallScreenThreshold = 400.0;
+  static const double _smallScreenThreshold = 360.0;
 
   /// Check if the current screen is considered small (< 6 inches)
   /// 

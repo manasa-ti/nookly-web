@@ -138,7 +138,14 @@ class _HomePageState extends State<HomePage> {
             bottom: false,
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF283d67), // 5% lighter shade of #1d335f
+                gradient: RadialGradient(
+                  center: Alignment.center,
+                  radius: 1.0,
+                  colors: [
+                    Color(0xFF413b62), // Purple from center
+                    Color(0xFF283d67), // Original blue at edges
+                  ],
+                ),
               ),
               child: SizedBox(
                 height: appBarHeight,
