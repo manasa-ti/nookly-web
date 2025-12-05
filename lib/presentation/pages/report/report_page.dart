@@ -58,7 +58,7 @@ class _ReportPageState extends State<ReportPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF1d335f),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1d335f),
+        backgroundColor: const Color(0xFF283d67), // 5% lighter shade of #1d335f
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white),

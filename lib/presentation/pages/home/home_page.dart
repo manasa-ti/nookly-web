@@ -144,7 +144,7 @@ class _HomePageState extends State<HomePage> {
                   radius: 1.5,
                   colors: [
                     const Color(0xFF4c4a7b).withOpacity(0.5), // Purple from center
-                    const Color(0xFF1d335f), // Primary blue at edges
+                    const Color(0xFF283d67), // 5% lighter shade of #1d335f
                   ],
                 ),
               ),

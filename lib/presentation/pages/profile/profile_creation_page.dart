@@ -513,7 +513,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
             color: Colors.white
           ),
         ),
-        backgroundColor: const Color(0xFF1d335f),
+        backgroundColor: const Color(0xFF283d67), // 5% lighter shade of #1d335f
         elevation: 0,
       ),
       body: Column(

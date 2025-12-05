@@ -25,6 +25,10 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   String? _currentOpenParticipantId;
   // Store last valid ConversationLoaded state for recovery from error states
   ConversationLoaded? _lastValidLoadedState;
+  
+  // Debounce timer for ConversationUpdated events
+  Timer? _conversationUpdateDebounceTimer;
+  ConversationUpdated? _pendingConversationUpdate;
 
   ConversationBloc({
     required ConversationRepository conversationRepository,
@@ -981,6 +985,36 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
     ConversationUpdated event,
     Emitter<ConversationState> emit,
   ) {
+    // Merge with pending update if exists (keep latest values)
+    if (_pendingConversationUpdate != null) {
+      // Merge: keep latest lastMessage, latest updatedAt, latest isTyping
+      _pendingConversationUpdate = ConversationUpdated(
+        conversationId: event.conversationId,
+        lastMessage: event.lastMessage ?? _pendingConversationUpdate!.lastMessage,
+        updatedAt: event.updatedAt.isAfter(_pendingConversationUpdate!.updatedAt) 
+            ? event.updatedAt 
+            : _pendingConversationUpdate!.updatedAt,
+        isTyping: event.isTyping ?? _pendingConversationUpdate!.isTyping,
+      );
+    } else {
+      _pendingConversationUpdate = event;
+    }
+    
+    // Cancel existing timer
+    _conversationUpdateDebounceTimer?.cancel();
+    
+    // Start new debounce timer (50ms window)
+    _conversationUpdateDebounceTimer = Timer(const Duration(milliseconds: 50), () {
+      _processPendingConversationUpdate(emit);
+    });
+  }
+  
+  void _processPendingConversationUpdate(Emitter<ConversationState> emit) {
+    if (_pendingConversationUpdate == null) return;
+    
+    final event = _pendingConversationUpdate!;
+    _pendingConversationUpdate = null;
+    
     // Try to recover from error state using last valid loaded state
     ConversationLoaded? currentState = state is ConversationLoaded 
         ? state as ConversationLoaded 
@@ -1206,6 +1240,8 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
   @override
   Future<void> close() {
     _messagesSubscription?.cancel();
+    _conversationUpdateDebounceTimer?.cancel();
+    _pendingConversationUpdate = null;
     return super.close();
   }
 }

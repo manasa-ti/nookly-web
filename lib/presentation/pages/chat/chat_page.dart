@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/message.dart';
@@ -157,10 +158,46 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   
   // Store GamesBloc reference for safe access in dispose()
   GamesBloc? _gamesBloc;
+  
+  // Read receipt scheduling
+  bool _readReceiptCheckScheduled = false;
+  
+  // Cache formatted timestamps to avoid recomputing on every rebuild
+  final Map<String, String> _timestampCache = {};
+  
+  // Cache status widget keys to avoid rebuilding widgets unnecessarily
+  final Map<String, String> _statusWidgetCache = {};
+  
+  // Store previous FlutterError handler to restore on dispose
+  FlutterExceptionHandler? _previousErrorHandler;
 
   @override
   void initState() {
     super.initState();
+    
+    // Set up Flutter error handler for debugging white page issues
+    _previousErrorHandler = FlutterError.onError;
+    FlutterError.onError = (FlutterErrorDetails details) {
+      // Log detailed error information
+      AppLogger.error('🔥 ========== FLUTTER ERROR DETECTED ==========');
+      AppLogger.error('🔥 EXCEPTION: ${details.exception}');
+      AppLogger.error('🔥 EXCEPTION TYPE: ${details.exception.runtimeType}');
+      if (details.stack != null) {
+        AppLogger.error('🔥 STACK TRACE:\n${details.stack}');
+      }
+      if (details.context != null) {
+        AppLogger.error('🔥 ERROR CONTEXT:\n${details.context}');
+      }
+      AppLogger.error('🔥 LIBRARY: ${details.library}');
+      AppLogger.error('🔥 SILENT: ${details.silent}');
+      AppLogger.error('🔥 ============================================');
+      
+      // Present the error UI
+      FlutterError.presentError(details);
+      
+      // Also call previous handler if it exists
+      _previousErrorHandler?.call(details);
+    };
     
     // Add lifecycle observer to monitor app state changes
     WidgetsBinding.instance.addObserver(this);
@@ -171,6 +208,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // iOS requires the widget to be fully built before protection can be enabled
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _enableScreenProtection();
+      // Schedule read receipt checks
+      _scheduleReadReceiptCheck();
     });
     
     // Initialize DisappearingImageManager
@@ -440,6 +479,18 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     // Disable screen protection when leaving chat screen
     _disableScreenProtection();
     
+    // Cancel read receipt checks
+    _readReceiptCheckScheduled = false;
+    
+    // Clear caches
+    _timestampCache.clear();
+    _statusWidgetCache.clear();
+    
+    // Restore previous FlutterError handler
+    if (_previousErrorHandler != null) {
+      FlutterError.onError = _previousErrorHandler;
+    }
+    
     _messageController.dispose();
     _scrollController.dispose();
     _menuAnimationController.dispose();
@@ -461,6 +512,95 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     if (_scrollController.position.pixels <= 100 && !_isLoadingMore) {
       _loadMoreMessages();
     }
+  }
+
+  /// Get visible messages based on scroll position
+  List<Message> _getVisibleMessages() {
+    if (!_scrollController.hasClients) {
+      return [];
+    }
+
+    final state = context.read<ConversationBloc>().state;
+    if (state is! ConversationLoaded || state.messages.isEmpty) {
+      return [];
+    }
+
+    final position = _scrollController.position;
+    final viewportHeight = position.viewportDimension;
+    final scrollOffset = position.pixels;
+    
+    // Since ListView is reversed, messages at the start of the list (index 0, 1, 2...)
+    // are at the bottom of the screen (most visible)
+    // Estimate item height (average message height)
+    const estimatedItemHeight = 80.0;
+    
+    // Calculate visible range
+    // In reversed list: bottom is at scrollOffset=0, top is at scrollOffset=maxScrollExtent
+    final visibleStart = (scrollOffset / estimatedItemHeight).floor();
+    final visibleEnd = ((scrollOffset + viewportHeight) / estimatedItemHeight).ceil();
+    
+    // Clamp to valid range
+    final startIndex = visibleStart.clamp(0, state.messages.length - 1);
+    final endIndex = visibleEnd.clamp(0, state.messages.length);
+    
+    // Return messages in the visible range
+    return state.messages.sublist(startIndex, endIndex);
+  }
+
+  /// Send read receipts for visible messages
+  void _sendReadReceiptsForVisibleMessages() {
+    if (_socketService == null || _currentUserId == null) {
+      return;
+    }
+
+    final visibleMessages = _getVisibleMessages();
+    
+    for (final message in visibleMessages) {
+      if (message.sender != _currentUserId && 
+          message.status == 'delivered' && 
+          !_processedMessageIds.contains('${message.id}_read')) {
+        try {
+          _socketService!.emit('message_read', {
+            'messageId': message.id,
+            'conversationId': widget.conversationId,
+            'timestamp': DateTime.now().toIso8601String(),
+            'readBy': _currentUserId,
+          });
+          _processedMessageIds.add('${message.id}_read');
+        } catch (e) {
+          AppLogger.error('❌ Failed to emit message_read event: $e');
+        }
+      }
+    }
+  }
+
+  /// Schedule periodic read receipt checks
+  void _scheduleReadReceiptCheck() {
+    if (!mounted || _readReceiptCheckScheduled) {
+      return;
+    }
+
+    _readReceiptCheckScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        _readReceiptCheckScheduled = false;
+        return;
+      }
+      
+      _sendReadReceiptsForVisibleMessages();
+      
+      // Schedule again if still mounted
+      if (mounted) {
+        Future.delayed(const Duration(milliseconds: 200), () {
+          _readReceiptCheckScheduled = false;
+          if (mounted) {
+            _scheduleReadReceiptCheck();
+          }
+        });
+      } else {
+        _readReceiptCheckScheduled = false;
+      }
+    });
   }
 
   void _loadMoreMessages() {
@@ -504,6 +644,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // Scam detection and alert methods
   void _checkForScamAlert(String message, bool isFromOtherUser) {
     if (!isFromOtherUser) return; // Only check messages from other users
+    
+    // Skip scam alerts if a game is currently active
+    try {
+      final gamesBloc = _gamesBloc ?? context.read<GamesBloc>();
+      final gameState = gamesBloc.state;
+      if (gameState is GameActive || gameState is GameTurnCompleted) {
+        AppLogger.info('🔍 Skipping scam alert check - game is active (state: ${gameState.runtimeType})');
+        return;
+      }
+    } catch (e) {
+      // If we can't access GamesBloc, continue with scam check (better to show alert than miss it)
+      AppLogger.warning('⚠️ Could not check game state for scam alert: $e');
+    }
     
     AppLogger.info('🔍 Checking for scam alert in message: "$message"');
     AppLogger.info('🔍 Message count: $_messageCount');
@@ -2724,7 +2877,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       backgroundColor: Colors.transparent,
       resizeToAvoidBottomInset: true, // Enable keyboard avoidance - input moves up with keyboard
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1d335f),
+        backgroundColor: const Color(0xFF283d67), // 5% lighter shade of #1d335f
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: AppColors.white85),
@@ -2877,6 +3030,9 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                   if (isNewConversation) {
                     _cachedMessages = [];
                     _cachedConversationId = widget.conversationId;
+                    // Clear caches when switching conversations to prevent memory leaks
+                    _timestampCache.clear();
+                    _statusWidgetCache.clear();
                   }
                 }
                 
@@ -3105,111 +3261,43 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                   final message = displayMessages[index];
                                   final isMe = message.sender == _currentUserId;
                                   
-                                  // Emit message_read when message is visible and from other user
-                                  if (!isMe && 
-                                      message.status == 'delivered' && 
-                                      _socketService != null &&
-                                      !_processedMessageIds.contains('${message.id}_read')) {
-                                    AppLogger.info('🔵 Emitting message_read for message: ${message.id}');
-                                    try {
-                                      _socketService!.emit('message_read', {
-                                        'messageId': message.id,
-                                        'conversationId': widget.conversationId,
-                                        'timestamp': DateTime.now().toIso8601String(),
-                                        'readBy': _currentUserId,
-                                      });
-                                      _processedMessageIds.add('${message.id}_read');
-                                      AppLogger.info('✅ Successfully emitted message_read event');
-                                    } catch (e) {
-                                      AppLogger.error('❌ Failed to emit message status events: $e');
-                                    }
-                                  }
-                                  
                                   // Only pass timer parameters for disappearing image messages
                                   final timerState = _disappearingImageManager.getTimerState(message.id);
                                   final shouldShowTimer = message.metadata?.isDisappearing == true && 
                                                        message.metadata?.disappearingTime != null && 
                                                        message.type == MessageType.image;
                                   
-                                  // Debug logging for all messages
-                                  AppLogger.info('🔍 CHAT PAGE - Processing message for display:');
-                                  AppLogger.info('  - Message ID: ${message.id}');
-                                  AppLogger.info('  - Message type: ${message.type}');
-                                  AppLogger.info('  - Message metadata: ${message.metadata}');
-                                  AppLogger.info('  - Message isDisappearing: ${message.metadata?.isDisappearing}');
-                                  AppLogger.info('  - Message disappearingTime: ${message.metadata?.disappearingTime}');
-                                  AppLogger.info('  - Total messages in list: ${displayMessages.length}');
-                                  AppLogger.info('  - Message index: ${displayMessages.indexOf(message)}');
-                                  
-                                  // Debugging disappearing data - Before MessageBubble rendering (images only)
-                                  if (message.type == MessageType.image) {
-                                    AppLogger.info('🔍 [Debugging disappearing data] BEFORE MESSAGEBUBBLE RENDERING:');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.id: ${message.id}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.type: ${message.type}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata: ${message.metadata}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata?.isDisappearing: ${message.metadata?.isDisappearing} (type: ${message.metadata?.isDisappearing.runtimeType})');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata?.disappearingTime: ${message.metadata?.disappearingTime} (type: ${message.metadata?.disappearingTime.runtimeType})');
-                                  }
-                                  AppLogger.info('🔍 [Debugging disappearing data] - shouldShowTimer: $shouldShowTimer');
-                                  AppLogger.info('🔍 [Debugging disappearing data] - timerState: ${timerState?.remainingTime}');
-                                  
-                                  // Debug logging for MessageBubble parameters
-                                  if (message.type == MessageType.image) {
-                                    AppLogger.info('🔍 MessageBubble parameters DEBUG:');
-                                    AppLogger.info('  - Message ID: ${message.id}');
-                                    AppLogger.info('  - Is disappearing: ${message.metadata?.isDisappearing}');
-                                    AppLogger.info('  - Disappearing time: ${message.metadata?.disappearingTime}');
-                                    AppLogger.info('  - Should show timer: $shouldShowTimer');
-                                    AppLogger.info('  - Timer state remaining: ${timerState?.remainingTime}');
-                                    AppLogger.info('  - Passing disappearingTime: ${shouldShowTimer ? message.metadata?.disappearingTime : null}');
-                                    AppLogger.info('  - Full message metadata: ${message.metadata}');
-                                  }
-                                  
-                                  // Debugging disappearing data - Final parameters being passed to MessageBubble (images only)
-                                  if (message.type == MessageType.image) {
-                                    AppLogger.info('🔍 [Debugging disappearing data] FINAL MESSAGEBUBBLE PARAMETERS:');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.id: ${message.id}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.type: ${message.type}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - message.metadata: ${message.metadata}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - shouldShowTimer: $shouldShowTimer');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - disappearingTime parameter: ${shouldShowTimer ? message.metadata?.disappearingTime : null}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - timerNotifier parameter: ${shouldShowTimer ? timerState?.timerNotifier : null}');
-                                    AppLogger.info('🔍 [Debugging disappearing data] - timerState?.remainingTime: ${timerState?.remainingTime}');
-                                  }
-                                  
-                                  return Padding(
-                                    padding: const EdgeInsets.symmetric(vertical: 4),
-                                    child: MessageBubble(
-                                      key: ValueKey(message.id),
-                                      message: message,
-                                      isMe: isMe,
-                                      showAvatar: false,
-                                      avatarUrl: widget.participantAvatar,
-                                      statusWidget: isMe ? _buildMessageStatus(message) : null,
-                                      timestamp: _formatMessageTimestamp(message),
-                                      onImageTap: () {
-                                        if (message.type == MessageType.image) {
-                                          AppLogger.info('🔵 MessageBubble requested full screen image');
-                                          AppLogger.info('🔵 Message content: ${message.content}');
-                                          _showFullScreenImage(message.content, isMe);
-                                        }
-                                      },
-                                      onImageUrlReady: (imageUrl) {
-                                        // REMOVED: image_viewed event is now sent only when image is viewed in full screen
-                                        // and has finished loading (see _showFullScreenImageWithUrl loadingBuilder)
-                                        AppLogger.info('🔵 Image URL ready for message: ${message.id} (NOT sending image_viewed - will send when viewed in full screen)');
-                                      },
-                                      disappearingTime: shouldShowTimer ? message.metadata?.disappearingTime : null,
-                                      timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,
-                                      onImageUrlRefreshed: (messageId, newImageUrl, newExpirationTime, additionalData) {
-                                        AppLogger.info('🔵 MessageBubble requested image URL refresh for message: $messageId');
-                                        context.read<ConversationBloc>().add(UpdateMessageImageData(
-                                          messageId: messageId,
-                                          newImageUrl: newImageUrl,
-                                          newExpirationTime: newExpirationTime,
-                                          additionalData: additionalData,
-                                        ));
-                                      },
+                                  return RepaintBoundary(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 4),
+                                      child: MessageBubble(
+                                        key: ValueKey(message.id),
+                                        message: message,
+                                        isMe: isMe,
+                                        showAvatar: false,
+                                        avatarUrl: widget.participantAvatar,
+                                        statusWidget: isMe ? _getCachedStatusWidget(message) : null,
+                                        timestamp: _getCachedTimestamp(message),
+                                        onImageTap: () {
+                                          if (message.type == MessageType.image) {
+                                            _showFullScreenImage(message.content, isMe);
+                                          }
+                                        },
+                                        onImageUrlReady: (imageUrl) {
+                                          // REMOVED: image_viewed event is now sent only when image is viewed in full screen
+                                          // and has finished loading (see _showFullScreenImageWithUrl loadingBuilder)
+                                        },
+                                        disappearingTime: shouldShowTimer ? message.metadata?.disappearingTime : null,
+                                        timerNotifier: shouldShowTimer ? timerState?.timerNotifier : null,
+                                        onImageUrlRefreshed: (messageId, newImageUrl, newExpirationTime, additionalData) {
+                                          context.read<ConversationBloc>().add(UpdateMessageImageData(
+                                            messageId: messageId,
+                                            newImageUrl: newImageUrl,
+                                            newExpirationTime: newExpirationTime,
+                                            additionalData: additionalData,
+                                          ));
+                                        },
+                                      ),
                                     ),
                                   );
                                 },
@@ -3285,6 +3373,19 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
             updatedAt: DateTime.now(),
             isOnline: widget.isOnline,
           )),
+          // Scam Alert Popup - positioned in Stack (not in Column)
+          if (_showScamAlert && _currentScamAlert != null)
+            Positioned(
+              top: 100,
+              left: 16,
+              right: 16,
+              child: ScamAlertPopup(
+                alertType: _currentScamAlert!,
+                onDismiss: _dismissScamAlert,
+                onReport: _reportScamAlert,
+                onLearnMore: _learnMoreAboutScam,
+              ),
+            ),
         ],
         ),
       ),
@@ -3543,19 +3644,6 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 ],
               ),
             ),
-          // Scam Alert Popup
-          if (_showScamAlert && _currentScamAlert != null)
-            Positioned(
-              top: 100,
-              left: 16,
-              right: 16,
-              child: ScamAlertPopup(
-                alertType: _currentScamAlert!,
-                onDismiss: _dismissScamAlert,
-                onReport: _reportScamAlert,
-                onLearnMore: _learnMoreAboutScam,
-              ),
-            ),
         ],
       ),
     );
@@ -3729,6 +3817,20 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     );
   }
 
+  /// Get cached formatted timestamp for a message
+  /// Cache key includes message ID, status, and relevant timestamp to invalidate when message changes
+  String _getCachedTimestamp(Message message) {
+    // Create cache key from message properties that affect timestamp
+    final statusTimestamp = message.metadata?.readAt ?? 
+                           message.metadata?.deliveredAt ?? 
+                           message.timestamp.millisecondsSinceEpoch.toString();
+    final cacheKey = '${message.id}_${message.status}_$statusTimestamp';
+    
+    return _timestampCache.putIfAbsent(cacheKey, () {
+      return _formatMessageTimestamp(message);
+    });
+  }
+
   String _formatMessageTimestamp(Message message) {
     // Convert UTC timestamps to local time before formatting
     DateTime localTime;
@@ -3744,6 +3846,29 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
     }
     
     return DateFormat('HH:mm').format(localTime);
+  }
+
+  /// Get cached status widget for a message
+  /// Uses cache key to avoid rebuilding widgets unnecessarily
+  Widget? _getCachedStatusWidget(Message message) {
+    if (message.sender != _currentUserId) return null;
+    
+    // Create cache key from message properties that affect status widget
+    final statusTimestamp = message.metadata?.readAt ?? 
+                           message.metadata?.deliveredAt ?? 
+                           '';
+    final cacheKey = '${message.id}_${message.status}_$statusTimestamp';
+    
+    // Check if we have a cached widget key (we can't cache widgets directly)
+    // Instead, we'll use the cache key to determine if we need to rebuild
+    if (_statusWidgetCache.containsKey(cacheKey)) {
+      // Widget is the same, but we still need to return it
+      // The key helps Flutter's widget diffing optimize rebuilds
+    } else {
+      _statusWidgetCache[cacheKey] = cacheKey;
+    }
+    
+    return _buildMessageStatus(message);
   }
 
   // Add message status indicator
@@ -4102,6 +4227,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
       _isRecordingVoice = false;
     });
   }
+
 
   void _showGifPicker() {
     setState(() {

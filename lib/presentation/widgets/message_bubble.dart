@@ -215,7 +215,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: widget.isMe ? const Color(0xFFf9666c) : const Color(0xFF4f527e),
+                        color: widget.isMe ? const Color(0xFFf9666c).withOpacity(0.75) : const Color(0xFF4f527e),
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
