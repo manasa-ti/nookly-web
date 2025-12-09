@@ -117,20 +117,22 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      // TEMPORARILY DISABLED: Swipe gesture handlers commented out for future use
-      // onHorizontalDragStart: _onDragStart,
-      // onHorizontalDragUpdate: _onDragUpdate,
-      // onHorizontalDragEnd: _onDragEnd,
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: _animation,
-        builder: (context, child) {
-          return Transform.translate(
-            // TEMPORARILY DISABLED: Swipe offset commented out for future use
-            // offset: Offset(_dragOffset, 0),
-            offset: Offset.zero, // No movement since swipe is disabled
-            child: Stack(
+    return ExcludeFocus(
+      // Prevent focus system crashes on iPad by excluding this widget from focus traversal
+      child: GestureDetector(
+        // TEMPORARILY DISABLED: Swipe gesture handlers commented out for future use
+        // onHorizontalDragStart: _onDragStart,
+        // onHorizontalDragUpdate: _onDragUpdate,
+        // onHorizontalDragEnd: _onDragEnd,
+        onTap: widget.onTap,
+        child: AnimatedBuilder(
+          animation: _animation,
+          builder: (context, child) {
+            return Transform.translate(
+              // TEMPORARILY DISABLED: Swipe offset commented out for future use
+              // offset: Offset(_dragOffset, 0),
+              offset: Offset.zero, // No movement since swipe is disabled
+              child: Stack(
               children: [
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
@@ -252,6 +254,7 @@ class _ProfileCardState extends State<ProfileCard> with SingleTickerProviderStat
           );
         },
       ),
+      ),
     );
   }
 }
@@ -271,12 +274,14 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
   late Animation<double> _scaleAnim;
   late Animation<Color?> _colorAnim;
   late Animation<double> _outlineAnim;
+  late FocusNode _focusNode; // Manage focus node to prevent iPad crashes
   bool _isFilled = false;
   List<Widget> _floatingHearts = [];
 
   @override
   void initState() {
     super.initState();
+    _focusNode = FocusNode(skipTraversal: true); // Prevent focus issues on iPad
     _scaleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -303,6 +308,7 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
 
   @override
   void dispose() {
+    _focusNode.dispose();
     _scaleController.dispose();
     _colorController.dispose();
     _outlineController.dispose();
@@ -382,6 +388,7 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
                 ),
                 child: ElevatedButton(
                   onPressed: _onPressed,
+                  focusNode: _focusNode, // Use managed focus node to prevent iPad crashes
                   style: ElevatedButton.styleFrom(
                     shape: const CircleBorder(),
                     padding: const EdgeInsets.all(4),

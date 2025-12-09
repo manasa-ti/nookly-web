@@ -7,8 +7,8 @@ import 'package:nookly/domain/entities/recommended_profiles_page.dart';
 import 'package:nookly/domain/repositories/recommended_profiles_repository.dart';
 
 class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository {
-  static const bool _enableMockRecommendations =
-      bool.fromEnvironment('USE_MOCK_RECOMMENDATIONS', defaultValue: false);
+  // Temporarily enable mock recommendations for testing
+  static const bool _enableMockRecommendations = true; // Changed to true for temporary mock data
   static const int _mockTotalCandidates = 500;
   static const int _mockDefaultLimit = 20;
 
@@ -157,49 +157,76 @@ class RecommendedProfilesRepositoryImpl implements RecommendedProfilesRepository
 
   static const List<_MockProfileTemplate> _mockTemplates = [
     _MockProfileTemplate(
-      name: 'Avery',
+      name: 'Candlelight Vibes',
       sex: 'f',
       hometown: 'Bengaluru',
-      bio: 'Coffee, hikes, and meaningful conversations.',
-      interests: ['coffee dates', 'nature walks', 'live music'],
-      objectives: ['Long term', 'Companionship'],
-      profilePic: 'https://cdn.nookly.app/mock/avery.jpg',
+      bio: 'Exploring life. Looking to find like minded souls and see where this goes. Deep, Trust worthy, friendly one. No agenda, just exploring.',
+      interests: ['engaging chats', 'drink and dine', 'deep conversations'],
+      objectives: ['Companionship', 'Friendship'],
+      profilePic: null,
     ),
     _MockProfileTemplate(
-      name: 'Maya',
+      name: 'Sunny Side Sam',
+      sex: 'm',
+      hometown: 'Mumbai',
+      bio: 'I am a sports enthusiast. Ambivert in nature. I like talking about psychology and human behaviour. looking for like minded people.',
+      interests: ['deep conversations', 'experiences together', 'engaging chats'],
+      objectives: ['Friendship', 'Companionship'],
+      profilePic: null,
+    ),
+    _MockProfileTemplate(
+      name: 'Warmhearted Traveler',
       sex: 'f',
-      hometown: 'Chennai',
-      bio: 'Early morning runs and seaside sunsets.',
-      interests: ['running buddies', 'cooking', 'podcasts'],
-      objectives: ['Friendship', 'Study partner'],
-      profilePic: 'https://cdn.nookly.app/mock/maya.jpg',
+      hometown: 'Pune',
+      bio: 'would love to have cherishable moments, experiences together, create memories. I like adventures and at some time like to relax in leisure',
+      interests: ['experiences together', 'travel buddy', 'adventures'],
+      objectives: ['Travel buddy', 'Companionship'],
+      profilePic: null,
     ),
     _MockProfileTemplate(
-      name: 'Noah',
+      name: 'Midnight Philosopher',
       sex: 'm',
       hometown: 'Hyderabad',
-      bio: 'Product designer who loves indie films.',
-      interests: ['design meetups', 'board games', 'film clubs'],
-      objectives: ['Creative projects', 'Companionship'],
-      profilePic: 'https://cdn.nookly.app/mock/noah.jpg',
+      bio: 'Night owl who loves deep conversations over coffee. Passionate about books, music, and meaningful connections. Looking for someone to share thoughts and experiences with.',
+      interests: ['deep conversations', 'coffee dates', 'book clubs'],
+      objectives: ['Companionship', 'Friendship'],
+      profilePic: null,
     ),
     _MockProfileTemplate(
-      name: 'Liam',
-      sex: 'm',
-      hometown: 'Pune',
-      bio: 'Weekend cyclist & amateur chef.',
-      interests: ['long rides', 'farmers markets', 'tech events'],
-      objectives: ['Workout partner', 'Travel buddy'],
-      profilePic: 'https://cdn.nookly.app/mock/liam.jpg',
-    ),
-    _MockProfileTemplate(
-      name: 'Zara',
+      name: 'Ocean Breeze',
       sex: 'f',
+      hometown: 'Chennai',
+      bio: 'Beach lover and yoga enthusiast. I enjoy morning walks, meditation, and connecting with nature. Seeking someone who values peace and mindfulness.',
+      interests: ['nature walks', 'yoga sessions', 'beach outings'],
+      objectives: ['Companionship', 'Wellness partner'],
+      profilePic: null,
+    ),
+    _MockProfileTemplate(
+      name: 'Urban Explorer',
+      sex: 'm',
       hometown: 'New Delhi',
-      bio: 'Bookstores, theatre, and street photography.',
-      interests: ['open mic nights', 'art shows', 'coffee tasting'],
-      objectives: ['Creative projects', 'Friendship'],
-      profilePic: 'https://cdn.nookly.app/mock/zara.jpg',
+      bio: 'City wanderer who loves discovering hidden gems. Foodie at heart, always up for trying new cuisines and exploring local markets. Let\'s create memories together.',
+      interests: ['drink and dine', 'city exploration', 'food adventures'],
+      objectives: ['Companionship', 'Travel buddy'],
+      profilePic: null,
+    ),
+    _MockProfileTemplate(
+      name: 'Starry Night Dreamer',
+      sex: 'f',
+      hometown: 'Kolkata',
+      bio: 'Creative soul who finds inspiration in art, music, and stargazing. Love deep conversations about life, dreams, and everything in between. Looking for genuine connections.',
+      interests: ['deep conversations', 'art shows', 'stargazing'],
+      objectives: ['Creative projects', 'Companionship'],
+      profilePic: null,
+    ),
+    _MockProfileTemplate(
+      name: 'Mountain Soul',
+      sex: 'm',
+      hometown: 'Dehradun',
+      bio: 'Adventure seeker and nature enthusiast. Love hiking, camping, and outdoor activities. Looking for someone to share adventures and create lasting memories with.',
+      interests: ['adventures', 'hiking', 'outdoor activities'],
+      objectives: ['Adventure partner', 'Companionship'],
+      profilePic: null,
     ),
   ];
 

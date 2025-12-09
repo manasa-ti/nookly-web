@@ -316,6 +316,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       child: AuthWrapper(
         child: MaterialApp(
           title: 'nookly',
+          debugShowCheckedModeBanner: false, // Hide debug banner in all modes
           navigatorKey: FirebaseMessagingService.navigatorKey ?? AuthHandler.navigatorKey, // Firebase notifications and auth navigation
           scaffoldMessengerKey: MyApp.scaffoldMessengerKey, // Add global scaffold messenger key
           theme: AppTheme.theme,
