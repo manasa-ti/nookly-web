@@ -1213,7 +1213,7 @@ class _ChatInboxPageState extends State<ChatInboxPage> with WidgetsBindingObserv
                       const SizedBox(height: 16),
                       Text('No conversations yet', style: TextStyle(fontSize: AppTextStyles.getLargeTitleFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85, fontFamily: 'Nunito')),
                       const SizedBox(height: 8),
-                      Text('When you match with someone, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: AppColors.white85.withOpacity(0.7))),
+                      Text('When you form a connection, you can start chatting here', textAlign: TextAlign.center, style: TextStyle(color: AppColors.white85.withOpacity(0.7))),
                     ],
                   ),
                 );

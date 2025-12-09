@@ -170,7 +170,7 @@ class _GamesTutorialOverlayState extends State<GamesTutorialOverlay>
                           const SizedBox(height: 8),
                           
                           Text(
-                            'Send invite to your match',
+                            'Send invite to your connection',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: AppTextStyles.getBodyFontSize(context),

@@ -135,25 +135,25 @@ class ScamAlertService {
   String getAlertMessage(ScamAlertType type) {
     switch (type) {
       case ScamAlertType.romanceFinancial:
-        return "🚨 **Scam Alert**: Never send money, gift cards, or personal financial information to someone you've met online. Legitimate matches won't ask for financial help.";
+        return "🚨 **Scam Alert**: Never send money, gift cards, or personal financial information to someone you've met online. Legitimate connections won't ask for financial help.";
       
       case ScamAlertType.catfishing:
-        return "⚠️ **Stay Safe**: Be cautious of matches who avoid video calls. Consider having a video call to verify your match's identity before meeting.";
+        return "⚠️ **Stay Safe**: Be cautious of connections who avoid video calls. Consider having a video call to verify your connection's identity before meeting.";
       
       case ScamAlertType.offPlatform:
-        return "🛡️ **Safety Tip**: Keep conversations on our platform initially. Be wary of matches who immediately want to move to other apps or request personal contact info.";
+        return "🛡️ **Safety Tip**: Keep conversations on our platform initially. Be wary of connections who immediately want to move to other apps or request personal contact info.";
       
       case ScamAlertType.investmentCrypto:
-        return "🚨 **Investment Scam Warning**: Never invest money based on advice from online matches. These are common scams targeting dating app users.";
+        return "🚨 **Investment Scam Warning**: Never invest money based on advice from online connections. These are common scams targeting dating app users.";
       
       case ScamAlertType.militaryImpersonation:
         return "⚠️ **Verification Needed**: Be cautious of profiles claiming military service or overseas work. Verify claims and never send money for 'emergencies'.";
       
       case ScamAlertType.loveBombing:
-        return "🚨 **Red Flag**: Be cautious of matches who express intense love very quickly or seem 'too good to be true'. Take relationships slow.";
+        return "🚨 **Red Flag**: Be cautious of connections who express intense love very quickly or seem 'too good to be true'. Take relationships slow.";
       
       case ScamAlertType.personalInfoRequest:
-        return "🔒 **Protect Yourself**: Never share personal information like your address, workplace, financial details, or passwords with online matches.";
+        return "🔒 **Protect Yourself**: Never share personal information like your address, workplace, financial details, or passwords with online connections.";
       
       case ScamAlertType.advanceFee:
         return "🚨 **Advance Fee Scam**: Be wary of promises of large sums of money requiring upfront payments. These are almost always scams.";

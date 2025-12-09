@@ -26,7 +26,7 @@ class MatchingTutorialDialog extends StatelessWidget {
           children: [
             // Title
             Text(
-              'Find Your Match',
+              'Discover Your Connection',
               style: TextStyle(
                 fontSize: AppTextStyles.getTitleFontSize(context),
                 fontWeight: FontWeight.bold,
@@ -54,7 +54,7 @@ class MatchingTutorialDialog extends StatelessWidget {
             _buildInstruction(
               context: context,
               icon: Icons.chat_bubble_outline,
-              text: 'Matched profiles appear in Chat',
+              text: 'Connected profiles appear in Chat',
             ),
             const SizedBox(height: 24),
             

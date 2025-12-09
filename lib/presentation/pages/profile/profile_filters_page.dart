@@ -269,7 +269,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Adjust your preferences to find better matches',
+                          'Adjust your preferences to find better connections',
                           style: TextStyle(
                             fontSize: AppTextStyles.getBodyFontSize(context),
                             color: Colors.white70,

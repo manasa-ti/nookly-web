@@ -143,7 +143,7 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                           
                           // Title
                           Text(
-                            'Find Your Match',
+                            'Discover Your Connection',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: AppTextStyles.getTitleFontSize(context),
@@ -219,7 +219,7 @@ class _MatchingTutorialOverlayState extends State<MatchingTutorialOverlay>
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Matched profiles appear in Chat',
+                                  'Connected profiles appear in Chat',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     fontSize: AppTextStyles.getBodyFontSize(context),

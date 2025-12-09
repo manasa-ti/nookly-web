@@ -26,25 +26,25 @@ class _SafetyTipsBannerState extends State<SafetyTipsBanner> {
     SafetyTip(
       icon: "🚨",
       title: "Never Send Money",
-      message: "Legitimate matches won't ask for money, gift cards, or financial help. If someone asks, it's likely a scam.",
+      message: "Legitimate connections won't ask for money, gift cards, or financial help. If someone asks, it's likely a scam.",
       color: Color(0xFFE74C3C),
     ),
     SafetyTip(
       icon: "🛡️",
       title: "Stay on Platform",
-      message: "Keep conversations on our platform initially. Be wary of matches who quickly want to move to other apps.",
+      message: "Keep conversations on our platform initially. Be cautious of connections who quickly want to move to other apps.",
       color: Color(0xFF3498DB),
     ),
     SafetyTip(
       icon: "✅",
-      title: "Verify Your Match",
-      message: "Consider having a video call before meeting in person to confirm your match is who they claim to be.",
+      title: "Verify Your Connection",
+      message: "Consider having a video call before meeting in person to confirm your connection is who they claim to be.",
       color: Color(0xFF27AE60),
     ),
     SafetyTip(
       icon: "🔒",
       title: "Protect Your Privacy",
-      message: "Never share personal information like your address, workplace, or financial details with online matches.",
+      message: "Never share personal information like your address, workplace, or financial details with online connections.",
       color: Color(0xFFF39C12),
     ),
   ];

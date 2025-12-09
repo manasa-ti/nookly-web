@@ -157,7 +157,7 @@ class _MessagingTutorialOverlayState extends State<MessagingTutorialOverlay>
                           
                           // Description
                           Text(
-                            'Your matches appear here',
+                            'Your connections appear here',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: AppTextStyles.getBodyFontSize(context),

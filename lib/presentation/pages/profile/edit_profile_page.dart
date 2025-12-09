@@ -74,14 +74,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   // Fallback static lists
   static const List<String> _fallbackObjectives = [
-    'Short Term',
-    'Long Term',
-    'Serious Committed Relationship',
-    'Casual',
-    'ONS',
-    'FWB',
-    'Friends to Hang Out',
-    'Emotional Connection',
+    'Short-term companionship',
+    'Long-term companionship',
+    'Committed companionship',
+    'Light, no-pressure connection',
+    'Non committed companionship',
+    'Spontaneous meetup',
+    'Easy-going companionship',
+    'Friends to hang out',
+    'Emotional bonding',
   ];
 
   static const List<String> _fallbackInterests = [
