@@ -21,34 +21,34 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
 
   final List<WelcomeSlide> _slides = [
     WelcomeSlide(
-      title: 'Welcome to Nookly',
-      description: 'Your journey to meaningful connections starts here',
-      icon: '👋',
+      title: 'Find people who get you',
+      description: 'Meet like-minded individuals without judgment.',
+      icon: '🤝',
       color: const Color(0xFF6C5CE7),
     ),
     WelcomeSlide(
-      title: 'Ditch loneliness',
-      description: 'Find genuine connections with people who share your interests',
-      icon: '💝',
-      color: const Color(0xFFE84393),
+      title: 'Stay anonymous. Stay in control.',
+      description: 'Your identity remains private until you choose to share it.',
+      icon: '🫥',
+      color: const Color(0xFF6C5CE7),
     ),
     WelcomeSlide(
-      title: 'Find your discreet companion',
-      description: 'Connect with like-minded individuals in a safe, private environment',
+      title: 'Safety that actually protects you',
+      description: 'Encrypted chats and strict moderation keep the space respectful.',
       icon: '🔒',
-      color: const Color(0xFF00B894),
+      color: const Color(0xFF6C5CE7),
     ),
     WelcomeSlide(
-      title: 'Chat and play games together',
-      description: 'Break the ice with fun games and meaningful conversations',
+      title: 'Chat and play together',
+      description: 'Break the ice with games and fun conversations.',
       icon: '🎮',
-      color: const Color(0xFFFDCB6E),
+      color: const Color(0xFF6C5CE7),
     ),
     WelcomeSlide(
-      title: 'Start your journey',
-      description: 'Ready to find your like minded companion? Let\'s begin!',
-      icon: '🚀',
-      color: const Color(0xFFE17055),
+      title: 'Ditch loneliness.',
+      description: 'Find genuine, mature connections—privately and discreetly.',
+      icon: '❤️‍🔥',
+      color: const Color(0xFF6C5CE7),
     ),
   ];
 
@@ -158,7 +158,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
                 child: ElevatedButton(
                   onPressed: _nextPage,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _slides[_currentPage].color,
+                    backgroundColor: const Color(0xFFFF2D7A),
                     foregroundColor: AppColors.white85,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
