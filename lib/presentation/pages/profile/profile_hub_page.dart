@@ -14,6 +14,7 @@ import 'package:nookly/core/di/injection_container.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/presentation/pages/profile/unique_experiences_page.dart';
 
 class ProfileHubPage extends StatefulWidget {
   const ProfileHubPage({super.key});
@@ -218,7 +219,23 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Nookly is a comprehensive dating application designed to help you find meaningful connections.',
+                  '''nookly is a quiet corner on the internet designed for adults who value depth, privacy, and intentional conversations.
+
+We believe that meaningful interactions don't come from algorithms or bios. They grow from comfort, curiosity, and the freedom to express yourself at your own pace.
+
+What nookly offers
+
+A private space where identity is shown only when you choose
+
+Thoughtful prompts and mini-experiences that make opening up easy and natural
+
+Conversation tools that help you understand each other beyond small talk
+
+A calm, distraction-free environment built for genuine human connection
+
+Who it's for
+
+Adults seeking a comfortable, judgment-free space to connect, explore, and express themselves—without labels, pressures, or predefined expectations.''',
                   style: TextStyle(
                     color: AppColors.white85,
                     fontFamily: 'Nunito',
@@ -654,6 +671,18 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                     child: Column(
                       children: [
+                        _SettingsTile(
+                          icon: Icons.star,
+                          title: 'Unique experiences',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const UniqueExperiencesPage(),
+                              ),
+                            );
+                          },
+                        ),
                         _SettingsTile(icon: Icons.privacy_tip, title: 'Privacy', onTap: _openPrivacyPolicy),
                         // TODO: Uncomment when Help & Support page is implemented
                         // _SettingsTile(icon: Icons.help, title: 'Help & Support', onTap: () {}),
