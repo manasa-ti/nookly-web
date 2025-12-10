@@ -19,7 +19,6 @@ class PersonalityTypeChips extends StatelessWidget {
       availableOptions: availablePersonalityTypes,
       selectedOptions: selectedPersonalityTypes,
       onSelectionChanged: onPersonalityTypesChanged,
-      title: 'Personality Type',
     );
   }
 }

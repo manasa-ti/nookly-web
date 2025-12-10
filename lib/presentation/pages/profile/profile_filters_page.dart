@@ -354,7 +354,7 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
 
                         // Objectives
                         Text(
-                          'Objectives',
+                          'Intent',
                           style: TextStyle(
                             fontSize: AppTextStyles.getSectionHeaderFontSize(context),
                             fontWeight: FontWeight.w500,

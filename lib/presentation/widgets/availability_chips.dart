@@ -19,7 +19,6 @@ class AvailabilityChips extends StatelessWidget {
       availableOptions: availableAvailability,
       selectedOptions: selectedAvailability,
       onSelectionChanged: onAvailabilityChanged,
-      title: 'Availability',
     );
   }
 }

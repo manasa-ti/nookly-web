@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 import 'package:nookly/core/theme/app_colors.dart';
+import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/core/utils/logger.dart';
 
 class WelcomeTourPage extends StatefulWidget {
@@ -103,7 +104,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
                       'Skip',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.7),
-                        fontSize: 16,
+                        fontSize: AppTextStyles.getBodyFontSize(context),
                         fontFamily: 'Nunito',
                       ),
                     ),
@@ -167,8 +168,8 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
                   ),
                   child: Text(
                     _currentPage == _slides.length - 1 ? 'Get Started' : 'Next',
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: AppTextStyles.getBodyFontSize(context),
                       fontWeight: FontWeight.w600,
                       fontFamily: 'Nunito',
                     ),
@@ -199,7 +200,9 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
             child: Center(
               child: Text(
                 slide.icon,
-                style: const TextStyle(fontSize: 60),
+                style: TextStyle(
+                  fontSize: AppTextStyles.getTitleFontSize(context) * 2.5,
+                ),
               ),
             ),
           ),
@@ -210,9 +213,9 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
           Text(
             slide.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.white85,
-              fontSize: 28,
+              fontSize: AppTextStyles.getLargeTitleFontSize(context),
               fontWeight: FontWeight.bold,
               fontFamily: 'Nunito',
             ),
@@ -226,7 +229,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
             textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white.withOpacity(0.8),
-              fontSize: 16,
+              fontSize: AppTextStyles.getBodyFontSize(context),
               fontFamily: 'Nunito',
               height: 1.5,
             ),

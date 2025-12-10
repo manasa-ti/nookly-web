@@ -438,7 +438,7 @@ class _ProfileViewPageState extends State<ProfileViewPage> {
     }
 
     return _buildSection(
-      title: 'Objectives',
+      title: 'Intent',
       child: Wrap(
         spacing: 8,
         runSpacing: 8,

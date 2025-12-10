@@ -616,7 +616,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                               child: ElevatedButton(
                                 onPressed: isLoading ? null : details.onStepCancel,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1d335f),
+                                  backgroundColor: const Color(0xFF34476f),
                                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                                 ),
                                 child: Text(
@@ -1032,7 +1032,7 @@ class _ProfileCreationPageState extends State<ProfileCreationPage> {
                       isActive: _currentStep >= 2,
                     ),
                     Step(
-                      title: Text('Objective', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w600)),
+                      title: Text('Intent', style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w600)),
                       content: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [

@@ -320,6 +320,8 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
 
   void _onPressed() async {
     if (_isFilled) return;
+    if (!mounted) return;
+    
     setState(() => _isFilled = true);
     
     // Start animations
@@ -330,6 +332,8 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
     
     // Wait for animations to complete
     await Future.delayed(const Duration(milliseconds: 400));
+    
+    if (!mounted) return;
     _scaleController.reverse();
     _outlineController.reverse();
     
@@ -339,11 +343,15 @@ class _AnimatedConnectButtonState extends State<AnimatedConnectButton> with Tick
 
   void _emitFloatingHearts() {
     final hearts = List.generate(3, (i) => _FloatingHeart(key: UniqueKey(), offset: i - 1));
-    setState(() {
-      _floatingHearts = hearts;
-    });
+    if (mounted) {
+      setState(() {
+        _floatingHearts = hearts;
+      });
+    }
     Future.delayed(const Duration(milliseconds: 1200), () {
-      setState(() => _floatingHearts = []);
+      if (mounted) {
+        setState(() => _floatingHearts = []);
+      }
     });
   }
 

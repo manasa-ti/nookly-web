@@ -671,7 +671,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Objectives',
+                      'Intent',
                       style: TextStyle(fontFamily: 'Nunito', fontSize: AppTextStyles.getSectionHeaderFontSize(context), fontWeight: FontWeight.w500, color: AppColors.white85),
                     ),
                     const SizedBox(height: 6),
