@@ -113,8 +113,8 @@ class UniqueExperiencesPage extends StatelessWidget {
                     _buildFeatureSection(
                       context,
                       icon: '🔥',
-                      title: 'Optional Intimacy Layer (Coming Soon)',
-                      description: 'A consent-driven, private mode for adults who want deeper expression — available only when both sides agree.',
+                      title: 'Deeper Exploration (Coming Soon)',
+                      description: 'A consent-based mode that allows both participants to explore more personal conversations at their own pace.',
                     ),
                     const SizedBox(height: 32),
                     
