@@ -46,7 +46,7 @@ class _WelcomeTourPageState extends State<WelcomeTourPage> {
     ),
     WelcomeSlide(
       title: 'Ditch loneliness.',
-      description: 'Find genuine, mature connections—privately and discreetly.',
+      description: 'Find genuine, mature connections — in a private, judgment-free space.',
       icon: '❤️‍🔥',
       color: const Color(0xFF6C5CE7),
     ),

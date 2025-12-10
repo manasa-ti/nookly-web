@@ -223,7 +223,7 @@ class _ProfileHubPageState extends State<ProfileHubPage> {
 
 We believe that meaningful interactions don't come from algorithms or bios. They grow from comfort, curiosity, and the freedom to express yourself at your own pace.
 
-What nookly offers
+What nookly offers:
 
 A private space where identity is shown only when you choose
 
@@ -233,7 +233,7 @@ Conversation tools that help you understand each other beyond small talk
 
 A calm, distraction-free environment built for genuine human connection
 
-Who it's for
+Who it's for:
 
 Adults seeking a comfortable, judgment-free space to connect, explore, and express themselves—without labels, pressures, or predefined expectations.''',
                   style: TextStyle(
