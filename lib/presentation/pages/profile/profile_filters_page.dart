@@ -205,31 +205,16 @@ class _ProfileFiltersPageState extends State<ProfileFiltersPage> {
       // Save filter preferences (for physical activeness and availability)
       await _saveFilterPreferences();
 
-      // Show success message
+      // Navigate back immediately with refresh flag
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Filters updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        
-        // Navigate back with refresh flag
         Navigator.pop(context, true);
       }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Failed to update filters: ${e.toString()}';
-      });
-      
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error updating filters: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to update filters: ${e.toString()}';
+        });
       }
     }
   }

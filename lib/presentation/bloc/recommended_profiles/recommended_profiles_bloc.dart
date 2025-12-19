@@ -85,6 +85,29 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
     on<ResetPagination>(_onResetPagination);
   }
 
+  /// Deduplicates profiles by ID, keeping the first occurrence to maintain order.
+  /// This prevents duplicate profile cards from being rendered in the UI.
+  /// Time complexity: O(n) where n is the number of profiles.
+  List<RecommendedProfile> _deduplicateProfiles(List<RecommendedProfile> profiles) {
+    final seen = <String>{};
+    final uniqueProfiles = <RecommendedProfile>[];
+    
+    for (final profile in profiles) {
+      if (!seen.contains(profile.id)) {
+        seen.add(profile.id);
+        uniqueProfiles.add(profile);
+      } else {
+        AppLogger.warning('🔵 DUPLICATE: Profile ${profile.id} (${profile.name}) already in list, skipping');
+      }
+    }
+    
+    if (profiles.length != uniqueProfiles.length) {
+      AppLogger.info('🔵 DEDUPLICATION: Removed ${profiles.length - uniqueProfiles.length} duplicate profile(s)');
+    }
+    
+    return uniqueProfiles;
+  }
+
   Future<void> _onLoadRecommendedProfiles(
     LoadRecommendedProfiles event,
     Emitter<RecommendedProfilesState> emit,
@@ -161,6 +184,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
       );
 
       if (isFreshLoad) {
+        // Fresh load: backend always returns unique profiles, no deduplication needed
         emit(
           RecommendedProfilesLoaded(
             page.profiles,
@@ -173,10 +197,14 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
       } else {
         final currentState = state;
         if (currentState is RecommendedProfilesLoaded) {
-          final updatedProfiles = [...currentState.profiles, ...page.profiles];
+          // Pagination: Combine lists and deduplicate once (O(totalProfiles))
+          // This single pass handles all race conditions - duplicates in existing list or new list
+          final combinedProfiles = [...currentState.profiles, ...page.profiles];
+          final uniqueProfiles = _deduplicateProfiles(combinedProfiles);
+          
           emit(
             RecommendedProfilesLoaded(
-              updatedProfiles,
+              uniqueProfiles,
               hasMore: hasMore,
               nextCursor: _nextCursor,
               currentCursor: _currentCursor,
@@ -185,6 +213,7 @@ class RecommendedProfilesBloc extends Bloc<RecommendedProfilesEvent, Recommended
             ),
           );
         } else {
+          // State not loaded: backend always returns unique profiles, no deduplication needed
           emit(
             RecommendedProfilesLoaded(
               page.profiles,

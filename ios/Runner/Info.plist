@@ -46,13 +46,13 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSCameraUsageDescription</key>
-	<string>Need camera access for video calls</string>
+	<string>nookly uses the camera to allow you to capture and share optional photos during conversations, such as profile expressions or in-chat moments.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>This app needs location access to show nearby profiles and improve matching</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>This app needs location access to show nearby profiles and improve matching</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Need microphone access for calls</string>
+	<string>nookly uses the microphone to record voice messages that you choose to send during conversations. Audio is only captured when you actively record a message.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photos to select images for chat messages</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
