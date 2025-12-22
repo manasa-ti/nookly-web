@@ -15,6 +15,7 @@ class RemoteConfigService {
   static const String _androidAppLinkKey = 'android_app_link';
   static const String _iosAppLinkKey = 'ios_app_link';
   static const String _callsEnabledKey = 'calls_enabled';
+  static const String _isReviewerBuildKey = 'is_reviewer_build';
 
   /// Initialize Remote Config with default values
   Future<void> initialize() async {
@@ -86,6 +87,7 @@ class RemoteConfigService {
         _androidAppLinkKey: '',
         _iosAppLinkKey: '',
         _callsEnabledKey: true,
+        _isReviewerBuildKey: false,
       });
 
       // Don't fetch yet - just mark as initialized with defaults
@@ -246,6 +248,7 @@ class RemoteConfigService {
       AppLogger.info('  android_app_link: ""');
       AppLogger.info('  ios_app_link: ""');
       AppLogger.info('  calls_enabled: true');
+      AppLogger.info('  is_reviewer_build: false');
       return;
     }
 
@@ -300,6 +303,13 @@ class RemoteConfigService {
         AppLogger.info('  calls_enabled: $callsEnabled');
       } catch (e) {
         AppLogger.warning('  calls_enabled: error reading value - $e');
+      }
+      
+      try {
+        final isReviewerBuild = _remoteConfig!.getBool(_isReviewerBuildKey);
+        AppLogger.info('  is_reviewer_build: $isReviewerBuild');
+      } catch (e) {
+        AppLogger.warning('  is_reviewer_build: error reading value - $e');
       }
     } catch (e, stackTrace) {
       AppLogger.error('Error logging Remote Config values', e, stackTrace);
@@ -365,6 +375,23 @@ class RemoteConfigService {
       AppLogger.error('❌ [REMOTE_CONFIG] Error type: ${e.runtimeType}');
       AppLogger.error('❌ [REMOTE_CONFIG] Error message: ${e.toString()}');
       return false; // Default to disabled on error
+    }
+  }
+
+  /// Check if this is a reviewer build (demo mode enabled)
+  bool isReviewerBuild() {
+    if (_remoteConfig == null || !_isInitialized) {
+      AppLogger.warning('Remote Config not initialized, using default: false for is_reviewer_build');
+      return false; // Default to false
+    }
+
+    try {
+      final isReviewer = _remoteConfig!.getBool(_isReviewerBuildKey);
+      AppLogger.info('🔍 [REMOTE_CONFIG] is_reviewer_build value: $isReviewer');
+      return isReviewer;
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ [REMOTE_CONFIG] Error reading is_reviewer_build from Remote Config', e, stackTrace);
+      return false; // Default to false on error
     }
   }
 }
