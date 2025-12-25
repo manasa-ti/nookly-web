@@ -12,6 +12,7 @@ import 'package:nookly/presentation/widgets/contextual_tooltip.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 import 'package:nookly/core/services/onboarding_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/core/di/injection_container.dart';
 
 class GameInterfaceBar extends StatefulWidget {
@@ -163,6 +164,15 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
             ),
           );
         }
+        if (state is DemoGameEnded) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Game over'),
+              backgroundColor: AppColors.primary,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       },
       builder: (context, state) {
         final content = _buildContent(context, state);
@@ -264,61 +274,61 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
           Expanded(
             child: _buildGetCloseButton(),
           ),
-          // Heat Up (coming soon)
-          Expanded(
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  // Track heat up clicked
-                  sl<AnalyticsService>().logHeatUpClicked();
-                },
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.local_fire_department, size: 18, color: Colors.white.withOpacity(0.6)),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Heat Up',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: AppTextStyles.getChipFontSize(context),
-                            height: 1.1,
-                            fontFamily: 'Nunito',
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 12),
-                      child: Text(
-                        'Coming soon',
-                        style: TextStyle(
-                          color: Colors.orange,
-                          fontSize: AppTextStyles.getSmallCaptionFontSize(context),
-                          height: 1.0,
-                          fontFamily: 'Nunito',
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          // Heat Up (coming soon) - Temporarily hidden
+          // Expanded(
+          //   child: Material(
+          //     color: Colors.transparent,
+          //     child: InkWell(
+          //       onTap: () {
+          //         // Track heat up clicked
+          //         sl<AnalyticsService>().logHeatUpClicked();
+          //       },
+          //       child: Column(
+          //         mainAxisAlignment: MainAxisAlignment.center,
+          //         crossAxisAlignment: CrossAxisAlignment.center,
+          //         children: [
+          //           Row(
+          //             mainAxisAlignment: MainAxisAlignment.center,
+          //             children: [
+          //               Icon(Icons.local_fire_department, size: 18, color: Colors.white.withOpacity(0.6)),
+          //               const SizedBox(width: 6),
+          //               Text(
+          //                 'Heat Up',
+          //                 style: TextStyle(
+          //                   color: Colors.white.withOpacity(0.7),
+          //                   fontSize: AppTextStyles.getChipFontSize(context),
+          //                   height: 1.1,
+          //                   fontFamily: 'Nunito',
+          //                   fontWeight: FontWeight.w600,
+          //                 ),
+          //                 maxLines: 1,
+          //                 softWrap: false,
+          //                 overflow: TextOverflow.ellipsis,
+          //               ),
+          //             ],
+          //           ),
+          //           const SizedBox(height: 2),
+          //           Padding(
+          //             padding: const EdgeInsets.only(left: 12),
+          //             child: Text(
+          //               'Coming soon',
+          //               style: TextStyle(
+          //                 color: Colors.orange,
+          //                 fontSize: AppTextStyles.getSmallCaptionFontSize(context),
+          //                 height: 1.0,
+          //                 fontFamily: 'Nunito',
+          //                 fontWeight: FontWeight.w500,
+          //               ),
+          //               maxLines: 1,
+          //               softWrap: false,
+          //               overflow: TextOverflow.ellipsis,
+          //             ),
+          //           ),
+          //         ],
+          //       ),
+          //     ),
+          //   ),
+          // ),
         ],
       ),
     );
@@ -693,11 +703,24 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
         AppLogger.info('🎮 Sending game invite to: ${widget.matchUserId}');
         AppLogger.info('🎮 Game type: ${gameSession.gameType.apiValue}');
         AppLogger.info('🎮 Current user ID: ${widget.currentUserId}');
-        context.read<GamesBloc>().add(SendGameInvite(
-          gameType: gameSession.gameType.apiValue,
-          otherUserId: widget.matchUserId,
-          conversationId: _getActualConversationId(),
-        ));
+        
+        // Check if it's a reviewer build - use demo game instead
+        final remoteConfigService = sl<RemoteConfigService>();
+        if (remoteConfigService.isReviewerBuild()) {
+          AppLogger.info('🎮 Reviewer build detected - starting demo game');
+          context.read<GamesBloc>().add(StartDemoGame(
+            gameType: gameSession.gameType.apiValue,
+            currentUserId: widget.currentUserId,
+            otherUserId: widget.matchUserId,
+            conversationId: _getActualConversationId(),
+          ));
+        } else {
+          context.read<GamesBloc>().add(SendGameInvite(
+            gameType: gameSession.gameType.apiValue,
+            otherUserId: widget.matchUserId,
+            conversationId: _getActualConversationId(),
+          ));
+        }
         break;
       case 'next_turn':
         _completeGameTurn(context, gameSession);

@@ -4,6 +4,8 @@ import 'package:nookly/presentation/bloc/games/games_event.dart';
 import 'package:nookly/presentation/bloc/games/games_state.dart';
 import 'package:nookly/core/services/games_service.dart';
 import 'package:nookly/core/services/analytics_service.dart';
+import 'package:nookly/core/services/demo_game_data_service.dart';
+import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/domain/entities/game_session.dart';
 import 'package:nookly/domain/entities/game_prompt.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -13,6 +15,9 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
   final GamesService _gamesService;
   final GameTimeoutManager _timeoutManager;
   final AnalyticsService? _analyticsService;
+  final DemoGameDataService _demoGameDataService = DemoGameDataService();
+  final RemoteConfigService _remoteConfigService = di.sl<RemoteConfigService>();
+  Timer? _demoGameTimer;
 
   GamesBloc({
     required GamesService gamesService,
@@ -34,6 +39,11 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     on<GameInviteSent>(_onGameInviteSent);
     on<GameInviteAccepted>(_onGameInviteAccepted);
     on<GameInviteRejected>(_onGameInviteRejected);
+    
+    // Demo game events
+    on<StartDemoGame>(_onStartDemoGame);
+    on<DemoGameTurnSwitch>(_onDemoGameTurnSwitch);
+    on<DemoGamePartnerChoice>(_onDemoGamePartnerChoice);
     
     // Game session events
     on<SelectGame>(_onSelectGame);
@@ -223,6 +233,12 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
       AppLogger.info('🎮 Emitting updated GameActive state with choice');
       emit(GameActive(gameSession: updatedSession));
       
+      // Check if this is a demo game - skip server call for demo games
+      if (currentState.gameSession.sessionId.startsWith('demo_')) {
+        AppLogger.info('🎮 Demo game detected - skipping server call for choice selection');
+        return; // For demo games, just update the state locally
+      }
+      
       // Emit the choice to the server so other players can see it
       AppLogger.info('🎮 Emitting game choice to server...');
       
@@ -262,6 +278,14 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     AppLogger.info('🎮 - selectedChoice: ${event.selectedChoice}');
     AppLogger.info('🎮 - selectedPrompt: ${event.selectedPrompt}');
     AppLogger.info('🎮 - Current state: ${state.runtimeType}');
+    
+    // Check if this is a demo game
+    if (event.sessionId.startsWith('demo_')) {
+      AppLogger.info('🎮 Demo game detected, handling turn switch locally');
+      _handleDemoGameTurnSwitch(emit, event.sessionId);
+      return;
+    }
+    
     AppLogger.info('🎮 - GamesService instance: ${_gamesService.hashCode}');
     
     try {
@@ -392,6 +416,27 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     EndGame event,
     Emitter<GamesState> emit,
   ) async {
+    // Check if this is a demo game - handle locally without server call
+    if (event.sessionId.startsWith('demo_')) {
+      AppLogger.info('🎮 Ending demo game locally: ${event.sessionId}');
+      
+      // Cancel any running demo game timer
+      _demoGameTimer?.cancel();
+      _demoGameTimer = null;
+      
+      // Clear game state
+      _gamesService.clearGameSession();
+      
+      // Extract game type and reset the demo game data service
+      final gameType = _extractGameTypeFromSessionId(event.sessionId);
+      _demoGameDataService.reset(gameType);
+      
+      AppLogger.info('🎮 Demo game ended successfully');
+      emit(const GamesInitial());
+      return;
+    }
+    
+    // For real games, call the server
     try {
       await _gamesService.endGame(
         sessionId: event.sessionId,
@@ -547,8 +592,319 @@ class GamesBloc extends Bloc<GamesEvent, GamesState> {
     }
   }
 
+  // Demo game handlers
+  void _onStartDemoGame(
+    StartDemoGame event,
+    Emitter<GamesState> emit,
+  ) {
+    AppLogger.info('🎮 GamesBloc: Received StartDemoGame event');
+    AppLogger.info('🎮 - gameType: ${event.gameType}');
+    AppLogger.info('🎮 - currentUserId: ${event.currentUserId}');
+    AppLogger.info('🎮 - otherUserId: ${event.otherUserId}');
+    
+    // Check if it's a reviewer build
+    if (!_remoteConfigService.isReviewerBuild()) {
+      AppLogger.warning('⚠️ StartDemoGame called but not in reviewer build mode');
+      emit(GamesError(message: 'Demo game is only available in reviewer builds'));
+      return;
+    }
+    
+    try {
+      // Reset demo game data service for this game type
+      _demoGameDataService.reset(event.gameType);
+      
+      // Get first prompt
+      final promptData = _demoGameDataService.getNextPrompt(event.gameType);
+      if (promptData == null) {
+        AppLogger.error('❌ No prompts available for game type: ${event.gameType}');
+        emit(GamesError(message: 'No prompts available for this game type'));
+        return;
+      }
+      
+      // Create demo game session
+      final gameSession = _createDemoGameSession(
+        gameType: event.gameType,
+        currentUserId: event.currentUserId,
+        otherUserId: event.otherUserId,
+        promptData: promptData,
+        turnNumber: 1,
+      );
+      
+      AppLogger.info('🎮 Demo game session created: ${gameSession.sessionId}');
+      emit(GameActive(gameSession: gameSession));
+    } catch (e) {
+      AppLogger.error('❌ Failed to start demo game: $e');
+      emit(GamesError(message: 'Failed to start demo game: $e'));
+    }
+  }
+
+  GameSession _createDemoGameSession({
+    required String gameType,
+    required String currentUserId,
+    required String otherUserId,
+    required Map<String, dynamic> promptData,
+    required int turnNumber,
+  }) {
+    final gameTypeEnum = GameType.fromApiValue(gameType);
+    final sessionId = 'demo_${gameType}_${DateTime.now().millisecondsSinceEpoch}';
+    
+    // Parse prompt data - extract the correct structure based on game type
+    Map<String, dynamic> promptJson;
+    if (gameType == 'truth_or_thrill') {
+      // For truth_or_thrill, extract the truthOrThrill object
+      promptJson = promptData['truthOrThrill'] as Map<String, dynamic>;
+    } else {
+      // For other games, extract the singlePrompt object
+      promptJson = promptData['singlePrompt'] as Map<String, dynamic>;
+    }
+    final gamePrompt = GamePrompt.fromJson(promptJson, gameType);
+    
+    // Create players
+    final players = [
+      Player(userId: currentUserId, isActive: true),
+      Player(userId: otherUserId, isActive: true),
+    ];
+    
+    // Create current turn (current user's turn)
+    final currentTurn = Turn(
+      userId: currentUserId,
+      turnNumber: turnNumber,
+    );
+    
+    return GameSession(
+      sessionId: sessionId,
+      gameType: gameTypeEnum,
+      currentTurn: currentTurn,
+      currentPrompt: gamePrompt,
+      players: players,
+      startedAt: DateTime.now(),
+      lastActivityAt: DateTime.now(),
+    );
+  }
+
+  /// Extract game type from demo session ID
+  /// Format: demo_gameType_timestamp
+  /// Game types can have underscores: truth_or_thrill, memory_sparks, would_you_rather, guess_me
+  String _extractGameTypeFromSessionId(String sessionId) {
+    // Remove "demo_" prefix
+    if (!sessionId.startsWith('demo_')) {
+      AppLogger.error('❌ Invalid demo session ID format: $sessionId');
+      return 'truth_or_thrill'; // Default fallback
+    }
+    
+    final withoutPrefix = sessionId.substring(5); // Remove "demo_"
+    final parts = withoutPrefix.split('_');
+    
+    if (parts.length < 2) {
+      AppLogger.error('❌ Invalid demo session ID format: $sessionId');
+      return 'truth_or_thrill'; // Default fallback
+    }
+    
+    // The last part is always the timestamp (numeric), everything before is the game type
+    // Remove the last part (timestamp) and join the rest
+    final gameTypeParts = parts.sublist(0, parts.length - 1);
+    final gameType = gameTypeParts.join('_');
+    
+    AppLogger.info('🎮 Extracted game type from session ID: $gameType');
+    return gameType;
+  }
+
+  void _handleDemoGameTurnSwitch(Emitter<GamesState> emit, String sessionId) {
+    AppLogger.info('🎮 Handling demo game turn switch for session: $sessionId');
+    
+    // Cancel any existing timer
+    _demoGameTimer?.cancel();
+    
+    if (state is! GameActive && state is! GameTurnCompleted) {
+      AppLogger.warning('⚠️ Invalid state for demo game turn switch: ${state.runtimeType}');
+      return;
+    }
+    
+    final currentState = state is GameActive 
+        ? (state as GameActive).gameSession 
+        : (state as GameTurnCompleted).gameSession;
+    
+    // Extract game type from session ID
+    final gameType = _extractGameTypeFromSessionId(sessionId);
+    
+    // Get next prompt
+    final nextPromptData = _demoGameDataService.getNextPrompt(gameType);
+    
+    if (nextPromptData == null) {
+      // No more prompts - game over
+      AppLogger.info('🎮 Demo game completed - no more prompts');
+      emit(const DemoGameEnded());
+      // Clear state after a brief delay to allow toast to show
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!isClosed) {
+          emit(const GamesInitial());
+        }
+      });
+      return;
+    }
+    
+    // Switch to partner's turn (no Done button)
+    // Find the partner (the other player)
+    final currentTurnUserId = currentState.currentTurn.userId;
+    final partner = currentState.players.firstWhere(
+      (p) => p.userId != currentTurnUserId,
+      orElse: () => currentState.players.last,
+    );
+    
+    final partnerTurn = Turn(
+      userId: partner.userId,
+      turnNumber: currentState.currentTurn.turnNumber + 1,
+    );
+    
+    // Parse prompt data - extract the correct structure based on game type
+    Map<String, dynamic> partnerPromptJson;
+    if (gameType == 'truth_or_thrill') {
+      partnerPromptJson = nextPromptData['truthOrThrill'] as Map<String, dynamic>;
+    } else {
+      partnerPromptJson = nextPromptData['singlePrompt'] as Map<String, dynamic>;
+    }
+    final partnerPrompt = GamePrompt.fromJson(partnerPromptJson, gameType);
+    
+    final partnerSession = currentState.copyWith(
+      currentTurn: partnerTurn,
+      currentPrompt: partnerPrompt,
+      clearSelectedChoice: true,
+      lastActivityAt: DateTime.now(),
+    );
+    
+    AppLogger.info('🎮 Emitting GameTurnCompleted (partner\'s turn)');
+    emit(GameTurnCompleted(gameSession: partnerSession));
+    
+    // For Truth or Thrill games, we need two phases:
+    // 1. Show prompt for 5 seconds
+    // 2. Simulate partner choosing Truth/Thrill for 3 seconds
+    // 3. Then switch back to current user
+    if (gameType == 'truth_or_thrill') {
+      // Phase 1: Show prompt for 5 seconds (already emitted above)
+      _demoGameTimer = Timer(const Duration(seconds: 3), () {
+        if (isClosed) return;
+        // Phase 2: Simulate partner choosing Truth or Thrill
+        add(DemoGamePartnerChoice(sessionId: sessionId));
+      });
+    } else {
+      // For other games, just wait 5 seconds then switch back
+      _demoGameTimer = Timer(const Duration(seconds: 5), () {
+        if (isClosed) return;
+        add(DemoGameTurnSwitch(sessionId: sessionId));
+      });
+    }
+  }
+
+  void _onDemoGameTurnSwitch(
+    DemoGameTurnSwitch event,
+    Emitter<GamesState> emit,
+  ) {
+    AppLogger.info('🎮 Handling demo game turn switch after 5 seconds');
+    
+    if (state is! GameTurnCompleted) {
+      AppLogger.warning('⚠️ Invalid state for demo game turn switch: ${state.runtimeType}');
+      return;
+    }
+    
+    final currentState = (state as GameTurnCompleted).gameSession;
+    
+    // Extract game type from session ID
+    final gameType = _extractGameTypeFromSessionId(event.sessionId);
+    
+    // Get next prompt
+    final nextPromptData = _demoGameDataService.getNextPrompt(gameType);
+    
+    if (nextPromptData == null) {
+      // No more prompts - game over
+      AppLogger.info('🎮 Demo game completed - no more prompts');
+      emit(const DemoGameEnded());
+      // Clear state after a brief delay to allow toast to show
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (!isClosed) {
+          emit(const GamesInitial());
+        }
+      });
+      return;
+    }
+    
+    // Switch back to current user's turn
+    // The current user is the one who started the game (first player)
+    // We need to find the user who is NOT the current turn user (the partner)
+    // and switch back to the original current user
+    final partnerUserId = currentState.currentTurn.userId; // Currently partner's turn
+    final originalCurrentUser = currentState.players.firstWhere(
+      (p) => p.userId != partnerUserId,
+      orElse: () => currentState.players.first,
+    );
+    
+      final currentUserTurn = Turn(
+        userId: originalCurrentUser.userId,
+        turnNumber: currentState.currentTurn.turnNumber + 1,
+      );
+      
+      // Parse prompt data - extract the correct structure based on game type
+      Map<String, dynamic> currentUserPromptJson;
+      if (gameType == 'truth_or_thrill') {
+        currentUserPromptJson = nextPromptData['truthOrThrill'] as Map<String, dynamic>;
+      } else {
+        currentUserPromptJson = nextPromptData['singlePrompt'] as Map<String, dynamic>;
+      }
+      final currentUserPrompt = GamePrompt.fromJson(currentUserPromptJson, gameType);
+    
+    final currentUserSession = currentState.copyWith(
+      currentTurn: currentUserTurn,
+      currentPrompt: currentUserPrompt,
+      clearSelectedChoice: true,
+      lastActivityAt: DateTime.now(),
+    );
+    
+    AppLogger.info('🎮 Emitting GameActive (current user\'s turn)');
+    emit(GameActive(gameSession: currentUserSession));
+  }
+
+  void _onDemoGamePartnerChoice(
+    DemoGamePartnerChoice event,
+    Emitter<GamesState> emit,
+  ) {
+    AppLogger.info('🎮 Simulating partner choice for Truth or Thrill');
+    
+    if (state is! GameTurnCompleted) {
+      AppLogger.warning('⚠️ Invalid state for demo game partner choice: ${state.runtimeType}');
+      return;
+    }
+    
+    final currentState = (state as GameTurnCompleted).gameSession;
+    
+    // Randomly choose Truth or Thrill for the partner (alternate for consistency)
+    final partnerChoice = (currentState.currentTurn.turnNumber % 2 == 0) ? 'truth' : 'thrill';
+    AppLogger.info('🎮 Partner chose: $partnerChoice');
+    AppLogger.info('🎮 Current turn user: ${currentState.currentTurn.userId}');
+    AppLogger.info('🎮 Current turn number: ${currentState.currentTurn.turnNumber}');
+    
+    // Update the session with partner's choice
+    final sessionWithChoice = currentState.copyWith(
+      selectedChoice: partnerChoice,
+      lastActivityAt: DateTime.now(),
+    );
+    
+    AppLogger.info('🎮 Emitting GameTurnCompleted with partner choice: $partnerChoice');
+    AppLogger.info('🎮 Session selectedChoice: ${sessionWithChoice.selectedChoice}');
+    AppLogger.info('🎮 Current turn user: ${sessionWithChoice.currentTurn.userId}');
+    
+    // Emit GameTurnCompleted with the choice (this will show the selected choice)
+    // The UI will display the partner's choice (Truth or Thrill badge)
+    emit(GameTurnCompleted(gameSession: sessionWithChoice));
+    
+    // After 3 seconds, switch back to current user with next prompt
+    _demoGameTimer = Timer(const Duration(seconds: 5), () {
+      if (isClosed) return;
+      add(DemoGameTurnSwitch(sessionId: event.sessionId));
+    });
+  }
+
   @override
   Future<void> close() {
+    _demoGameTimer?.cancel();
     _timeoutManager.dispose();
     return super.close();
   }

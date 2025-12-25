@@ -273,6 +273,42 @@ class HideGameInviteModal extends GamesEvent {
   const HideGameInviteModal();
 }
 
+// Demo game events
+class StartDemoGame extends GamesEvent {
+  final String gameType;
+  final String currentUserId;
+  final String otherUserId;
+  final String conversationId;
+  
+  const StartDemoGame({
+    required this.gameType,
+    required this.currentUserId,
+    required this.otherUserId,
+    required this.conversationId,
+  });
+  
+  @override
+  List<Object?> get props => [gameType, currentUserId, otherUserId, conversationId];
+}
+
+class DemoGameTurnSwitch extends GamesEvent {
+  final String sessionId;
+  
+  const DemoGameTurnSwitch({required this.sessionId});
+  
+  @override
+  List<Object?> get props => [sessionId];
+}
+
+class DemoGamePartnerChoice extends GamesEvent {
+  final String sessionId;
+  
+  const DemoGamePartnerChoice({required this.sessionId});
+  
+  @override
+  List<Object?> get props => [sessionId];
+}
+
 // Cleanup events
 class ClearGameState extends GamesEvent {
   const ClearGameState();

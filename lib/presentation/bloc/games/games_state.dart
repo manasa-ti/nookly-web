@@ -132,3 +132,8 @@ class GamesLoading extends GamesState {
   @override
   List<Object?> get props => [message];
 }
+
+// Demo game states
+class DemoGameEnded extends GamesState {
+  const DemoGameEnded();
+}

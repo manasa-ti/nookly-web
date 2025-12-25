@@ -49,9 +49,7 @@ import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/core/services/screen_protection_service.dart';
 import 'package:nookly/core/services/force_update_service.dart';
 import 'package:nookly/core/network/network_service.dart';
-import 'package:nookly/core/services/demo_event_bus_service.dart';
 import 'package:nookly/core/services/demo_game_data_service.dart';
-import 'package:nookly/core/services/demo_message_storage_service.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -163,16 +161,8 @@ Future<void> init() async {
   );
   
   // Demo Services
-  sl.registerLazySingleton<DemoEventBusService>(
-    () => DemoEventBusService(),
-  );
-  
   sl.registerLazySingleton<DemoGameDataService>(
     () => DemoGameDataService(),
-  );
-  
-  sl.registerLazySingleton<DemoMessageStorageService>(
-    () => DemoMessageStorageService(),
   );
   
   // Blocs

@@ -182,9 +182,10 @@ class GameBoardWidget extends StatelessWidget {
   }
 
   Widget _buildTruthOrThrillContent(BuildContext context) {
-    // If turn is completed, show waiting message for the user who completed their turn
+    // If turn is completed and partner hasn't made a choice yet, show waiting message
     // (This user is no longer the current turn user)
-    if (isTurnCompleted && !_isCurrentUserTurn()) {
+    // But if partner has made a choice, we'll show it below
+    if (isTurnCompleted && !_isCurrentUserTurn() && gameSession.selectedChoice == null) {
       AppLogger.info('🎮 Showing turn completed message for user who completed turn: $currentUserId');
       AppLogger.info('🎮 Current turn user: ${gameSession.currentTurn.userId}');
       return Container(
