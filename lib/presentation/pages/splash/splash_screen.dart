@@ -37,7 +37,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     );
 
     _loadingController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
 
@@ -58,7 +58,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _loadingAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _loadingController,
-        curve: Curves.easeInOut,
+        curve: Curves.easeOut,
       ),
     );
 
@@ -261,9 +261,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             ),
                           ),
                           const SizedBox(height: 40),
-                          
-                          // Loading bar
-                          _buildLoadingBar(),
                         ],
                       ),
                     ),
@@ -280,72 +277,125 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Widget _buildLogo() {
     final size = MediaQuery.of(context).size;
     final logoSize = (size.width * 0.25).clamp(80.0, 120.0);
+    final centerCircleSize = logoSize * 0.5;
+    
+    return SizedBox(
+      width: logoSize * 2.5,
+      height: logoSize * 2.5,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Ripple animations (outer animated rings)
+          _buildRippleAnimation(logoSize, 0),
+          _buildRippleAnimation(logoSize, 0.33),
+          _buildRippleAnimation(logoSize, 0.66),
+          
+          // Logo with transparent rounded background
+          Container(
+            width: logoSize,
+            height: logoSize,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF1d335f).withOpacity(0.5),
+                  blurRadius: 40,
+                  offset: const Offset(0, 15),
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Static concentric rings (part of the logo design)
+                _buildStaticRing(logoSize * 0.75, 0.4, const Color(0xFF667EEA)), // Outer ring
+                _buildStaticRing(logoSize * 0.65, 0.5, const Color(0xFF8B7FD8)), // Middle ring
+                _buildStaticRing(logoSize * 0.55, 0.6, const Color(0xFFA89EE6)), // Inner ring
+                
+                // Central blue circle with glow
+                Container(
+                  width: centerCircleSize,
+                  height: centerCircleSize,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: const RadialGradient(
+                      colors: [
+                        Color(0xFF7B9FFF), // Bright blue center
+                        Color(0xFF667EEA), // Slightly darker blue
+                        Color(0xFF5A67D8), // Darker blue edge
+                      ],
+                      stops: [0.0, 0.6, 1.0],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF667EEA).withOpacity(0.8),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                      BoxShadow(
+                        color: const Color(0xFF667EEA).withOpacity(0.4),
+                        blurRadius: 30,
+                        spreadRadius: 4,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStaticRing(double size, double opacity, Color color) {
     return Container(
-      width: logoSize,
-      height: logoSize,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF1d335f), // #1d335f
-            Color(0xFF413b62), // #5A4B7A
-          ],
-        ),
-        borderRadius: BorderRadius.circular(22),
+        shape: BoxShape.circle,
         border: Border.all(
-          color: const Color.fromRGBO(255, 255, 255, 0.15),
+          color: color.withOpacity(opacity),
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1d335f).withOpacity(0.5),
-            blurRadius: 40,
-            offset: const Offset(0, 15),
+            color: color.withOpacity(opacity * 0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Main "N" letter
-          Center(
-            child: Text(
-              'N',
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                fontSize: (logoSize * 0.48).clamp(32.0, 48.0),
-                fontWeight: FontWeight.w600,
-                color: AppColors.white85,
-                letterSpacing: 2,
-                shadows: const [
-                  Shadow(
-                    color: Color.fromRGBO(0, 0, 0, 0.4),
-                    blurRadius: 12,
-                    offset: Offset(0, 3),
-                  ),
-                ],
-              ),
+    );
+  }
+
+  Widget _buildRippleAnimation(double logoSize, double delay) {
+    return AnimatedBuilder(
+      animation: _loadingController,
+      builder: (context, child) {
+        final animationValue = ((_loadingAnimation.value + delay) % 1.0);
+        final rippleSize = logoSize * (1.0 + animationValue * 1.5);
+        final opacity = (1.0 - animationValue).clamp(0.0, 1.0) * 0.6;
+        
+        return Container(
+          width: rippleSize,
+          height: rippleSize,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: Colors.white.withOpacity(opacity),
+              width: 2,
             ),
-          ),
-          
-          // Diamond accent
-          Positioned(
-            top: 10,
-            right: 10,
-            child: Container(
-              width: 15,
-              height: 15,
-              decoration: BoxDecoration(
-                color: const Color.fromRGBO(255, 255, 255, 0.6),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(8),
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.white.withOpacity(opacity * 0.3),
+                blurRadius: 10,
+                spreadRadius: 2,
               ),
-              transform: Matrix4.rotationZ(0.785398), // 45 degrees
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -413,35 +463,4 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _buildLoadingBar() {
-    return Container(
-      width: 220,
-      height: 4,
-      decoration: BoxDecoration(
-        color: const Color.fromRGBO(255, 255, 255, 0.2),
-        borderRadius: BorderRadius.circular(2),
-      ),
-      child: AnimatedBuilder(
-        animation: _loadingAnimation,
-        builder: (context, child) {
-          return FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: _loadingAnimation.value,
-            child: Container(
-              height: 4,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFF1d335f), // #1d335f
-                    Color(0xFF5A4B7A), // #5A4B7A
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 } 

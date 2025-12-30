@@ -36,7 +36,7 @@ class DemoGameDataService {
           'id': 2,
           'type': 'truth',
           'stage': 1,
-          'text': 'What\'s the biggest lesson a past relationship taught you?',
+          'text': 'What\'s the biggest lesson a friendship taught you?',
         },
         'thrill': {
           'id': 82,
@@ -76,7 +76,7 @@ class DemoGameDataService {
           'id': 84,
           'type': 'thrill',
           'stage': 1,
-          'text': 'React to your partner\'s last message with three exaggerated emojis.',
+          'text': 'React to your friend\'s last message with three exaggerated emojis.',
         },
       },
     },
@@ -138,7 +138,7 @@ class DemoGameDataService {
           'id': 8,
           'type': 'truth',
           'stage': 1,
-          'text': 'What do you think is your biggest weakness in relationships?',
+          'text': 'What do you think is your biggest strength in friendships?',
         },
         'thrill': {
           'id': 88,
@@ -161,7 +161,7 @@ class DemoGameDataService {
           'id': 89,
           'type': 'thrill',
           'stage': 1,
-          'text': 'Write a compliment for your partner in rhyming words.',
+          'text': 'Write a compliment for your friend in rhyming words.',
         },
       },
     },
@@ -178,7 +178,7 @@ class DemoGameDataService {
           'id': 90,
           'type': 'thrill',
           'stage': 1,
-          'text': 'Send your partner three random facts about yourself right now.',
+          'text': 'Send your friend three random facts about yourself right now.',
         },
       },
     },
@@ -286,7 +286,7 @@ class DemoGameDataService {
         'id': 1,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather have a partner who\'s your best friend or your greatest passion?',
+        'text': 'Would you rather have a friend who\'s always there for you or one who pushes you to grow?',
       },
     },
     {
@@ -295,7 +295,7 @@ class DemoGameDataService {
         'id': 2,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather know your partner\'s deepest secret or have them never know yours?',
+        'text': 'Would you rather know your friend\'s deepest secret or have them never know yours?',
       },
     },
     {
@@ -304,7 +304,7 @@ class DemoGameDataService {
         'id': 3,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather be with someone who makes you laugh or someone who makes you think?',
+        'text': 'Would you rather be friends with someone who makes you laugh or someone who makes you think?',
       },
     },
     {
@@ -313,7 +313,7 @@ class DemoGameDataService {
         'id': 4,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather have perfect communication or perfect chemistry with a partner?',
+        'text': 'Would you rather have perfect communication or perfect adventures with a friend?',
       },
     },
     {
@@ -322,7 +322,7 @@ class DemoGameDataService {
         'id': 5,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather date someone exactly like you or someone completely opposite?',
+        'text': 'Would you rather be friends with someone exactly like you or someone completely opposite?',
       },
     },
     {
@@ -331,7 +331,7 @@ class DemoGameDataService {
         'id': 6,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather be loved intensely for 5 years or moderately for a lifetime?',
+        'text': 'Would you rather have an intense friendship for 5 years or a steady one for a lifetime?',
       },
     },
     {
@@ -340,7 +340,7 @@ class DemoGameDataService {
         'id': 7,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather have your partner always be honest even if it hurts, or sometimes lie to protect your feelings?',
+        'text': 'Would you rather have your friend always be honest even if it hurts, or sometimes be gentle to protect your feelings?',
       },
     },
     {
@@ -349,7 +349,7 @@ class DemoGameDataService {
         'id': 8,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather share all your passwords with your partner or none at all?',
+        'text': 'Would you rather share all your passwords with your friend or keep some privacy?',
       },
     },
     {
@@ -358,7 +358,7 @@ class DemoGameDataService {
         'id': 9,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather spend every moment with your partner or maintain separate hobbies and friends?',
+        'text': 'Would you rather spend every moment with your friend or maintain separate hobbies and other friendships?',
       },
     },
     {
@@ -367,7 +367,7 @@ class DemoGameDataService {
         'id': 10,
         'type': 'question',
         'stage': 1,
-        'text': 'Would you rather be with someone who needs constant reassurance or someone who\'s very independent?',
+        'text': 'Would you rather be friends with someone who needs constant reassurance or someone who\'s very independent?',
       },
     },
   ];
