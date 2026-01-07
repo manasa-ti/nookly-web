@@ -37,6 +37,7 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget>
   bool _isLoading = false;
   bool _hasError = false;
   String? _currentUrl;
+  bool _isSending = false; // Track if message is still sending (temp URL)
   
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<bool>? _playingSubscription;
@@ -108,6 +109,12 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget>
     final voiceMetadata = widget.message.metadata!.voice!;
     _currentUrl = voiceMetadata.voiceUrl;
     _totalDuration = Duration(seconds: voiceMetadata.voiceDuration);
+    
+    // Check if this is a temp message (still sending)
+    _isSending = _currentUrl == 'temp_url' || 
+                 _currentUrl!.startsWith('temp_') ||
+                 widget.message.status == 'sending' ||
+                 widget.message.id.startsWith('temp_');
 
     // TODO: Check if URL is expired and refresh if needed
     // For now, we'll use the URL as-is
@@ -117,6 +124,18 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget>
 
   Future<void> _togglePlayback() async {
     if (_currentUrl == null || _hasError) return;
+    
+    // Validate URL before attempting to play
+    if (_currentUrl!.isEmpty || 
+        _currentUrl == 'temp_url' || 
+        _currentUrl!.startsWith('temp_') ||
+        (!_currentUrl!.startsWith('http://') && !_currentUrl!.startsWith('https://') && !_currentUrl!.startsWith('blob:'))) {
+      AppLogger.error('❌ Cannot play voice: Invalid URL: $_currentUrl');
+      setState(() {
+        _hasError = true;
+      });
+      return;
+    }
 
     try {
       if (_isPlaying) {
@@ -223,21 +242,34 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget>
           // Playback controls and progress
           Row(
             children: [
-              // Play/Pause button
+              // Play/Pause button (disabled if sending)
               GestureDetector(
-                onTap: _togglePlayback,
+                onTap: _isSending ? null : _togglePlayback,
                 child: Container(
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: widget.isMe ? Colors.white : Colors.white.withOpacity(0.2),
+                    color: _isSending 
+                        ? (widget.isMe ? Colors.grey[300] : Colors.white.withOpacity(0.1))
+                        : (widget.isMe ? Colors.white : Colors.white.withOpacity(0.2)),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    _isPlaying ? Icons.pause : Icons.play_arrow,
-                    color: widget.isMe ? Colors.grey[600] : Colors.white,
-                    size: 16,
-                  ),
+                  child: _isSending
+                      ? SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              widget.isMe ? (Colors.grey[600] ?? Colors.grey) : Colors.white70,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          _isPlaying ? Icons.pause : Icons.play_arrow,
+                          color: widget.isMe ? Colors.grey[600] : Colors.white,
+                          size: 16,
+                        ),
                 ),
               ),
               
@@ -392,7 +424,13 @@ class _VoicePlayerWidgetState extends State<VoicePlayerWidget>
     _positionSubscription?.cancel();
     _playingSubscription?.cancel();
     _waveController.dispose();
-    _playerService.dispose();
+    try {
+      _playerService.dispose();
+    } catch (e) {
+      // On web, just_audio dispose() may throw UnimplementedError
+      // This is a known issue with just_audio on web
+      // Ignore the error as the player will be cleaned up by garbage collection
+    }
     super.dispose();
   }
 }

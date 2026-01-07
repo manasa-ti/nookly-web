@@ -1,9 +1,12 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:dio/dio.dart';
+import 'package:nookly/core/utils/file_io_helper.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:nookly/core/utils/logger.dart';
+import 'dart:html' as html if (dart.library.io) 'conversation_repository_stub.dart';
 import 'package:nookly/core/network/network_service.dart'; // Use NetworkService
-import 'package:nookly/core/utils/logger.dart'; // Add logger import
 import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/conversation_key.dart';
 import 'package:nookly/domain/entities/message.dart';
@@ -371,12 +374,21 @@ class ConversationRepositoryImpl implements ConversationRepository {
   @override
   Future<void> sendVoiceMessage(String conversationId, String audioPath, Duration duration) async {
     try {
-      final uploadForm = FormData.fromMap({
-        'voice': await MultipartFile.fromFile(
+      MultipartFile voiceFile;
+      if (kIsWeb) {
+        // On web, audioPath is a blob URL, convert it to MultipartFile
+        voiceFile = await _createMultipartFileFromBlobUrlForVoice(audioPath);
+      } else {
+        // On mobile, use file path directly
+        voiceFile = await MultipartFile.fromFile(
           audioPath,
           filename: audioPath.split('/').last,
           contentType: MediaType.parse('audio/m4a'),
-        ),
+        );
+      }
+      
+      final uploadForm = FormData.fromMap({
+        'voice': voiceFile,
       });
       final uploadResponse = await NetworkService.dio.post(
         '/messages/upload-voice',
@@ -590,9 +602,18 @@ class ConversationRepositoryImpl implements ConversationRepository {
       AppLogger.info('debug disappearing: Starting image upload process');
       AppLogger.info('debug disappearing: Base URL from NetworkService: ${NetworkService.baseUrl}');
       
+      MultipartFile imageFile;
+      if (kIsWeb) {
+        // On web, imagePath is a blob URL, convert it to MultipartFile
+        imageFile = await _createMultipartFileFromBlobUrl(imagePath);
+      } else {
+        // On mobile, use file path directly
+        imageFile = await MultipartFile.fromFile(imagePath);
+      }
+      
       // Create form data for the image upload
       final formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(imagePath),
+        'image': imageFile,
         'receiver': conversationId,
         'messageType': 'image',
         'isDisappearing': true,
@@ -721,6 +742,12 @@ class ConversationRepositoryImpl implements ConversationRepository {
   // Helper method to get file size
   Future<int> _getFileSize(String filePath) async {
     try {
+      if (kIsWeb) {
+        // On web, file size cannot be determined from path alone
+        // Return 0 as fallback - actual size will come from upload response
+        return 0;
+      }
+      // Use File from dart:io (only available when not on web)
       final file = File(filePath);
       if (await file.exists()) {
         return await file.length();
@@ -747,6 +774,165 @@ class ConversationRepositoryImpl implements ConversationRepository {
         return 'image/webp';
       default:
         return 'image/jpeg'; // Default fallback
+    }
+  }
+  
+  /// Create MultipartFile from blob URL (web only)
+  Future<MultipartFile> _createMultipartFileFromBlobUrl(String blobUrl) async {
+    if (!kIsWeb) {
+      throw UnsupportedError('_createMultipartFileFromBlobUrl is only available on web');
+    }
+    
+    try {
+      // Fetch the blob from the URL
+      final request = await html.HttpRequest.request(
+        blobUrl,
+        responseType: 'blob',
+      );
+      
+      final blob = request.response as html.Blob;
+      
+      // Convert blob to bytes using FileReader
+      final fileReader = html.FileReader();
+      final completer = Completer<Uint8List>();
+      
+      fileReader.onLoadEnd.listen((_) {
+        final result = fileReader.result;
+        try {
+          // Handle both ArrayBuffer and Uint8List cases
+          Uint8List bytes;
+          if (result is Uint8List) {
+            // Already a Uint8List (some browsers return this directly)
+            bytes = result;
+          } else {
+            // It's an ArrayBuffer, create a view
+            final arrayBuffer = result as dynamic;
+            bytes = Uint8List.view(arrayBuffer);
+          }
+          completer.complete(bytes);
+        } catch (e) {
+          completer.completeError(StateError('Failed to read blob as ArrayBuffer: $e'));
+        }
+      });
+      
+      fileReader.onError.listen((_) {
+        completer.completeError(StateError('Failed to read blob'));
+      });
+      
+      fileReader.readAsArrayBuffer(blob);
+      final bytes = await completer.future;
+      
+      // Determine filename from blob type or use default
+      final mimeType = blob.type.isNotEmpty ? blob.type : 'image/jpeg';
+      String extension = 'jpg';
+      if (mimeType.contains('png')) {
+        extension = 'png';
+      } else if (mimeType.contains('gif')) {
+        extension = 'gif';
+      } else if (mimeType.contains('webp')) {
+        extension = 'webp';
+      }
+      
+      final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      
+      return MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+        contentType: MediaType.parse(mimeType),
+      );
+    } catch (e) {
+      AppLogger.error('❌ Error creating MultipartFile from blob URL: $e');
+      rethrow;
+    }
+  }
+  
+  /// Create MultipartFile from blob URL (web only) - for voice messages
+  Future<MultipartFile> _createMultipartFileFromBlobUrlForVoice(String blobUrl) async {
+    if (!kIsWeb) {
+      throw UnsupportedError('_createMultipartFileFromBlobUrlForVoice is only available on web');
+    }
+    
+    try {
+      // Fetch the blob from the URL
+      final request = await html.HttpRequest.request(
+        blobUrl,
+        responseType: 'blob',
+      );
+      
+      final blob = request.response as html.Blob;
+      
+      // Convert blob to bytes using FileReader
+      final fileReader = html.FileReader();
+      final completer = Completer<Uint8List>();
+      
+      fileReader.onLoadEnd.listen((_) {
+        final result = fileReader.result;
+        try {
+          // Handle both ArrayBuffer and Uint8List cases
+          Uint8List bytes;
+          if (result is Uint8List) {
+            // Already a Uint8List (some browsers return this directly)
+            bytes = result;
+          } else {
+            // It's an ArrayBuffer, create a view
+            final arrayBuffer = result as dynamic;
+            bytes = Uint8List.view(arrayBuffer);
+          }
+          completer.complete(bytes);
+        } catch (e) {
+          completer.completeError(StateError('Failed to read blob as ArrayBuffer: $e'));
+        }
+      });
+      
+      fileReader.onError.listen((_) {
+        completer.completeError(StateError('Failed to read blob'));
+      });
+      
+      fileReader.readAsArrayBuffer(blob);
+      final bytes = await completer.future;
+      
+      // Determine filename and MIME type from blob type
+      // Server accepts: M4A, MP3, OGG, Opus, WebM
+      final blobMimeType = blob.type.isNotEmpty ? blob.type.toLowerCase() : '';
+      String extension = 'm4a';
+      String contentType = 'audio/m4a'; // Default to m4a
+      
+      if (blobMimeType.contains('mp4') || blobMimeType.contains('m4a') || blobMimeType.contains('aac')) {
+        // Map audio/mp4 and audio/aac to audio/m4a (server expects m4a)
+        extension = 'm4a';
+        contentType = 'audio/m4a';
+      } else if (blobMimeType.contains('webm')) {
+        extension = 'webm';
+        contentType = 'audio/webm';
+      } else if (blobMimeType.contains('ogg') || blobMimeType.contains('opus')) {
+        // Map opus to ogg format (server accepts both)
+        extension = 'ogg';
+        contentType = 'audio/ogg';
+      } else if (blobMimeType.contains('mp3') || blobMimeType.contains('mpeg')) {
+        extension = 'mp3';
+        contentType = 'audio/mpeg';
+      } else {
+        // Default to m4a if unknown
+        extension = 'm4a';
+        contentType = 'audio/m4a';
+      }
+      
+      final fileName = 'voice_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      
+      AppLogger.info('🎤 Voice file details:');
+      AppLogger.info('🎤 Original blob MIME type: $blobMimeType');
+      AppLogger.info('🎤 Mapped content type: $contentType');
+      AppLogger.info('🎤 File extension: $extension');
+      AppLogger.info('🎤 File name: $fileName');
+      
+      return MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+        contentType: MediaType.parse(contentType),
+      );
+    } catch (e) {
+      AppLogger.error('❌ Error creating MultipartFile from blob URL for voice: $e');
+      rethrow;
     }
   }
 

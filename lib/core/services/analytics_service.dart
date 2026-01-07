@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:nookly/core/config/environment_manager.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -13,7 +14,7 @@ class AnalyticsService {
   AnalyticsService({
     FirebaseAnalytics? analytics,
     AnalyticsSuperProperties? superProperties,
-  })  : _analytics = analytics ?? FirebaseAnalytics.instance,
+  })  : _analytics = analytics ?? (Firebase.apps.isNotEmpty ? FirebaseAnalytics.instance : throw StateError('Firebase not initialized')),
         _superProperties = superProperties ?? AnalyticsSuperProperties() {
     // Enable analytics for all environments (separate Firebase projects per environment)
     _isEnabled = true;

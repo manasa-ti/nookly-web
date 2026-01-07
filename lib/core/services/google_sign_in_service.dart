@@ -1,8 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/utils/platform_utils.dart';
 
 class GoogleSignInService {
   static GoogleSignInService? _instance;
@@ -34,7 +34,7 @@ class GoogleSignInService {
           ],
         );
         AppLogger.info('GoogleSignIn initialized for web');
-      } else if (Platform.isAndroid) {
+      } else if (PlatformUtils.isAndroid) {
         // Android configuration - using Android client ID
         _googleSignIn = GoogleSignIn(
           serverClientId: '957642975258-39lt5kotqdbuvcqg9uic4pplpdq29c1o.apps.googleusercontent.com', // Web client ID
@@ -45,7 +45,7 @@ class GoogleSignInService {
           ],
         );
         AppLogger.info('GoogleSignIn initialized for Android');
-      } else if (Platform.isIOS) {
+      } else if (PlatformUtils.isIOS) {
         // iOS configuration
         _googleSignIn = GoogleSignIn(
           clientId: '957642975258-256528neeadp0ieai104f80idjnmlngm.apps.googleusercontent.com', // Replace with your iOS client ID
@@ -55,16 +55,16 @@ class GoogleSignInService {
           ],
         );
         AppLogger.info('GoogleSignIn initialized for iOS');
-      }else {
-  // Fallback or other platforms
-  _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-    ],
-  );
-  AppLogger.info('GoogleSignIn initialized for unknown platform');
-}
+      } else {
+        // Fallback or other platforms
+        _googleSignIn = GoogleSignIn(
+          scopes: [
+            'email',
+            'profile',
+          ],
+        );
+        AppLogger.info('GoogleSignIn initialized for unknown platform');
+      }
 
       _isInitialized = true;
       AppLogger.info('GoogleSignInService initialization completed');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:nookly/core/utils/file_io_helper.dart';
 import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/message.dart';
 import 'package:nookly/presentation/bloc/conversation/conversation_bloc.dart';
@@ -31,8 +32,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:nookly/core/theme/app_text_styles.dart';
 import 'package:nookly/core/theme/app_colors.dart';
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
-import 'dart:io';
+import 'dart:html' as html if (dart.library.io) 'chat_page_stub.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/services/image_url_service.dart';
 
@@ -169,7 +171,7 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   final Map<String, String> _statusWidgetCache = {};
   
   // Store previous FlutterError handler to restore on dispose
-  FlutterExceptionHandler? _previousErrorHandler;
+  Function(FlutterErrorDetails)? _previousErrorHandler;
 
   @override
   void initState() {
@@ -1988,26 +1990,44 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                               );
                               
                               if (image != null) {
-                                // Verify file exists and check format
-                                final file = File(image.path);
-                                if (await file.exists()) {
-                                  final fileSize = await file.length();
-                                  
-                                  // Check file extension
+                                // Verify file exists and check format (skip on web)
+                                if (!kIsWeb) {
+                                  try {
+                                    final file = File(image.path);
+                                    if (!await file.exists()) {
+                                      throw Exception('Selected image file does not exist');
+                                    }
+                                  } catch (e) {
+                                    // File operations not available
+                                    throw Exception('Failed to verify image file: $e');
+                                  }
+                                }
+                                
+                                // Validate image format
+                                // On web, check MIME type first (more reliable than extension)
+                                if (kIsWeb && image.mimeType != null) {
+                                  final mimeType = image.mimeType!.toLowerCase();
+                                  if (!mimeType.startsWith('image/')) {
+                                    throw Exception('Only image files are supported');
+                                  }
+                                  // Validate specific image types
+                                  if (!['image/jpeg', 'image/jpg', 'image/png', 'image/gif'].contains(mimeType)) {
+                                    throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                  }
+                                } else {
+                                  // On mobile, use extension check (existing logic)
                                   final extension = image.path.split('.').last.toLowerCase();
                                   if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
                                     throw Exception('Only JPEG, PNG and GIF images are allowed');
                                   }
-                                  
-                                  Navigator.pop(context);
-                                  await _sendImageMessage(
-                                    image.path,
-                                    isDisappearing: true,
-                                    disappearingTime: selectedTime,
-                                  );
-                                } else {
-                                  throw Exception('Selected image file does not exist');
                                 }
+                                
+                                Navigator.pop(context);
+                                await _sendImageMessage(
+                                  image.path,
+                                  isDisappearing: true,
+                                  disappearingTime: selectedTime,
+                                );
                               }
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -2032,29 +2052,52 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () async {
-                            try {
-                              final picker = ImagePicker();
-                              final image = await picker.pickImage(
-                                source: ImageSource.camera,
-                                imageQuality: 80, // Compress image to reduce size
-                                maxWidth: 1920, // Limit max width
-                                maxHeight: 1920, // Limit max height
-                              );
-                              
-                              if (image != null) {
-                                // Verify file exists and check format
-                                final file = File(image.path);
-                                if (await file.exists()) {
-                                  final fileSize = await file.length();
+                      // Hide camera option on web
+                      if (!kIsWeb) ...[
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () async {
+                              try {
+                                final picker = ImagePicker();
+                                final image = await picker.pickImage(
+                                  source: ImageSource.camera,
+                                  imageQuality: 80, // Compress image to reduce size
+                                  maxWidth: 1920, // Limit max width
+                                  maxHeight: 1920, // Limit max height
+                                );
+                                
+                                if (image != null) {
+                                  // Verify file exists and check format (skip on web)
+                                  if (!kIsWeb) {
+                                    try {
+                                      final file = File(image.path);
+                                      if (!await file.exists()) {
+                                        throw Exception('Captured image file does not exist');
+                                      }
+                                    } catch (e) {
+                                      // File operations not available
+                                      throw Exception('Failed to verify image file: $e');
+                                    }
+                                  }
                                   
-                                  // Check file extension
-                                  final extension = image.path.split('.').last.toLowerCase();
-                                  if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
-                                    throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                  // Validate image format
+                                  // On web, check MIME type first (more reliable than extension)
+                                  if (kIsWeb && image.mimeType != null) {
+                                    final mimeType = image.mimeType!.toLowerCase();
+                                    if (!mimeType.startsWith('image/')) {
+                                      throw Exception('Only image files are supported');
+                                    }
+                                    // Validate specific image types
+                                    if (!['image/jpeg', 'image/jpg', 'image/png', 'image/gif'].contains(mimeType)) {
+                                      throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                    }
+                                  } else {
+                                    // On mobile, use extension check (existing logic)
+                                    final extension = image.path.split('.').last.toLowerCase();
+                                    if (!['jpg', 'jpeg', 'png', 'gif'].contains(extension)) {
+                                      throw Exception('Only JPEG, PNG and GIF images are allowed');
+                                    }
                                   }
                                   
                                   Navigator.pop(context);
@@ -2063,33 +2106,31 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                                     isDisappearing: true,
                                     disappearingTime: selectedTime,
                                   );
-                                } else {
-                                  throw Exception('Captured image file does not exist');
                                 }
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error capturing image: $e')),
+                                );
                               }
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error capturing image: $e')),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4C5C8A),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.camera_alt, color: AppColors.white85, size: 20),
-                              const SizedBox(width: 8),
-                              Text(
-                                'Camera',
-                                style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w600),
-                              ),
-                            ],
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4C5C8A),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.camera_alt, color: AppColors.white85, size: 20),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Camera',
+                                  style: TextStyle(fontFamily: 'Nunito', color: AppColors.white85, fontSize: AppTextStyles.getBodyFontSize(context), fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -2132,20 +2173,35 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
           _isUploadingImage = true;
           _uploadStatus = 'Uploading image...';
         });
-        final extension = imagePath.split('.').last.toLowerCase();
-        final contentType = switch (extension) {
-          'jpg' || 'jpeg' => 'image/jpeg',
-          'png' => 'image/png',
-          'gif' => 'image/gif',
-          _ => throw Exception('Unsupported image format: $extension')
-        };
+        MultipartFile imageFile;
+        String contentType;
+        String fileName;
+        
+        if (kIsWeb) {
+          // On web, imagePath is a blob URL, convert it to MultipartFile
+          imageFile = await _createMultipartFileFromBlobUrl(imagePath);
+          fileName = imageFile.filename ?? 'image_${DateTime.now().millisecondsSinceEpoch}.jpg';
+          contentType = imageFile.contentType?.mimeType ?? 'image/jpeg';
+        } else {
+          // On mobile, use file path directly
+          final extension = imagePath.split('.').last.toLowerCase();
+          contentType = switch (extension) {
+            'jpg' || 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            _ => throw Exception('Unsupported image format: $extension')
+          };
+          fileName = imagePath.split('/').last;
+          
+          imageFile = await MultipartFile.fromFile(
+            imagePath,
+            filename: fileName,
+            contentType: MediaType.parse(contentType),
+          );
+        }
         
         final formData = FormData.fromMap({
-          'image': await MultipartFile.fromFile(
-            imagePath,
-            filename: imagePath.split('/').last,
-            contentType: MediaType.parse(contentType),
-          ),
+          'image': imageFile,
           'isDisappearing': isDisappearing,
           'disappearingTime': disappearingTime,
         });
@@ -2376,6 +2432,12 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
   // Helper method to get file size
   Future<int> _getFileSize(String filePath) async {
     try {
+      if (kIsWeb) {
+        // On web, file size cannot be determined from path alone
+        // Return 0 as fallback - actual size will come from upload response
+        return 0;
+      }
+      // Use File from dart:io (only available when not on web)
       final file = File(filePath);
       if (await file.exists()) {
         return await file.length();
@@ -2401,6 +2463,75 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
         return 'image/webp';
       default:
         return 'image/jpeg'; // Default fallback
+    }
+  }
+
+  /// Create MultipartFile from blob URL (web only)
+  Future<MultipartFile> _createMultipartFileFromBlobUrl(String blobUrl) async {
+    if (!kIsWeb) {
+      throw UnsupportedError('_createMultipartFileFromBlobUrl is only available on web');
+    }
+    
+    try {
+      // Fetch the blob from the URL
+      final request = await html.HttpRequest.request(
+        blobUrl,
+        responseType: 'blob',
+      );
+      
+      final blob = request.response as html.Blob;
+      
+      // Convert blob to bytes using FileReader
+      final fileReader = html.FileReader();
+      final completer = Completer<Uint8List>();
+      
+      fileReader.onLoadEnd.listen((_) {
+        final result = fileReader.result;
+        try {
+          // Handle both ArrayBuffer and Uint8List cases
+          Uint8List bytes;
+          if (result is Uint8List) {
+            // Already a Uint8List (some browsers return this directly)
+            bytes = result;
+          } else {
+            // It's an ArrayBuffer, create a view
+            final arrayBuffer = result as dynamic;
+            bytes = Uint8List.view(arrayBuffer);
+          }
+          completer.complete(bytes);
+        } catch (e) {
+          completer.completeError(StateError('Failed to read blob as ArrayBuffer: $e'));
+        }
+      });
+      
+      fileReader.onError.listen((_) {
+        completer.completeError(StateError('Failed to read blob'));
+      });
+      
+      fileReader.readAsArrayBuffer(blob);
+      final bytes = await completer.future;
+      
+      // Determine filename from blob type or use default
+      final mimeType = blob.type.isNotEmpty ? blob.type : 'image/jpeg';
+      String extension = 'jpg';
+      if (mimeType.contains('png')) {
+        extension = 'png';
+      } else if (mimeType.contains('gif')) {
+        extension = 'gif';
+      } else if (mimeType.contains('webp')) {
+        extension = 'webp';
+      }
+      
+      final fileName = 'image_${DateTime.now().millisecondsSinceEpoch}.$extension';
+      
+      return MultipartFile.fromBytes(
+        bytes,
+        filename: fileName,
+        contentType: MediaType.parse(mimeType),
+      );
+    } catch (e) {
+      AppLogger.error('❌ Error creating MultipartFile from blob URL: $e');
+      rethrow;
     }
   }
 
@@ -2531,15 +2662,17 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 _showStickerPicker();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.mic, color: AppColors.white85),
-              title: Text('Voice Message', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context))),
-              onTap: () {
-                AppLogger.info('🔵 Voice Message option tapped');
-                Navigator.pop(context);
-                _toggleVoiceRecording();
-              },
-            ),
+            // Hide voice message option on web
+            if (!kIsWeb)
+              ListTile(
+                leading: const Icon(Icons.mic, color: AppColors.white85),
+                title: Text('Voice Message', style: TextStyle(color: AppColors.white85, fontFamily: 'Nunito', fontSize: AppTextStyles.getBodyFontSize(context))),
+                onTap: () {
+                  AppLogger.info('🔵 Voice Message option tapped');
+                  Navigator.pop(context);
+                  _toggleVoiceRecording();
+                },
+              ),
             ],
           ),
         );
@@ -3477,8 +3610,8 @@ class _ChatPageState extends State<ChatPage> with SingleTickerProviderStateMixin
                 ],
               ),
             ),
-          // Voice recorder widget
-          if (_isRecordingVoice)
+          // Voice recorder widget (hidden on web)
+          if (_isRecordingVoice && !kIsWeb)
             Container(
               margin: const EdgeInsets.only(bottom: 8),
               child: VoiceRecorderWidget(

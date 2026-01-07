@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:nookly/core/utils/logger.dart';
@@ -43,15 +44,79 @@ class SocketService {
     AppLogger.info('Initializing socket connection to $serverUrl');
     _userId = userId;
     
+    // Fix URL for web - use HTTPS instead of WSS and let socket.io handle the upgrade
+    String normalizedUrl = serverUrl;
+    if (kIsWeb) {
+      try {
+        final uri = Uri.parse(serverUrl);
+        
+        // For web, use https:// instead of wss:// and let socket.io handle the upgrade
+        // This prevents the port 0 issue that browsers block
+        if (uri.scheme == 'wss') {
+          // Convert wss:// to https://
+          if (uri.port != 0 && uri.port != 443) {
+            // Non-standard port, preserve it
+            normalizedUrl = 'https://${uri.host}:${uri.port}';
+          } else {
+            // Standard port, omit it (defaults to 443)
+            normalizedUrl = 'https://${uri.host}';
+          }
+          if (uri.path.isNotEmpty && uri.path != '/') {
+            normalizedUrl += uri.path;
+          }
+          AppLogger.info('🔵 Web: Converted wss:// to https:// for socket.io upgrade');
+        } else if (uri.scheme == 'ws') {
+          // Convert ws:// to http://
+          if (uri.port != 0 && uri.port != 80) {
+            // Non-standard port, preserve it
+            normalizedUrl = 'http://${uri.host}:${uri.port}';
+          } else {
+            // Standard port, omit it (defaults to 80)
+            normalizedUrl = 'http://${uri.host}';
+          }
+          if (uri.path.isNotEmpty && uri.path != '/') {
+            normalizedUrl += uri.path;
+          }
+          AppLogger.info('🔵 Web: Converted ws:// to http:// for socket.io upgrade');
+        }
+        
+        AppLogger.info('🔵 Web: Original URL: $serverUrl');
+        AppLogger.info('🔵 Web: Normalized URL: $normalizedUrl');
+      } catch (e) {
+        AppLogger.warning('⚠️ Failed to parse URL, using original: $e');
+        normalizedUrl = serverUrl;
+      }
+    }
+    
     try {
-      _socket = IO.io(
-        serverUrl,
-        IO.OptionBuilder()
-          .setTransports(['websocket'])
-          .setAuth({'token': token, 'userId': userId})
-          .disableAutoConnect()
-          .build(),
-      );
+      // On web, JavaScript interop can cause type issues with List/Map
+      // Use explicit casting to ensure types are preserved
+      IO.OptionBuilder optionBuilder = IO.OptionBuilder();
+      
+      if (kIsWeb) {
+        // On web, explicitly cast to avoid JSArray/JSObject type issues
+        final transportsList = ['websocket'] as List<String>;
+        optionBuilder.setTransports(transportsList);
+        
+        final authMap = {
+          'token': token,
+          'userId': userId,
+        } as Map<String, dynamic>;
+        optionBuilder.setAuth(authMap);
+      } else {
+        // On mobile, use normal typed lists/maps
+        final transports = <String>['websocket'];
+        final auth = <String, dynamic>{
+          'token': token,
+          'userId': userId,
+        };
+        optionBuilder.setTransports(transports);
+        optionBuilder.setAuth(auth);
+      }
+      
+      optionBuilder.disableAutoConnect();
+      
+      _socket = IO.io(normalizedUrl, optionBuilder.build());
       AppLogger.info('✅ Socket instance created successfully');
     } catch (e) {
       AppLogger.error('❌ Failed to create socket instance: $e');

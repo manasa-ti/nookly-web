@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/domain/entities/user.dart';
+import 'package:nookly/core/utils/platform_utils.dart';
 
 /// Manages and caches super properties for all analytics events
 /// Super properties are automatically included with every event
@@ -47,13 +47,7 @@ class AnalyticsSuperProperties {
     if (_platform != null) return; // Already initialized
     
     try {
-      if (Platform.isAndroid) {
-        _platform = 'android';
-      } else if (Platform.isIOS) {
-        _platform = 'ios';
-      } else {
-        _platform = 'unknown';
-      }
+      _platform = PlatformUtils.platformName;
       AppLogger.info('Analytics super property - Platform: $_platform');
     } catch (e) {
       AppLogger.error('Failed to initialize platform', e);

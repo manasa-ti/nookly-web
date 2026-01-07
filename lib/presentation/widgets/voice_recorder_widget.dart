@@ -205,7 +205,7 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Recording status and duration
+          // Recording status and duration with close button
           Row(
             children: [
               Icon(
@@ -214,24 +214,51 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                _recordingState == RecordingState.recording ? 'Recording...' : 'Hold to record',
-                style: const TextStyle(
-                  color: AppColors.white85,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              if (_recordingState == RecordingState.recording)
-                Text(
-                  _formatDuration(_currentDuration),
+              Expanded(
+                child: Text(
+                  _recordingState == RecordingState.recording ? 'Recording...' : 'Hold to record',
                   style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                    fontFamily: 'monospace',
+                    color: AppColors.white85,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+              ),
+              if (_recordingState == RecordingState.recording)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    _formatDuration(_currentDuration),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                ),
+              // Close button
+              GestureDetector(
+                onTap: () {
+                  // Cancel any active recording
+                  if (_recordingState == RecordingState.recording) {
+                    _cancelRecording();
+                  }
+                  // Close the widget
+                  widget.onRecordingCancelled?.call();
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    color: AppColors.white85,
+                    size: 20,
+                  ),
+                ),
+              ),
             ],
           ),
           

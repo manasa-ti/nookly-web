@@ -48,6 +48,15 @@ class VoicePlayerService {
 
   Future<bool> play(String url) async {
     try {
+      // Validate URL - reject temp URLs and invalid URLs
+      if (url.isEmpty || 
+          url == 'temp_url' || 
+          url.startsWith('temp_') ||
+          (!url.startsWith('http://') && !url.startsWith('https://') && !url.startsWith('blob:'))) {
+        AppLogger.error('❌ Invalid voice URL: $url');
+        return false;
+      }
+      
       if (_currentUrl == url && isPaused) {
         // Resume playback
         await _audioPlayer.play();
@@ -78,10 +87,15 @@ class VoicePlayerService {
 
   Future<void> pause() async {
     try {
-      await _audioPlayer.pause();
-      AppLogger.info('⏸️ Paused voice playback');
+      if (_audioPlayer.playing) {
+        await _audioPlayer.pause();
+        AppLogger.info('⏸️ Paused voice playback');
+      }
     } catch (e) {
-      AppLogger.error('❌ Failed to pause voice playback: $e');
+      // On web, just_audio may throw UnimplementedError
+      // This is a known issue with just_audio on web
+      // Log as warning instead of error
+      AppLogger.warning('⚠️ Failed to pause voice playback (may be web limitation): $e');
     }
   }
 
@@ -121,7 +135,13 @@ class VoicePlayerService {
   }
 
   void dispose() {
-    _audioPlayer.dispose();
+    try {
+      _audioPlayer.dispose();
+    } catch (e) {
+      // On web, just_audio dispose() may throw UnimplementedError
+      // This is a known issue with just_audio on web
+      // Ignore the error as the player will be cleaned up by garbage collection
+    }
     _positionController?.close();
     _stateController?.close();
     _isPlayingController?.close();

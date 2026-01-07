@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_performance/firebase_performance.dart';
+import 'firebase_options.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/deep_link_service.dart';
@@ -76,12 +78,24 @@ void main() async {
   
   // Initialize Firebase
   try {
-    await Firebase.initializeApp();
-    logger.i('✅ Firebase initialized');
+    // Check if Firebase is already initialized (prevents re-initialization errors)
+    if (Firebase.apps.isEmpty) {
+      // Initialize Firebase with platform-specific options
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      logger.i('✅ Firebase initialized');
+    } else {
+      logger.i('✅ Firebase already initialized (${Firebase.apps.length} app(s))');
+    }
     
-    // Set background message handler
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-    logger.i('✅ Firebase background message handler set');
+    // Set background message handler (not available on web)
+    if (!kIsWeb) {
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+      logger.i('✅ Firebase background message handler set');
+    } else {
+      logger.i('⚠️ Background message handler skipped on web');
+    }
     
     await di.init();
     logger.i('Dependency injection initialized');
@@ -119,19 +133,27 @@ void main() async {
       await analyticsService.initialize();
       logger.i('✅ Analytics initialized');
       
-      // Initialize Performance Monitoring
-      final performance = FirebasePerformance.instance;
-      await performance.setPerformanceCollectionEnabled(true); // Enabled for all environments
-      logger.i('✅ Performance monitoring initialized');
-      
-      // Track app startup time
-      final startupTrace = performance.newTrace('app_startup');
-      startupTrace.start();
-      startupStopwatch.stop();
-      startupTrace.putAttribute('startup_time_ms', startupStopwatch.elapsedMilliseconds.toString());
-      startupTrace.putAttribute('environment', EnvironmentManager.currentEnvironment.toString());
-      startupTrace.stop();
-      logger.i('📊 App startup tracked: ${startupStopwatch.elapsedMilliseconds}ms');
+      // Initialize Performance Monitoring (only if Firebase is initialized)
+      if (Firebase.apps.isNotEmpty) {
+        try {
+          final performance = FirebasePerformance.instance;
+          await performance.setPerformanceCollectionEnabled(true); // Enabled for all environments
+          logger.i('✅ Performance monitoring initialized');
+          
+          // Track app startup time
+          final startupTrace = performance.newTrace('app_startup');
+          startupTrace.start();
+          startupStopwatch.stop();
+          startupTrace.putAttribute('startup_time_ms', startupStopwatch.elapsedMilliseconds.toString());
+          startupTrace.putAttribute('environment', EnvironmentManager.currentEnvironment.toString());
+          startupTrace.stop();
+          logger.i('📊 App startup tracked: ${startupStopwatch.elapsedMilliseconds}ms');
+        } catch (e) {
+          logger.w('⚠️ Performance monitoring failed: $e');
+        }
+      } else {
+        logger.w('⚠️ Performance monitoring skipped - Firebase not initialized');
+      }
     } catch (e, stackTrace) {
       logger.e('❌ Error initializing analytics/crash reporting: $e');
       logger.e('Stack trace: $stackTrace');

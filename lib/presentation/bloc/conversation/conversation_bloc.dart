@@ -685,7 +685,22 @@ class ConversationBloc extends Bloc<ConversationEvent, ConversationState> {
         return;
       }
       
-      final updatedMessages = [event.message, ...currentState.messages];
+      // Remove any temp messages from the same sender for the same conversation
+      // This replaces temp messages (with temp_ IDs) with the real message
+      final updatedMessages = [
+        event.message,
+        ...currentState.messages.where((msg) {
+          // Keep message if it's not a temp message from the same sender
+          if (msg.id.startsWith('temp_') && 
+              msg.sender == event.message.sender &&
+              msg.receiver == event.message.receiver &&
+              msg.type == event.message.type) {
+            AppLogger.info('🗑️ Removing temp message: ${msg.id} (replaced by real message: ${event.message.id})');
+            return false; // Remove this temp message
+          }
+          return true; // Keep this message
+        })
+      ];
       
       final newLoadedState = ConversationLoaded(
         conversation: currentState.conversation.copyWith(

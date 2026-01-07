@@ -1,8 +1,9 @@
-import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:nookly/core/theme/app_colors.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/utils/platform_utils.dart';
 
 /// Non-dismissible dialog that forces user to update the app
 /// Blocks all navigation until user updates the app
@@ -70,14 +71,20 @@ class ForceUpdateDialog extends StatelessWidget {
     try {
       String? storeUrl;
       
-      if (Platform.isAndroid) {
+      if (kIsWeb) {
+        // On web, force update dialog doesn't make sense - just show error
+        _showErrorDialog(context);
+        return;
+      }
+      
+      if (PlatformUtils.isAndroid) {
         storeUrl = androidAppLink.isNotEmpty ? androidAppLink : null;
-      } else if (Platform.isIOS) {
+      } else if (PlatformUtils.isIOS) {
         storeUrl = iosAppLink.isNotEmpty ? iosAppLink : null;
       }
 
       if (storeUrl == null || storeUrl.isEmpty) {
-        AppLogger.warning('Store URL not available for platform: ${Platform.operatingSystem}');
+        AppLogger.warning('Store URL not available for platform');
         _showErrorDialog(context);
         return;
       }

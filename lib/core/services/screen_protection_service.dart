@@ -1,10 +1,13 @@
-import 'dart:io';
+import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:screen_protector/screen_protector.dart';
 import 'package:nookly/core/services/remote_config_service.dart';
 import 'package:nookly/core/utils/logger.dart';
 import 'package:nookly/core/di/injection_container.dart' as di;
+import 'package:nookly/core/utils/platform_utils.dart';
+import 'web_screenshot_protection_service.dart' if (dart.library.io) 'web_screenshot_protection_service_stub.dart' as web_protection;
 
 /// Service for managing screenshot and screen recording prevention
 /// Protection is always enabled when requested, independent of Remote Config
@@ -17,6 +20,12 @@ class ScreenProtectionService {
   DateTime? _lastProtectionDisableTime;
   MethodChannel? _screenshotChannel;
   
+  // Web-specific screenshot detection
+  web_protection.WebScreenshotProtectionService? _webProtectionService;
+  StreamSubscription<bool>? _webScreenshotSubscription;
+  OverlayEntry? _blackOverlayEntry;
+  OverlayState? _overlayState;
+  
   // Note: screen_protector prevents screenshots/recording but doesn't provide
   // a callback. The system (Android/iOS) automatically blocks attempts and
   // may show a system message.
@@ -26,8 +35,13 @@ class ScreenProtectionService {
   ScreenProtectionService({RemoteConfigService? remoteConfigService})
       : _remoteConfigService = remoteConfigService ?? di.sl<RemoteConfigService>() {
     // Setup screenshot detection on iOS
-    if (Platform.isIOS) {
+    if (PlatformUtils.isIOS) {
       _setupScreenshotDetection();
+    }
+    
+    // Setup web screenshot detection
+    if (kIsWeb) {
+      _setupWebScreenshotDetection();
     }
   }
   
@@ -40,22 +54,86 @@ class ScreenProtectionService {
       // Logging removed as per requirements
     });
   }
+  
+  /// Setup web screenshot detection
+  void _setupWebScreenshotDetection() {
+    _webProtectionService = web_protection.WebScreenshotProtectionService();
+    _webProtectionService!.initialize();
+    
+    // Listen for screenshot detection events
+    _webScreenshotSubscription = _webProtectionService!.screenshotDetected.listen((detected) {
+      if (detected && _isProtectionActive) {
+        _showBlackOverlay();
+      }
+    });
+  }
+  
+  /// Show black overlay when screenshot is detected (web only)
+  void _showBlackOverlay() {
+    if (!kIsWeb || _overlayState == null) return;
+    
+    // Remove existing overlay if any
+    _hideBlackOverlay();
+    
+    // Create black overlay
+    _blackOverlayEntry = OverlayEntry(
+      builder: (context) => Container(
+        color: Colors.black,
+        width: double.infinity,
+        height: double.infinity,
+        child: const Center(
+          child: Text(
+            'Screenshot detected',
+            style: TextStyle(color: Colors.white, fontSize: 16),
+          ),
+        ),
+      ),
+      opaque: true,
+    );
+    
+    _overlayState!.insert(_blackOverlayEntry!);
+    
+    // Hide overlay after 2 seconds
+    Future.delayed(const Duration(seconds: 2), () {
+      _hideBlackOverlay();
+    });
+  }
+  
+  /// Hide black overlay
+  void _hideBlackOverlay() {
+    if (_blackOverlayEntry != null) {
+      _blackOverlayEntry!.remove();
+      _blackOverlayEntry = null;
+    }
+  }
 
   /// Enable screenshot and screen recording protection
   /// 
   /// [screenType] should be one of: 'video_call', 'chat', 'profile'
   /// [context] is required to show system messages when screenshot is attempted
+  /// On web, context is required to show black overlay when screenshot is detected
   Future<bool> enableProtection({
     required String screenType,
     BuildContext? context,
   }) async {
     try {
-
+      // On web, enable screenshot detection (protection is limited)
+      if (kIsWeb) {
+        if (context != null) {
+          _overlayState = Overlay.of(context);
+        }
+        _isProtectionActive = true;
+        _currentProtectedScreen = screenType;
+        _lastProtectionEnableTime = DateTime.now();
+        AppLogger.info('✅ Web screenshot detection enabled for $screenType');
+        return true;
+      }
+      
       // On iOS, always call the API even if we think protection is already active
       // because iOS may have silently disabled protection (e.g., after app backgrounding)
       // On Android, we can skip if already protecting the same screen
-      final isIOSAlreadyActive = Platform.isIOS && _isProtectionActive && _currentProtectedScreen == screenType;
-      final shouldSkip = !Platform.isIOS && _isProtectionActive && _currentProtectedScreen == screenType;
+      final isIOSAlreadyActive = PlatformUtils.isIOS && _isProtectionActive && _currentProtectedScreen == screenType;
+      final shouldSkip = !PlatformUtils.isIOS && _isProtectionActive && _currentProtectedScreen == screenType;
       
       if (shouldSkip) {
         return true;
@@ -94,6 +172,14 @@ class ScreenProtectionService {
     }
 
     try {
+      if (kIsWeb) {
+        _hideBlackOverlay();
+        _isProtectionActive = false;
+        _currentProtectedScreen = null;
+        _lastProtectionDisableTime = DateTime.now();
+        return;
+      }
+      
       await ScreenProtector.protectDataLeakageOff();
       
       _isProtectionActive = false;
@@ -110,6 +196,14 @@ class ScreenProtectionService {
   /// Get the currently protected screen type
   String? get currentProtectedScreen => _currentProtectedScreen;
   
+  /// Get platform name safely (works on web and mobile)
+  String _getPlatformName() {
+    final name = PlatformUtils.platformName;
+    // Capitalize first letter
+    if (name.isEmpty) return 'Unknown';
+    return name[0].toUpperCase() + name.substring(1);
+  }
+
   /// Get detailed protection status for debugging
   Map<String, dynamic> getProtectionStatus() {
     return {
@@ -117,7 +211,7 @@ class ScreenProtectionService {
       'currentProtectedScreen': _currentProtectedScreen,
       'lastProtectionEnableTime': _lastProtectionEnableTime?.toIso8601String(),
       'lastProtectionDisableTime': _lastProtectionDisableTime?.toIso8601String(),
-      'platform': Platform.isIOS ? 'iOS' : Platform.isAndroid ? 'Android' : 'Unknown',
+      'platform': _getPlatformName(),
       'remoteConfigInitialized': _remoteConfigService.isInitialized,
     };
   }
@@ -146,6 +240,15 @@ class ScreenProtectionService {
       // If not active, enable it
       await enableProtection(screenType: screenType, context: context);
     }
+  }
+  
+  /// Dispose resources
+  void dispose() {
+    _webScreenshotSubscription?.cancel();
+    _webScreenshotSubscription = null;
+    _webProtectionService?.dispose();
+    _webProtectionService = null;
+    _hideBlackOverlay();
   }
 }
 

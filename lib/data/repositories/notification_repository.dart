@@ -1,8 +1,8 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
+import 'package:nookly/core/utils/platform_utils.dart';
 
 class NotificationRepository {
   NotificationRepository();
@@ -20,7 +20,7 @@ class NotificationRepository {
       }
       
       // Detect platform
-      final platform = Platform.isAndroid ? 'android' : Platform.isIOS ? 'ios' : 'web';
+      final platform = PlatformUtils.platformName;
       
       AppLogger.info('📱 Registering device: platform=$platform');
       

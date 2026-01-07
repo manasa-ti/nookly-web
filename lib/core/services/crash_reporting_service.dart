@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:nookly/core/utils/logger.dart';
 
@@ -10,7 +11,7 @@ class CrashReportingService {
   bool _isEnabled = true;
 
   CrashReportingService({FirebaseCrashlytics? crashlytics})
-      : _crashlytics = crashlytics ?? FirebaseCrashlytics.instance {
+      : _crashlytics = crashlytics ?? (Firebase.apps.isNotEmpty ? FirebaseCrashlytics.instance : throw StateError('Firebase not initialized')) {
     // Enable crashlytics for all environments (separate Firebase projects per environment)
     _isEnabled = true;
   }

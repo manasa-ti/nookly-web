@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_performance/firebase_performance.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:nookly/core/services/auth_handler.dart';
 import 'package:nookly/core/services/analytics_service.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -78,12 +79,18 @@ class NetworkService {
             _prefs ??= await SharedPreferences.getInstance();
             final token = _prefs?.getString('token');
             
-            // TEMP LOG: Print auth token before API call
+            // Only add Authorization header if token exists (login/register endpoints don't need it)
             if (token != null) {
-              AppLogger.info('🔑 NetworkService: Auth token for ${options.uri}: $token');
+              AppLogger.info('🔑 NetworkService: Adding auth token for ${options.uri}');
               options.headers['Authorization'] = 'Bearer $token';
             } else {
-              AppLogger.info('🔑 NetworkService: No auth token found for ${options.uri}');
+              // This is normal for login/register endpoints - don't log as it's expected
+              final isAuthEndpoint = options.uri.path.contains('/login') || 
+                                    options.uri.path.contains('/register') ||
+                                    options.uri.path.contains('/google-signin');
+              if (!isAuthEndpoint) {
+                AppLogger.debug('🔑 NetworkService: No auth token found for ${options.uri} (expected for auth endpoints)');
+              }
             }
             
             return handler.next(options);
@@ -103,12 +110,31 @@ class NetworkService {
         },
         onError: (DioException e, handler) {
           AppLogger.info('debug disappearing: Interceptor onError - Error: ${e.message}');
+          AppLogger.info('🔴 DioException type: ${e.type}');
+          AppLogger.info('🔴 DioException message: ${e.message}');
+          if (e.response != null) {
+            AppLogger.info('🔴 Response status: ${e.response?.statusCode}');
+            AppLogger.info('🔴 Response data: ${e.response?.data}');
+          }
+          
+          // Handle connection-related errors (including web-specific connection errors)
           if (e.type == DioExceptionType.connectionTimeout ||
-              e.type == DioExceptionType.receiveTimeout) {
+              e.type == DioExceptionType.receiveTimeout ||
+              e.type == DioExceptionType.connectionError ||
+              (kIsWeb && e.message?.toLowerCase().contains('cors') == true)) {
+            String errorMessage;
+            if (kIsWeb && (e.message?.toLowerCase().contains('cors') == true || 
+                           e.type == DioExceptionType.connectionError)) {
+              errorMessage = 'Connection failed. This may be a CORS issue. Please check server configuration.';
+              AppLogger.warning('⚠️ Possible CORS error on web: ${e.message}');
+            } else {
+              errorMessage = 'Connection timed out. Please check your internet connection and try again.';
+            }
             return handler.reject(
               DioException(
                 requestOptions: e.requestOptions,
-                error: 'Connection timed out. Please check your internet connection and try again.',
+                error: errorMessage,
+                type: e.type,
               ),
             );
           }
