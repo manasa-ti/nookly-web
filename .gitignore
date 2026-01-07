@@ -1,0 +1,10 @@
+# This .gitignore is for the nookly-web repository
+# It negates the parent repository's ignore rule for this directory
+
+# Allow all files in this directory (web build output)
+# The parent repo ignores /build/, but this repo needs to track these files
+*
+
+# But then un-ignore everything (negate the ignore)
+!*
+

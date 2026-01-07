@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="hushmate">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>hushmate</title>
+  <link rel="manifest" href="manifest.json">
+  
+  <!-- Screenshot Detection Script -->
+  <script>
+    (function() {
+      'use strict';
+      
+      let lastVisibilityChange = Date.now();
+      let screenshotDetectionEnabled = true;
+      
+      // Detect print attempts (often used for screenshots)
+      window.addEventListener('beforeprint', function() {
+        if (screenshotDetectionEnabled) {
+          window.dispatchEvent(new CustomEvent('screenshot-detected'));
+        }
+      });
+      
+      // Detect visibility changes (tab switching might indicate screenshot)
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+          lastVisibilityChange = Date.now();
+        } else {
+          const timeHidden = Date.now() - lastVisibilityChange;
+          // If tab was hidden for very short time (< 100ms), might be screenshot
+          if (timeHidden < 100 && screenshotDetectionEnabled) {
+            window.dispatchEvent(new CustomEvent('screenshot-detected'));
+          }
+        }
+      });
+      
+      // Listen for keyboard shortcuts that might indicate screenshot
+      document.addEventListener('keydown', function(e) {
+        if (!screenshotDetectionEnabled) return;
+        
+        // Print Screen key (Windows/Linux)
+        if (e.key === 'PrintScreen') {
+          window.dispatchEvent(new CustomEvent('screenshot-detected'));
+        }
+        
+        // Cmd+Shift+4 (macOS screenshot selection)
+        if (e.metaKey && e.shiftKey && e.key === '4') {
+          window.dispatchEvent(new CustomEvent('screenshot-detected'));
+        }
+        
+        // Cmd+Shift+3 (macOS full screenshot)
+        if (e.metaKey && e.shiftKey && e.key === '3') {
+          window.dispatchEvent(new CustomEvent('screenshot-detected'));
+        }
+        
+        // Ctrl+Shift+S (some browsers)
+        if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+          window.dispatchEvent(new CustomEvent('screenshot-detected'));
+        }
+      });
+      
+      // Detect screen recording (iOS Safari and some browsers)
+      if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
+        // Monitor for screen sharing/recording
+        let isRecording = false;
+        
+        // Check if screen is being shared (limited browser support)
+        if (navigator.mediaDevices.getDisplayMedia) {
+          // This is a best-effort detection
+          // We can't reliably detect screen recording without user interaction
+        }
+      }
+      
+      // iOS Safari specific: Detect when app loses focus (might indicate screenshot gesture)
+      window.addEventListener('blur', function() {
+        // On iOS, screenshot gesture might cause brief blur
+        setTimeout(function() {
+          if (document.hasFocus() && screenshotDetectionEnabled) {
+            // Quick blur/focus might indicate screenshot
+            window.dispatchEvent(new CustomEvent('screenshot-detected'));
+          }
+        }, 50);
+      });
+      
+      // Expose function to enable/disable detection (for Flutter control)
+      window.enableScreenshotDetection = function() {
+        screenshotDetectionEnabled = true;
+      };
+      
+      window.disableScreenshotDetection = function() {
+        screenshotDetectionEnabled = false;
+      };
+      
+      console.log('📸 Web screenshot detection initialized');
+    })();
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main chat bubble -->
+  <path d="M25 30 Q25 25, 30 25 L65 25 Q70 25, 70 30 L70 50 Q70 55, 65 55 L45 55 L35 65 L35 55 L30 55 Q25 55, 25 50 Z" fill="#3b82f6"/>
+  
+  <!-- Smaller overlapping bubble -->
+  <path d="M45 45 Q45 40, 50 40 L75 40 Q80 40, 80 45 L80 60 Q80 65, 75 65 L60 65 L55 70 L55 65 L50 65 Q45 65, 45 60 Z" fill="#60a5fa"/>
+</svg>
