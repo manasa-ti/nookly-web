@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:nookly/core/utils/logger.dart';
@@ -24,10 +23,15 @@ class GoogleSignInService {
 
     try {
       // Configure Google Sign-In based on platform
+      // Client IDs loaded from environment variables for security
       if (kIsWeb) {
         // Web configuration
+        const webClientId = String.fromEnvironment(
+          'GOOGLE_SIGN_IN_WEB_CLIENT_ID',
+          defaultValue: '957642975258-39lt5kotqdbuvcqg9uic4pplpdq29c1o.apps.googleusercontent.com',
+        );
         _googleSignIn = GoogleSignIn(
-          clientId: '957642975258-39lt5kotqdbuvcqg9uic4pplpdq29c1o.apps.googleusercontent.com', // Replace with your web client ID
+          clientId: webClientId,
           scopes: [
             'email',
             'profile',
@@ -36,9 +40,17 @@ class GoogleSignInService {
         AppLogger.info('GoogleSignIn initialized for web');
       } else if (PlatformUtils.isAndroid) {
         // Android configuration - using Android client ID
+        const webClientId = String.fromEnvironment(
+          'GOOGLE_SIGN_IN_WEB_CLIENT_ID',
+          defaultValue: '957642975258-39lt5kotqdbuvcqg9uic4pplpdq29c1o.apps.googleusercontent.com',
+        );
+        const androidClientId = String.fromEnvironment(
+          'GOOGLE_SIGN_IN_ANDROID_CLIENT_ID',
+          defaultValue: '957642975258-k802ombsbqdc6a0qvgubvkoa6s6ensnp.apps.googleusercontent.com',
+        );
         _googleSignIn = GoogleSignIn(
-          serverClientId: '957642975258-39lt5kotqdbuvcqg9uic4pplpdq29c1o.apps.googleusercontent.com', // Web client ID
-          clientId: '957642975258-k802ombsbqdc6a0qvgubvkoa6s6ensnp.apps.googleusercontent.com',
+          serverClientId: webClientId,
+          clientId: androidClientId,
           scopes: [
             'email',
             'profile',
@@ -47,8 +59,12 @@ class GoogleSignInService {
         AppLogger.info('GoogleSignIn initialized for Android');
       } else if (PlatformUtils.isIOS) {
         // iOS configuration
+        const iosClientId = String.fromEnvironment(
+          'GOOGLE_SIGN_IN_IOS_CLIENT_ID',
+          defaultValue: '957642975258-256528neeadp0ieai104f80idjnmlngm.apps.googleusercontent.com',
+        );
         _googleSignIn = GoogleSignIn(
-          clientId: '957642975258-256528neeadp0ieai104f80idjnmlngm.apps.googleusercontent.com', // Replace with your iOS client ID
+          clientId: iosClientId,
           scopes: [
             'email',
             'profile',

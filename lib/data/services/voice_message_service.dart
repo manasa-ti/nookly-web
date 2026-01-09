@@ -6,7 +6,7 @@ import 'package:nookly/core/utils/file_io_helper.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/network/network_service.dart';
 import 'package:nookly/core/utils/logger.dart';
-import 'dart:html' as html if (dart.library.io) 'voice_message_service_stub.dart';
+import 'dart:html' if (dart.library.io) 'voice_message_service_stub.dart' as html;
 
 class VoiceMessageService {
   /// Upload voice file to server

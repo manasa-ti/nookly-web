@@ -46,3 +46,12 @@ app.*.map.json
 
 # iOS build artifacts
 ios/build/
+
+# Web deployment directory (separate git repo for nookly-web)
+/web-deploy/
+
+# Environment variables - NEVER commit these!
+.env
+.env.local
+.env.*.local
+*.env

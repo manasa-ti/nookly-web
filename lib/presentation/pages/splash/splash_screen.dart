@@ -23,10 +23,10 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
   late AnimationController _controller;
-  late AnimationController _loadingController;
+  late AnimationController _progressController;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _loadingAnimation;
+  late Animation<double> _progressAnimation;
 
   @override
   void initState() {
@@ -36,8 +36,8 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       vsync: this,
     );
 
-    _loadingController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+    _progressController = AnimationController(
+      duration: const Duration(seconds: 3),
       vsync: this,
     );
 
@@ -55,15 +55,15 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ),
     );
 
-    _loadingAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
-        parent: _loadingController,
-        curve: Curves.easeOut,
+        parent: _progressController,
+        curve: Curves.easeInOut,
       ),
     );
 
     _controller.forward();
-    _loadingController.repeat();
+    _progressController.forward();
 
     // Check authentication status after animation, but only if no deep link is being processed
     Future.delayed(const Duration(seconds: 3), () {
@@ -84,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   @override
   void dispose() {
     _controller.dispose();
-    _loadingController.dispose();
+    _progressController.dispose();
     super.dispose();
   }
 
@@ -261,6 +261,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             ),
                           ),
                           const SizedBox(height: 40),
+                          
+                          // Horizontal progress bar
+                          _buildProgressBar(),
                         ],
                       ),
                     ),
@@ -276,121 +279,73 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Widget _buildLogo() {
     final size = MediaQuery.of(context).size;
-    final logoSize = (size.width * 0.25).clamp(80.0, 120.0);
-    final centerCircleSize = logoSize * 0.5;
+    final logoSize = (size.width * 0.35).clamp(100.0, 160.0);
     
-    return SizedBox(
-      width: logoSize * 2.5,
-      height: logoSize * 2.5,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Ripple animations (outer animated rings)
-          _buildRippleAnimation(logoSize, 0),
-          _buildRippleAnimation(logoSize, 0.33),
-          _buildRippleAnimation(logoSize, 0.66),
-          
-          // Logo with transparent rounded background
-          Container(
-            width: logoSize,
-            height: logoSize,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF1d335f).withOpacity(0.5),
-                  blurRadius: 40,
-                  offset: const Offset(0, 15),
-                ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Static concentric rings (part of the logo design)
-                _buildStaticRing(logoSize * 0.75, 0.4, const Color(0xFF667EEA)), // Outer ring
-                _buildStaticRing(logoSize * 0.65, 0.5, const Color(0xFF8B7FD8)), // Middle ring
-                _buildStaticRing(logoSize * 0.55, 0.6, const Color(0xFFA89EE6)), // Inner ring
-                
-                // Central blue circle with glow
-                Container(
-                  width: centerCircleSize,
-                  height: centerCircleSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const RadialGradient(
-                      colors: [
-                        Color(0xFF7B9FFF), // Bright blue center
-                        Color(0xFF667EEA), // Slightly darker blue
-                        Color(0xFF5A67D8), // Darker blue edge
-                      ],
-                      stops: [0.0, 0.6, 1.0],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF667EEA).withOpacity(0.8),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                      BoxShadow(
-                        color: const Color(0xFF667EEA).withOpacity(0.4),
-                        blurRadius: 30,
-                        spreadRadius: 4,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStaticRing(double size, double opacity, Color color) {
     return Container(
-      width: size,
-      height: size,
+      width: logoSize,
+      height: logoSize,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(
-          color: color.withOpacity(opacity),
-          width: 2,
-        ),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(opacity * 0.3),
-            blurRadius: 8,
-            spreadRadius: 1,
+            color: const Color(0xFF1d335f).withOpacity(0.5),
+            blurRadius: 40,
+            offset: const Offset(0, 15),
           ),
         ],
+      ),
+      child: Center(
+        child: ClipOval(
+          child: Image.asset(
+            'assets/icons/app_icon.png',
+            width: logoSize,
+            height: logoSize,
+            fit: BoxFit.contain,
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildRippleAnimation(double logoSize, double delay) {
+  Widget _buildProgressBar() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final progressBarWidth = screenWidth * 0.6;
+    
     return AnimatedBuilder(
-      animation: _loadingController,
+      animation: _progressAnimation,
       builder: (context, child) {
-        final animationValue = ((_loadingAnimation.value + delay) % 1.0);
-        final rippleSize = logoSize * (1.0 + animationValue * 1.5);
-        final opacity = (1.0 - animationValue).clamp(0.0, 1.0) * 0.6;
-        
-        return Container(
-          width: rippleSize,
-          height: rippleSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: Colors.white.withOpacity(opacity),
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.white.withOpacity(opacity * 0.3),
-                blurRadius: 10,
-                spreadRadius: 2,
+        return SizedBox(
+          width: progressBarWidth,
+          child: Stack(
+            children: [
+              // Background track
+              Container(
+                height: 3,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Animated progress fill
+              ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    width: progressBarWidth * _progressAnimation.value,
+                    height: 3,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFF1d335f), // #1d335f - blue
+                          Color(0xFF413b62), // #413b62 - purple
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

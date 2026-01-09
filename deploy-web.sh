@@ -25,9 +25,59 @@ echo "📦 Cleaning and getting dependencies..."
 flutter clean
 flutter pub get
 
-# Step 2: Build web app
+# Step 2: Build web app with environment variables
 echo "🔨 Building Flutter web app (release mode)..."
-flutter build web --release
+
+# Determine environment for dart-define
+DART_ENV="development"
+if [ "$ENV" = "prod" ] || [ "$ENV" = "production" ]; then
+    DART_ENV="production"
+elif [ "$ENV" = "staging" ]; then
+    DART_ENV="staging"
+fi
+
+# Build command with environment variables
+# Note: For GitHub Pages, you should set these as GitHub Secrets and pass them here
+# Example: --dart-define=HMS_APP_ID=$HMS_APP_ID
+BUILD_ARGS="--release --dart-define=ENVIRONMENT=$DART_ENV"
+
+# Add environment variables if they're set (for CI/CD)
+if [ -n "$HMS_APP_ID" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=HMS_APP_ID=$HMS_APP_ID"
+fi
+if [ -n "$HMS_AUTH_TOKEN" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=HMS_AUTH_TOKEN=$HMS_AUTH_TOKEN"
+fi
+if [ -n "$FIREBASE_WEB_PROD_API_KEY" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_API_KEY=$FIREBASE_WEB_PROD_API_KEY"
+fi
+if [ -n "$FIREBASE_WEB_PROD_APP_ID" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_APP_ID=$FIREBASE_WEB_PROD_APP_ID"
+fi
+if [ -n "$FIREBASE_WEB_PROD_MESSAGING_SENDER_ID" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_MESSAGING_SENDER_ID=$FIREBASE_WEB_PROD_MESSAGING_SENDER_ID"
+fi
+if [ -n "$FIREBASE_WEB_PROD_PROJECT_ID" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_PROJECT_ID=$FIREBASE_WEB_PROD_PROJECT_ID"
+fi
+if [ -n "$FIREBASE_WEB_PROD_AUTH_DOMAIN" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_AUTH_DOMAIN=$FIREBASE_WEB_PROD_AUTH_DOMAIN"
+fi
+if [ -n "$FIREBASE_WEB_PROD_STORAGE_BUCKET" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_STORAGE_BUCKET=$FIREBASE_WEB_PROD_STORAGE_BUCKET"
+fi
+if [ -n "$FIREBASE_WEB_PROD_MEASUREMENT_ID" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=FIREBASE_WEB_PROD_MEASUREMENT_ID=$FIREBASE_WEB_PROD_MEASUREMENT_ID"
+fi
+if [ -n "$GOOGLE_SIGN_IN_WEB_CLIENT_ID" ]; then
+    BUILD_ARGS="$BUILD_ARGS --dart-define=GOOGLE_SIGN_IN_WEB_CLIENT_ID=$GOOGLE_SIGN_IN_WEB_CLIENT_ID"
+fi
+
+echo "⚠️  SECURITY NOTE: If deploying to GitHub Pages, ensure environment variables are set!"
+echo "   See SECURITY_SETUP.md for details on using GitHub Secrets"
+echo ""
+
+flutter build web $BUILD_ARGS
 
 if [ ! -d "build/web" ]; then
     echo "❌ Build failed! build/web directory not found."

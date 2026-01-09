@@ -5,7 +5,7 @@ import 'package:dio/dio.dart';
 import 'package:nookly/core/utils/file_io_helper.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/utils/logger.dart';
-import 'dart:html' as html if (dart.library.io) 'conversation_repository_stub.dart';
+import 'dart:html' if (dart.library.io) 'conversation_repository_stub.dart' as html;
 import 'package:nookly/core/network/network_service.dart'; // Use NetworkService
 import 'package:nookly/domain/entities/conversation.dart';
 import 'package:nookly/domain/entities/conversation_key.dart';

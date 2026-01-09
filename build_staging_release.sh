@@ -50,6 +50,24 @@ if ! command -v xcodebuild &> /dev/null; then
     exit 1
 fi
 
+# Load environment variables from .env file
+print_step "Loading secrets from .env file..."
+if [ -f ".env" ]; then
+    # Source the load_env script if it exists, otherwise load directly
+    if [ -f "scripts/load_env.sh" ]; then
+        source scripts/load_env.sh
+    else
+        # Simple .env loader
+        set -a
+        source .env 2>/dev/null || true
+        set +a
+        print_status "✅ Loaded secrets from .env file"
+    fi
+else
+    print_warning ".env file not found. Secrets will use default values (if any)."
+    print_warning "Create a .env file with your secrets. See .env.example for template."
+fi
+
 # Get current version from pubspec.yaml
 VERSION=$(grep "version:" pubspec.yaml | sed 's/version: //' | tr -d ' ')
 TARGET_SDK=$(grep "targetSdk" android/app/build.gradle.kts | sed 's/.*targetSdk = //' | tr -d ' ')
@@ -67,13 +85,31 @@ flutter pub get
 print_step "Checking Android licenses..."
 echo "y" | flutter doctor --android-licenses > /dev/null 2>&1 || true
 
-# Build Android with staging environment
+# Build Android with staging environment and secrets
 print_step "Building Android App Bundle (AAB) for STAGING..."
-flutter build appbundle --release --dart-define=ENVIRONMENT=staging
+flutter build appbundle --release \
+  --dart-define=ENVIRONMENT=staging \
+  --dart-define=HMS_APP_ID="${HMS_APP_ID:-}" \
+  --dart-define=HMS_AUTH_TOKEN="${HMS_AUTH_TOKEN:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_API_KEY="${FIREBASE_ANDROID_PROD_API_KEY:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_APP_ID="${FIREBASE_ANDROID_PROD_APP_ID:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_MESSAGING_SENDER_ID="${FIREBASE_ANDROID_PROD_MESSAGING_SENDER_ID:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_PROJECT_ID="${FIREBASE_ANDROID_PROD_PROJECT_ID:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_STORAGE_BUCKET="${FIREBASE_ANDROID_PROD_STORAGE_BUCKET:-}" \
+  --dart-define=GOOGLE_SIGN_IN_ANDROID_CLIENT_ID="${GOOGLE_SIGN_IN_ANDROID_CLIENT_ID:-}"
 print_status "✅ Android AAB built: build/app/outputs/bundle/release/app-release.aab"
 
 print_step "Building Android APK for STAGING..."
-flutter build apk --release --dart-define=ENVIRONMENT=staging
+flutter build apk --release \
+  --dart-define=ENVIRONMENT=staging \
+  --dart-define=HMS_APP_ID="${HMS_APP_ID:-}" \
+  --dart-define=HMS_AUTH_TOKEN="${HMS_AUTH_TOKEN:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_API_KEY="${FIREBASE_ANDROID_PROD_API_KEY:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_APP_ID="${FIREBASE_ANDROID_PROD_APP_ID:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_MESSAGING_SENDER_ID="${FIREBASE_ANDROID_PROD_MESSAGING_SENDER_ID:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_PROJECT_ID="${FIREBASE_ANDROID_PROD_PROJECT_ID:-}" \
+  --dart-define=FIREBASE_ANDROID_PROD_STORAGE_BUCKET="${FIREBASE_ANDROID_PROD_STORAGE_BUCKET:-}" \
+  --dart-define=GOOGLE_SIGN_IN_ANDROID_CLIENT_ID="${GOOGLE_SIGN_IN_ANDROID_CLIENT_ID:-}"
 print_status "✅ Android APK built: build/app/outputs/flutter-apk/app-release.apk"
 
 # Build iOS with staging environment
@@ -231,7 +267,17 @@ fi
 cd ..
 
 print_step "Building iOS release for STAGING..."
-flutter build ios --release --no-codesign --dart-define=ENVIRONMENT=staging
+flutter build ios --release --no-codesign \
+  --dart-define=ENVIRONMENT=staging \
+  --dart-define=HMS_APP_ID="${HMS_APP_ID:-}" \
+  --dart-define=HMS_AUTH_TOKEN="${HMS_AUTH_TOKEN:-}" \
+  --dart-define=FIREBASE_IOS_PROD_API_KEY="${FIREBASE_IOS_PROD_API_KEY:-}" \
+  --dart-define=FIREBASE_IOS_PROD_APP_ID="${FIREBASE_IOS_PROD_APP_ID:-}" \
+  --dart-define=FIREBASE_IOS_PROD_MESSAGING_SENDER_ID="${FIREBASE_IOS_PROD_MESSAGING_SENDER_ID:-}" \
+  --dart-define=FIREBASE_IOS_PROD_PROJECT_ID="${FIREBASE_IOS_PROD_PROJECT_ID:-}" \
+  --dart-define=FIREBASE_IOS_PROD_STORAGE_BUCKET="${FIREBASE_IOS_PROD_STORAGE_BUCKET:-}" \
+  --dart-define=FIREBASE_IOS_PROD_BUNDLE_ID="${FIREBASE_IOS_PROD_BUNDLE_ID:-}" \
+  --dart-define=GOOGLE_SIGN_IN_IOS_CLIENT_ID="${GOOGLE_SIGN_IN_IOS_CLIENT_ID:-}"
 
 print_step "Creating iOS archive..."
 cd ios

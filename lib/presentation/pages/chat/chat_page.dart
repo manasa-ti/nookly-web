@@ -34,7 +34,7 @@ import 'package:nookly/core/theme/app_colors.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
-import 'dart:html' as html if (dart.library.io) 'chat_page_stub.dart';
+import 'dart:html' if (dart.library.io) 'chat_page_stub.dart' as html;
 import 'package:http_parser/http_parser.dart';
 import 'package:nookly/core/services/image_url_service.dart';
 
