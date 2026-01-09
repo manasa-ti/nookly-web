@@ -274,61 +274,61 @@ class _GameInterfaceBarState extends State<GameInterfaceBar> {
           Expanded(
             child: _buildGetCloseButton(),
           ),
-          // Heat Up (coming soon) - Temporarily hidden
-          // Expanded(
-          //   child: Material(
-          //     color: Colors.transparent,
-          //     child: InkWell(
-          //       onTap: () {
-          //         // Track heat up clicked
-          //         sl<AnalyticsService>().logHeatUpClicked();
-          //       },
-          //       child: Column(
-          //         mainAxisAlignment: MainAxisAlignment.center,
-          //         crossAxisAlignment: CrossAxisAlignment.center,
-          //         children: [
-          //           Row(
-          //             mainAxisAlignment: MainAxisAlignment.center,
-          //             children: [
-          //               Icon(Icons.local_fire_department, size: 18, color: Colors.white.withOpacity(0.6)),
-          //               const SizedBox(width: 6),
-          //               Text(
-          //                 'Heat Up',
-          //                 style: TextStyle(
-          //                   color: Colors.white.withOpacity(0.7),
-          //                   fontSize: AppTextStyles.getChipFontSize(context),
-          //                   height: 1.1,
-          //                   fontFamily: 'Nunito',
-          //                   fontWeight: FontWeight.w600,
-          //                 ),
-          //                 maxLines: 1,
-          //                 softWrap: false,
-          //                 overflow: TextOverflow.ellipsis,
-          //               ),
-          //             ],
-          //           ),
-          //           const SizedBox(height: 2),
-          //           Padding(
-          //             padding: const EdgeInsets.only(left: 12),
-          //             child: Text(
-          //               'Coming soon',
-          //               style: TextStyle(
-          //                 color: Colors.orange,
-          //                 fontSize: AppTextStyles.getSmallCaptionFontSize(context),
-          //                 height: 1.0,
-          //                 fontFamily: 'Nunito',
-          //                 fontWeight: FontWeight.w500,
-          //               ),
-          //               maxLines: 1,
-          //               softWrap: false,
-          //               overflow: TextOverflow.ellipsis,
-          //             ),
-          //           ),
-          //         ],
-          //       ),
-          //     ),
-          //   ),
-          // ),
+          // Heat Up (Premium)
+          Expanded(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  // Track heat up clicked
+                  sl<AnalyticsService>().logHeatUpClicked();
+                },
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.local_fire_department, size: 18, color: Colors.white.withOpacity(0.6)),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Heat Up',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.7),
+                            fontSize: AppTextStyles.getChipFontSize(context),
+                            height: 1.1,
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Text(
+                        'Premium',
+                        style: TextStyle(
+                          color: Colors.orange,
+                          fontSize: AppTextStyles.getSmallCaptionFontSize(context),
+                          height: 1.0,
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
