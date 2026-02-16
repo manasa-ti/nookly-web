@@ -17,3 +17,4 @@ self.addEventListener('activate', (event) => {
 
 // No Firebase Messaging initialization - service worker exists only to prevent 404
 
+
