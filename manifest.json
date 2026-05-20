@@ -1,11 +1,11 @@
 {
-    "name": "hushmate",
-    "short_name": "hushmate",
+    "name": "Nookly",
+    "short_name": "Nookly",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#234481",
-    "theme_color": "#667eea",
-    "description": "A new Flutter project.",
+    "background_color": "#06030c",
+    "theme_color": "#8b5cf6",
+    "description": "Nookly — Find people who get you.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

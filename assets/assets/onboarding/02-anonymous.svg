@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="280" viewBox="0 0 280 280">
+  <defs>
+    <radialGradient id="a-glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.34"></stop>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"></stop>
+    </radialGradient>
+    <linearGradient id="a-av" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c4b5fd" stop-opacity="0.85"></stop>
+      <stop offset="1" stop-color="#6d28d9" stop-opacity="0.9"></stop>
+    </linearGradient>
+    <linearGradient id="a-veil" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6d28d9" stop-opacity="0.95"></stop>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0.4"></stop>
+    </linearGradient>
+    <clipPath id="a-avclip">
+      <circle cx="140" cy="120" r="78"></circle>
+    </clipPath>
+  </defs>
+  <circle cx="140" cy="140" r="140" fill="url(#a-glow)"></circle>
+
+  <circle cx="140" cy="120" r="78" fill="url(#a-av)"></circle>
+
+  <g clip-path="url(#a-avclip)">
+    <circle cx="140" cy="105" r="26" fill="#fff" fill-opacity="0.92"></circle>
+    <ellipse cx="140" cy="190" rx="56" ry="40" fill="#fff" fill-opacity="0.92"></ellipse>
+  </g>
+
+  <g clip-path="url(#a-avclip)">
+    <rect x="62" y="92" width="156" height="34" fill="url(#a-veil)"></rect>
+    <line x1="62" y1="92" x2="218" y2="92" stroke="#c4b5fd" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="2 4"></line>
+    <line x1="62" y1="126" x2="218" y2="126" stroke="#c4b5fd" stroke-opacity="0.6" stroke-width="1" stroke-dasharray="2 4"></line>
+  </g>
+
+  <circle cx="140" cy="120" r="78" fill="none" stroke="#fff" stroke-opacity="0.18" stroke-width="1.5"></circle>
+
+  <g transform="translate(50 220)">
+    <rect x="0" y="0" width="180" height="44" rx="14" fill="#181126" stroke="#8b5cf6" stroke-opacity="0.25"></rect>
+    <g transform="translate(14 14)" stroke="#fff" stroke-opacity="0.8" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M2 8 C 6 3, 12 3, 16 8 C 12 13, 6 13, 2 8 Z"></path>
+      <circle cx="9" cy="8" r="2.2" fill="#fff" fill-opacity="0.8" stroke="none"></circle>
+      <line x1="0" y1="0" x2="18" y2="16" stroke="#f43f5e" stroke-width="2"></line>
+    </g>
+    <text x="46" y="22" font-family="Manrope, system-ui, sans-serif" font-size="11" font-weight="600" fill="#fff" letter-spacing="1">HIDDEN</text>
+    <text x="46" y="34" font-family="Manrope, system-ui, sans-serif" font-size="10" fill="rgba(255,255,255,0.55)">until you choose</text>
+    <g transform="translate(132 12)">
+      <rect width="36" height="20" rx="10" fill="#8b5cf6" fill-opacity="0.18" stroke="#8b5cf6" stroke-opacity="0.3"></rect>
+      <circle cx="10" cy="10" r="7" fill="#fff"></circle>
+    </g>
+  </g>
+</svg>
