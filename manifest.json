@@ -1,11 +1,11 @@
 {
-    "name": "Nookly",
-    "short_name": "Nookly",
+    "name": "DuskPal",
+    "short_name": "DuskPal",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#06030c",
     "theme_color": "#8b5cf6",
-    "description": "Nookly — Find people who get you.",
+    "description": "DuskPal - Find people who get you.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
